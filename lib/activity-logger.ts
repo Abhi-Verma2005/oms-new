@@ -1,10 +1,10 @@
 import { prisma } from './db';
-import { ActivityCategory } from '@prisma/client';
 
 export interface ActivityLogData {
   userId: string;
   activity: string;
-  category: ActivityCategory;
+  // Use a plain string to avoid coupling to Prisma enums at build time
+  category: string;
   description?: string;
   metadata?: Record<string, any>;
   ipAddress?: string;
