@@ -1,0 +1,46 @@
+/* Enhanced draggable levers for input[type=range] used in publishers filters */
+input[type="range"].dual-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 0; /* track is custom */
+  touch-action: none; /* prevent scroll while dragging on touch */
+}
+input[type="range"].dual-range:focus {
+  outline: none;
+}
+input[type="range"].dual-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b; /* amber-500 */
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  cursor: grab;
+}
+input[type="range"].dual-range:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+input[type="range"].dual-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  cursor: grab;
+}
+input[type="range"].dual-range:active::-moz-range-thumb {
+  cursor: grabbing;
+}
+input[type="range"].dual-range::-ms-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  cursor: grab;
+}
+
