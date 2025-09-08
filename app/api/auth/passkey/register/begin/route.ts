@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         residentKey: "preferred",
       },
       supportedAlgorithmIDs: [-7, -257],
-      excludeCredentials: existingAuthenticators.map((auth) => ({
+      excludeCredentials: existingAuthenticators.map((auth: any) => ({
         id: auth.credentialID,
         type: "public-key",
         transports: auth.transports ? (auth.transports.split(",") as any) : undefined,
