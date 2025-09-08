@@ -3,11 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
-export const metadata = {
-  title: 'Set up MFA',
-  description: 'Enable multi-factor authentication',
-}
-
 export default function Page() {
   const [token, setToken] = useState("")
   const [loading, setLoading] = useState(false)

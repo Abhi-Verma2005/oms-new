@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { generateRegistrationOptions } from "@simplewebauthn/server"
+// Lazy load inside the handler to avoid top-level await/type issues
 import { prisma } from "@/lib/db"
 import { auth } from "@/lib/auth"
 
@@ -19,6 +19,13 @@ export async function POST(request: NextRequest) {
       where: { userId: (session.user as any).id },
     })
 
+    let generateRegistrationOptions: any
+    try {
+      ;({ generateRegistrationOptions } = await import("@simplewebauthn/server" as any))
+    } catch {}
+    if (!generateRegistrationOptions) {
+      return NextResponse.json({ error: "Passkey server dependency not installed" }, { status: 501 })
+    }
     const options = await generateRegistrationOptions({
       rpName: process.env.AUTH_WEBAUTHN_RP_NAME || "Mosaic OMS",
       rpID: process.env.AUTH_WEBAUTHN_RP_ID || "localhost",

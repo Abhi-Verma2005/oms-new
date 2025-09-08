@@ -5,7 +5,8 @@ import { addSecurityHeaders } from "@/lib/security"
 
 export async function POST(request: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) {
+  const userId = (session?.user as any)?.id
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   const { ipAddress, userAgent } = extractRequestInfo(request as any)
 
   await ActivityLogger.log({
-    userId: (session.user as any).id,
+    userId,
     activity,
     category,
     description,

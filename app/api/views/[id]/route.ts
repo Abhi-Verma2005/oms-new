@@ -22,8 +22,8 @@ async function writeViews(views: View[]): Promise<void> {
   await fs.writeFile(dataFile, JSON.stringify(views, null, 2), 'utf8')
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id
+export async function DELETE(_req: NextRequest, { params }: any) {
+  const id = params?.id
   const views = await readViews()
   const next = views.filter(v => v.id !== id)
   await writeViews(next)

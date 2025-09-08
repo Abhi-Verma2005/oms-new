@@ -8,7 +8,8 @@ const limiter = rateLimit({ windowMs: 60_000, max: 60 })
 
 export async function GET(request: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) {
+  const userId = (session?.user as any)?.id
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   const orders = await prisma.order.findMany({
-    where: { userId: (session.user as any).id },
+    where: { userId },
     include: { items: true, transactions: true },
     orderBy: { createdAt: "desc" },
   })

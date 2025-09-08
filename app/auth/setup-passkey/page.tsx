@@ -1,12 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { startRegistration } from "@simplewebauthn/browser"
-
-export const metadata = {
-  title: 'Set up Passkey',
-  description: 'Register a passkey for passwordless sign-in',
-}
 
 export default function Page() {
   const [name, setName] = useState("")
@@ -26,6 +20,13 @@ export default function Page() {
       const opts = await beginRes.json()
       if (!beginRes.ok) throw new Error(opts.error || 'Failed to start registration')
 
+      let startRegistration: any = null
+      try {
+        const mod = await import("@simplewebauthn/browser")
+        startRegistration = (mod as any).startRegistration
+      } catch {
+        throw new Error('Passkey support is not available in this build')
+      }
       const att = await startRegistration(opts)
 
       const completeRes = await fetch('/api/auth/passkey/register/complete', {

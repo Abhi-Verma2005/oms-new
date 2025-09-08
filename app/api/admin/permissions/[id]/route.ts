@@ -3,7 +3,7 @@ import { requireAdminForAPI } from "@/lib/auth-middleware"
 import { prisma } from "@/lib/db"
 import { addSecurityHeaders } from "@/lib/security"
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: any) {
   try {
     await requireAdminForAPI()
   } catch (e: any) {
@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 
   const permission = await prisma.permission.findUnique({
-    where: { id: params.id },
+    where: { id: params?.id },
     include: {
       rolePermissions: { include: { role: true } },
     },
