@@ -50,9 +50,21 @@ export function NotificationToast({
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
+  // Debug logging
+  console.log('🔔 NotificationToast: Rendering toast for notification:', {
+    id: notification.id,
+    title: notification.title,
+    isVisible,
+    isClosing
+  });
+
   useEffect(() => {
     // Trigger slide-in animation
-    const timer = setTimeout(() => setIsVisible(true), 100);
+    console.log('🔔 NotificationToast: Setting up visibility timer for:', notification.title);
+    const timer = setTimeout(() => {
+      console.log('🔔 NotificationToast: Making toast visible:', notification.title);
+      setIsVisible(true);
+    }, 100);
     return () => clearTimeout(timer);
   }, []);
 
@@ -201,8 +213,19 @@ export function NotificationToast({
 export function NotificationToastContainer() {
   const { toasts, removeToast, markAsRead } = useNotifications();
 
+  // Debug logging
+  console.log('🔔 NotificationToastContainer: Rendering with toasts:', {
+    count: toasts.length,
+    toasts: toasts.map(t => ({ id: t.id, title: t.title }))
+  });
+
   return (
     <div className="fixed bottom-4 right-4 z-50 space-y-2">
+      {toasts.length > 0 && (
+        <div className="text-xs text-gray-500 mb-2">
+          Debug: {toasts.length} toast(s) to render
+        </div>
+      )}
       {toasts.map((toast) => (
         <NotificationToast
           key={toast.id}

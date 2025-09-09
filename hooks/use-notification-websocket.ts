@@ -105,35 +105,50 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log('WebSocket message received:', message);
+          console.log('🔔 WebSocket message received:', {
+            type: message.type,
+            hasData: !!message.data,
+            dataKeys: message.data ? Object.keys(message.data) : [],
+            fullMessage: message
+          });
           
           switch (message.type) {
             case 'connected':
-              console.log('WebSocket client connected:', message.clientId);
+              console.log('✅ WebSocket client connected:', message.clientId);
               break;
               
             case 'authenticated':
-              console.log('WebSocket authenticated for user:', message.userId);
+              console.log('✅ WebSocket authenticated for user:', message.userId);
               break;
               
             case 'notification':
+              console.log('🔔 Processing notification message...');
               if (message.data && onNotification) {
-                console.log('Received notification via WebSocket:', message.data);
+                console.log('✅ Calling onNotification with data:', {
+                  id: message.data.id,
+                  title: message.data.title,
+                  hasType: !!message.data.type,
+                  isGlobal: message.data.isGlobal
+                });
                 onNotification(message.data);
               } else {
-                console.log('No onNotification handler or no data in message');
+                console.log('❌ No onNotification handler or no data in message:', {
+                  hasData: !!message.data,
+                  hasOnNotification: !!onNotification,
+                  data: message.data
+                });
               }
               break;
               
             case 'pong':
-              // Handle ping/pong for connection health
+              console.log('🏓 Pong received');
               break;
               
             default:
-              console.log('Unknown WebSocket message type:', message.type);
+              console.log('❓ Unknown WebSocket message type:', message.type);
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          console.error('❌ Error parsing WebSocket message:', error, 'Raw data:', event.data);
         }
       };
 

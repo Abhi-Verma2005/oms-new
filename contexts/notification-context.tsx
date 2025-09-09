@@ -54,15 +54,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [initialLoad, setInitialLoad] = useState(false);
 
   const handleNewNotification = useCallback((notification: NotificationData) => {
-    console.log('Received new notification via WebSocket:', notification);
+    console.log('🔔 NotificationContext: Received new notification via WebSocket:', {
+      id: notification.id,
+      title: notification.title,
+      hasType: !!notification.type,
+      isGlobal: notification.isGlobal,
+      fullNotification: notification
+    });
     
     // Add to notifications list
     setNotifications(prev => {
       // Check if notification already exists
       const exists = prev.some(n => n.id === notification.id);
-      if (exists) return prev;
+      if (exists) {
+        console.log('⚠️ Notification already exists in list, skipping:', notification.title);
+        return prev;
+      }
       
-      console.log('Adding notification to list:', notification.title);
+      console.log('✅ Adding notification to list:', notification.title);
       return [notification, ...prev];
     });
 
@@ -70,9 +79,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setToasts(prev => {
       // Check if toast already exists
       const exists = prev.some(n => n.id === notification.id);
-      if (exists) return prev;
+      if (exists) {
+        console.log('⚠️ Toast already exists, skipping:', notification.title);
+        return prev;
+      }
       
-      console.log('Adding notification to toast queue:', notification.title);
+      console.log('✅ Adding notification to toast queue:', notification.title);
       return [...prev, notification];
     });
   }, []);

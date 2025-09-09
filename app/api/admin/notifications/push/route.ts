@@ -4,10 +4,16 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 // WebSocket server is now independent - we'll call it via HTTP API
 
-const WS_SERVER_URL = process.env.WS_SERVER_URL || 'http://localhost:8000';
+const WS_SERVER_URL = process.env.WS_API_URL || 'http://localhost:8001';
 
 async function broadcastNotification(notification: any) {
   try {
+    console.log('🔔 Broadcasting notification to WebSocket server:', {
+      url: `${WS_SERVER_URL}/api/broadcast`,
+      notificationId: notification.id,
+      title: notification.title
+    });
+    
     const response = await fetch(`${WS_SERVER_URL}/api/broadcast`, {
       method: 'POST',
       headers: {
@@ -17,10 +23,16 @@ async function broadcastNotification(notification: any) {
     });
 
     if (!response.ok) {
-      console.error('Failed to broadcast notification:', await response.text());
+      const errorText = await response.text();
+      console.error('❌ Failed to broadcast notification:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
       return false;
     } else {
-      console.log('✅ Notification broadcasted successfully');
+      const result = await response.json();
+      console.log('✅ Notification broadcasted successfully:', result);
       return true;
     }
   } catch (error) {

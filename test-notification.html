@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Notification</title>
+</head>
+<body>
+    <h1>Test Notification</h1>
+    <button onclick="testNotification()">Test Notification</button>
+    <button onclick="testWebSocket()">Test WebSocket</button>
+    
+    <script>
+        function testNotification() {
+            // Simulate a notification event
+            const notification = {
+                id: 'test-' + Date.now(),
+                title: 'Test Notification',
+                body: 'This is a test notification',
+                typeId: 'test-type',
+                isActive: true,
+                isGlobal: true,
+                targetUserIds: [],
+                priority: 'NORMAL',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                type: {
+                    id: 'test-type',
+                    name: 'test',
+                    displayName: 'Test',
+                    icon: '🔔',
+                    color: 'blue'
+                }
+            };
+            
+            // Dispatch custom event
+            const event = new CustomEvent('preview-notification', { detail: notification });
+            window.dispatchEvent(event);
+            
+            console.log('Test notification dispatched:', notification);
+        }
+        
+        function testWebSocket() {
+            const ws = new WebSocket('ws://localhost:8000/api/notifications/ws');
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                // Authenticate
+                ws.send(JSON.stringify({
+                    type: 'authenticate',
+                    userId: 'test-user',
+                    isAdmin: true
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                console.log('WebSocket message:', JSON.parse(event.data));
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket closed');
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+    </script>
+</body>
+</html>
