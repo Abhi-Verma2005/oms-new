@@ -4,11 +4,11 @@
 
 /**
  * Get the WebSocket URL with consistent fallback
- * Primary: process.env.WEBSOCKET_URL
+ * Primary: process.env.NEXT_PUBLIC_WEBSOCKET_URL
  * Fallback: ws://localhost:8000
  */
 export function getWebSocketUrl(): string {
-  return process.env.WEBSOCKET_URL || 'ws://localhost:8000';
+  return process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8000';
 }
 
 /**
@@ -90,8 +90,7 @@ export function getFullClientWebSocketUrl(): string {
       fullUrl,
       hostname: window.location.hostname,
       protocol: window.location.protocol,
-      NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
-      WEBSOCKET_URL: process.env.WEBSOCKET_URL
+      NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL
     });
   }
   

@@ -4,7 +4,7 @@ const next = require('next');
 
 // WebSocket URL utility function
 function getWebSocketUrl() {
-  return process.env.WEBSOCKET_URL || 'ws://localhost:8000';
+  return process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8000';
 }
 
 const dev = process.env.NODE_ENV !== 'production';

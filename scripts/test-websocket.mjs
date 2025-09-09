@@ -3,7 +3,7 @@
 import WebSocket from 'ws';
 
 // Get WebSocket URL with consistent fallback
-const wsUrl = process.env.WEBSOCKET_URL || 'ws://localhost:8000';
+const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8000';
 const fullWsUrl = wsUrl.endsWith('/api/notifications/ws') ? wsUrl : `${wsUrl}/api/notifications/ws`;
 
 console.log('Connecting to WebSocket server...');
