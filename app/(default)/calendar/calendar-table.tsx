@@ -80,9 +80,9 @@ export default function CalendarTable({ events }: { events: Event[] }) {
                   {/* Events */}
                   <div className="grow flex flex-col relative p-0.5 sm:p-1.5 overflow-hidden">
                     {
-                      getEvents(day).map(event => {
+                      getEvents(day).map((event, index) => {
                         return (
-                          <button className="relative w-full text-left mb-1" key={event.eventName}>
+                          <button className="relative w-full text-left mb-1" key={`${event.eventName}-${index}`}>
                             <div className={`px-2 py-0.5 rounded-lg overflow-hidden ${eventColor(event.eventColor)}`}>
                               {/* Event name */}
                               <div className="text-xs font-semibold truncate">{event.eventName}</div>

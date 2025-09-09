@@ -60,6 +60,7 @@ model User {
   sessions       Session[]
   userRoles      UserRole[]
   activities     UserActivity[]
+  notificationReads UserNotificationRead[]
 
   @@map("users")
 }
@@ -335,6 +336,69 @@ model SerpFeature {
   caseStudy    CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
   
   @@map("serp_features")
+}
+
+// Notification System Models
+model NotificationType {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  displayName String        @map("display_name")
+  description String?
+  icon        String?       // Icon name or emoji for the notification type
+  color       String?       // Color theme for the notification type
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  notifications Notification[]
+  
+  @@map("notification_types")
+}
+
+model Notification {
+  id               String           @id @default(cuid())
+  title            String
+  body             String
+  imageUrl         String?          @map("image_url") // Banner image URL
+  typeId           String           @map("type_id")
+  isActive         Boolean          @default(true) @map("is_active")
+  isGlobal         Boolean          @default(true) @map("is_global") // If true, shows to all users
+  targetUserIds    String[]         @map("target_user_ids") // Specific user IDs if not global
+  priority         NotificationPriority @default(NORMAL)
+  expiresAt        DateTime?        @map("expires_at")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  createdBy        String?          @map("created_by") // Admin user who created this notification
+  
+  // Relations
+  type             NotificationType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  userReads        UserNotificationRead[]
+  
+  @@map("notifications")
+  @@index([isActive, isGlobal, createdAt])
+  @@index([expiresAt])
+}
+
+model UserNotificationRead {
+  id             String       @id @default(cuid())
+  userId         String       @map("user_id")
+  notificationId String       @map("notification_id")
+  readAt         DateTime     @default(now()) @map("read_at")
+  
+  // Relations
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, notificationId])
+  @@map("user_notification_reads")
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 

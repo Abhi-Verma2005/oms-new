@@ -13,7 +13,8 @@ import {
   TrendingUp, 
   Activity,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Bell
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -216,6 +217,46 @@ export function AdminDashboard() {
             <Button asChild className="w-full">
               <Link href="/admin/user-roles">
                 Manage Assignments
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bell className="h-5 w-5 mr-2" />
+              Notification Types
+            </CardTitle>
+            <CardDescription>
+              Manage notification types and their settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/admin/notification-types">
+                Manage Types
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bell className="h-5 w-5 mr-2" />
+              Notifications
+            </CardTitle>
+            <CardDescription>
+              Create and manage system notifications
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/admin/notifications">
+                Manage Notifications
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
