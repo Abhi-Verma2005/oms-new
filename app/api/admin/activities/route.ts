@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the data to match the expected format
-    const transformedActivities = activities.map(activity => ({
+    const transformedActivities = activities.map((activity: any) => ({
       id: activity.id,
       action: activity.activity,
       user: activity.user?.name || activity.user?.email || 'Unknown User',
