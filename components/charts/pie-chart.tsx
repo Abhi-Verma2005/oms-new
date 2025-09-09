@@ -14,19 +14,18 @@ import 'chartjs-adapter-moment'
 import { getCssVariable } from '@/components/utils/utils'
 
 Chart.register(PieController, ArcElement, TimeScale, Tooltip)
-Chart.overrides.doughnut.cutout = '80%'
 
-interface DoughnutProps {
+interface PieProps {
   data: ChartData
   width: number
   height: number
 }
 
-export default function DoughnutChart({
+export default function PieChart({
   data,
   width,
   height
-}: DoughnutProps) {
+}: PieProps) {
 
   const [chart, setChart] = useState<Chart | null>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -47,8 +46,8 @@ export default function DoughnutChart({
           padding: {
             top: 4,
             bottom: 4,
-            left: 24,
-            right: 24,
+            left: 8,
+            right: 8,
           },
         },
         plugins: {
@@ -85,31 +84,30 @@ export default function DoughnutChart({
             const items = c.options.plugins?.legend?.labels?.generateLabels?.(c)
             items?.forEach((item) => {
               const li = document.createElement('li')
-              li.style.margin = '6px'
+              li.style.margin = '1.5px'
               // Button element
               const button = document.createElement('button')
-              button.style.display = 'inline-flex'
-              button.style.alignItems = 'center'
+              button.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'shadow-sm', 'rounded-full', 'px-2', 'py-1.5')
               button.style.opacity = item.hidden ? '.3' : ''
+              button.style.fontSize = '14px'
               button.onclick = () => {
                 c.toggleDataVisibility(item.index!)
                 c.update()
               }
               // Color box
               const box = document.createElement('span')
-              box.style.display = 'block'
-              box.style.width = '12px'
-              box.style.height = '12px'
-              box.style.borderRadius = 'calc(infinity * 1px)'
-              box.style.marginRight = '6px'
-              box.style.borderWidth = '3px'
-              box.style.borderColor = item.fillStyle as string
+              box.style.display = 'inline-block'
+              box.style.width = '6px'
+              box.style.height = '6px'
+              box.style.backgroundColor = item.fillStyle as string
+              box.style.borderRadius = '3px'
+              box.style.marginRight = '3px'
               box.style.pointerEvents = 'none'
               // Label
               const label = document.createElement('span')
-              label.classList.add('text-gray-500', 'dark:text-gray-400')
+              label.style.display = 'inline-flex'
+              label.style.alignItems = 'center'
               label.style.fontSize = '14px'
-              label.style.lineHeight = 'calc(1.25 / 0.875)'
               const labelText = document.createTextNode(item.text)
               label.appendChild(labelText)
               li.appendChild(button)
@@ -143,12 +141,12 @@ export default function DoughnutChart({
   }, [theme])    
 
   return (
-    <div className="grow flex flex-col justify-center">
-      <div>
+    <div className="grow flex flex-col">
+      <div className="flex-shrink-0" style={{ height: `${height * 0.7}px` }}>
         <canvas ref={canvas} width={width} height={height}></canvas>
       </div>
-      <div className="px-5 py-4">
-        <ul ref={legend} className="flex flex-wrap justify-center -m-1" />
+      <div className="flex-1 px-2 pt-2 pb-2 flex items-center justify-center">
+        <ul ref={legend} className="flex flex-wrap justify-center gap-1.5 text-xs" />
       </div>
     </div>
   )
