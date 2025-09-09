@@ -2,6 +2,12 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+interface SessionUser extends Record<string, any> {
+  id?: string;
+  isAdmin?: boolean;
+  roles?: string[];
+}
+
 export async function requireAdminForAPI() {
   const session = await getServerSession(authOptions);
   
@@ -9,13 +15,15 @@ export async function requireAdminForAPI() {
     throw new Error('Unauthorized');
   }
 
-  if (!session.user.isAdmin) {
+  const user = session.user as SessionUser;
+
+  if (!user.isAdmin) {
     throw new Error('Forbidden: Admin access required');
   }
 
   return {
-    ...session.user,
-    id: session.user.id || 'unknown'
+    ...user,
+    id: user.id || 'unknown'
   };
 }
 
@@ -26,11 +34,13 @@ export async function requireRoleForAPI(role: string) {
     throw new Error('Unauthorized');
   }
 
-  if (!session.user.roles?.includes(role)) {
+  const user = session.user as SessionUser;
+
+  if (!user.roles?.includes(role)) {
     throw new Error(`Forbidden: ${role} role required`);
   }
 
-  return session.user;
+  return user;
 }
 
 export async function requirePermissionForAPI(permission: string) {
@@ -40,13 +50,15 @@ export async function requirePermissionForAPI(permission: string) {
     throw new Error('Unauthorized');
   }
 
+  const user = session.user as SessionUser;
+
   // For now, we'll check if user is admin
   // In a full implementation, you'd check user permissions
-  if (!session.user.isAdmin) {
+  if (!user.isAdmin) {
     throw new Error(`Forbidden: ${permission} permission required`);
   }
 
-  return session.user;
+  return user;
 }
 
 export function hasRole(userRoles: string[] | undefined, role: string): boolean {

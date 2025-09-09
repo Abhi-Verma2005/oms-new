@@ -28,7 +28,9 @@ const roleFormSchema = z.object({
   permissionIds: z.array(z.string()).default([])
 });
 
-type RoleFormData = z.infer<typeof roleFormSchema>;
+// Use input type (pre-parse) so resolver input matches react-hook-form expectations
+// This makes fields with defaults optional in the input type
+type RoleFormData = z.input<typeof roleFormSchema>;
 
 interface Permission {
   id: string;
@@ -173,7 +175,7 @@ export const RoleForm = React.memo(function RoleForm({ role, onSuccess }: RoleFo
       setValue('permissionIds', updated);
     } else {
       // Add all permissions for this resource
-      const updated = [...new Set([...current, ...resourcePermissionIds])];
+      const updated = Array.from(new Set([...current, ...resourcePermissionIds]));
       setValue('permissionIds', updated);
     }
   }, [groupedPermissions, selectedPermissions, setValue]);

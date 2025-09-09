@@ -18,7 +18,7 @@ export class ActivityLogger {
         data: {
           userId: data.userId,
           activity: data.activity,
-          category: data.category,
+          category: data.category as any,
           description: data.description,
           // Prisma JSON column expects JsonValue; avoid passing null literal
           metadata: data.metadata ? (data.metadata as any) : undefined,
