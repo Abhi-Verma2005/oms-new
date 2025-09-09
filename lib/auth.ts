@@ -89,12 +89,14 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         try {
           if (!prisma) {
-            console.error("Prisma client not available in JWT callback");
+            console.error("❌ Prisma client not available in JWT callback");
             token.roles = [];
             token.permissions = [];
             token.isAdmin = false;
             return token;
           }
+
+          console.log("✅ Prisma client available in JWT callback");
 
           const userWithRoles = await prisma.user.findUnique({
             where: { id: user.id },
@@ -173,7 +175,16 @@ export const authOptions: NextAuthOptions = {
 
 export const { handlers, signIn, signOut } = NextAuth(authOptions)
 export async function auth() {
-  return getServerSession(authOptions)
+  try {
+    const session = await getServerSession(authOptions);
+    if (session && !prisma) {
+      console.warn("⚠️ Session exists but Prisma client is not available");
+    }
+    return session;
+  } catch (error) {
+    console.error("❌ Error in auth function:", error);
+    return null;
+  }
 }
 
 

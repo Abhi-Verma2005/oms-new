@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 
 interface SessionUser extends Record<string, any> {
   id?: string;
@@ -9,7 +8,7 @@ interface SessionUser extends Record<string, any> {
 }
 
 export async function requireAdminForAPI() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   
   if (!session?.user) {
     throw new Error('Unauthorized');
@@ -28,7 +27,7 @@ export async function requireAdminForAPI() {
 }
 
 export async function requireRoleForAPI(role: string) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   
   if (!session?.user) {
     throw new Error('Unauthorized');
@@ -44,7 +43,7 @@ export async function requireRoleForAPI(role: string) {
 }
 
 export async function requirePermissionForAPI(permission: string) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   
   if (!session?.user) {
     throw new Error('Unauthorized');

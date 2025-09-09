@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 // WebSocket server is now independent - we'll call it via HTTP API
 
@@ -29,7 +28,12 @@ async function broadcastNotification(notification: any) {
 // GET /api/notifications - Get notifications for the current user
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    if (!prisma) {
+      console.error('Prisma client not available in notifications GET API');
+      return NextResponse.json({ error: 'Database not available' }, { status: 500 });
+    }
+
+    const session = await auth();
     
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -103,7 +107,12 @@ export async function GET(request: NextRequest) {
 // POST /api/notifications - Create a new notification (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    if (!prisma) {
+      console.error('Prisma client not available in notifications POST API');
+      return NextResponse.json({ error: 'Database not available' }, { status: 500 });
+    }
+
+    const session = await auth();
     
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
