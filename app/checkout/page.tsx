@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import CheckoutClient from './CheckoutClient'
 
 export const metadata = {
-  title: 'Checkout',
+  title: 'Checkout - Mosaic',
   description: 'Complete your payment',
 }
 

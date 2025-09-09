@@ -1,37 +1,58 @@
-import { NextRequest, NextResponse } from "next/server"
-import { requireAdminForAPI } from "@/lib/auth-middleware"
-import { prisma } from "@/lib/db"
-import { addSecurityHeaders } from "@/lib/security"
+import { NextRequest, NextResponse } from 'next/server';
+import { requireAdminForAPI } from '@/lib/rbac';
+import { createClient } from '@supabase/supabase-js';
 
-export async function GET(req: NextRequest) {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function GET(request: NextRequest) {
   try {
-    await requireAdminForAPI()
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || 'Unauthorized' }, { status: 401 })
+    await requireAdminForAPI();
+
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+
+    const { data: activities, error } = await supabase
+      .from('activity_logs')
+      .select(`
+        *,
+        user:users(
+          id,
+          name,
+          email
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    // Transform the data to match the expected format
+    const transformedActivities = activities?.map(activity => ({
+      id: activity.id,
+      action: activity.action,
+      user: activity.user?.name || activity.user?.email || 'Unknown User',
+      userId: activity.user_id,
+      resource: activity.resource,
+      resourceId: activity.resource_id,
+      details: activity.details,
+      ipAddress: activity.ip_address,
+      userAgent: activity.user_agent,
+      timestamp: activity.created_at,
+      createdAt: activity.created_at
+    })) || [];
+
+    return NextResponse.json(transformedActivities);
+  } catch (error) {
+    console.error('Error fetching activities:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch activities' },
+      { status: 500 }
+    );
   }
-
-  const { searchParams } = new URL(req.url)
-  const page = Number(searchParams.get('page') || '1')
-  const limit = Number(searchParams.get('limit') || '20')
-  const userId = searchParams.get('userId') || undefined
-  const category = searchParams.get('category') || undefined
-
-  const where: any = {}
-  if (userId) where.userId = userId
-  if (category) where.category = category
-
-  const [activities, total] = await Promise.all([
-    prisma.userActivity.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
-      include: { user: { select: { id: true, name: true, email: true } } },
-    }),
-    prisma.userActivity.count({ where }),
-  ])
-
-  const res = NextResponse.json({ activities, total, page, limit, totalPages: Math.ceil(total / limit) })
-  addSecurityHeaders(res)
-  return res
 }

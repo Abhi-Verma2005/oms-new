@@ -1,7 +1,7 @@
 "use client"
 
 import React, { Suspense } from "react"
-import OrdersTable, { type Order as UiOrder } from "@/app/(default)/ecommerce/orders/orders-table"
+import OrdersTable, { type Order as UiOrder } from "./orders-table"
 import Image01 from '@/public/images/icon-01.svg'
 import { SelectedItemsProvider } from '@/app/selected-items-context'
 
@@ -25,9 +25,13 @@ function OrdersList() {
     id: idx,
     image: Image01,
     order: `#${o.id.substring(0, 6)}`,
-    date: new Date(o.createdAt).toLocaleDateString(),
+    date: new Date(o.createdAt).toLocaleDateString('en-US', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      year: '2-digit' 
+    }),
     customer: o.user?.name || '—',
-    total: `${o.currency} ${o.totalAmount}`,
+    total: `${o.currency} ${(o.totalAmount / 100).toFixed(2)}`,
     status: o.status,
     items: String(o.items?.length ?? 0),
     location: '—',
