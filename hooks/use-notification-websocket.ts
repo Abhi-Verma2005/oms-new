@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { getFullClientWebSocketUrl } from '@/lib/websocket-utils';
 
 interface NotificationType {
   id: string;
@@ -72,10 +73,8 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
     setError(null);
 
     try {
-      // Get WebSocket URL from environment or use fallback
-      const wsHost = process.env.NEXT_PUBLIC_WS_HOST || 'localhost:8000';
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${wsHost}/api/notifications/ws`;
+      // Get WebSocket URL using consistent utility function
+      const wsUrl = getFullClientWebSocketUrl();
       
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;

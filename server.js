@@ -2,6 +2,11 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 
+// WebSocket URL utility function
+function getWebSocketUrl() {
+  return process.env.WEBSOCKET_URL || 'ws://localhost:8000';
+}
+
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = process.env.WS_PORT || 8000;
@@ -31,9 +36,10 @@ app.prepare().then(() => {
       // WebSocket connections are now handled by the independent ws-server
       // Redirect WebSocket requests to the WebSocket server
       if (pathname === '/api/notifications/ws') {
+        const wsUrl = getWebSocketUrl();
         console.log('🔌 WebSocket connection attempt - redirecting to independent ws-server');
         res.writeHead(302, {
-          'Location': `ws://localhost:8000${pathname}`
+          'Location': `${wsUrl}${pathname}`
         });
         res.end();
         return;
@@ -55,10 +61,11 @@ app.prepare().then(() => {
       process.exit(1);
     })
     .listen(port, () => {
+      const wsUrl = getWebSocketUrl();
       console.log('🎉 Next.js server started successfully!');
       console.log(`🌐 HTTP Server: http://${hostname}:${port}`);
-      console.log('📝 Note: WebSocket server runs independently on port 8000');
-      console.log('🔌 WebSocket Endpoint: ws://localhost:8000/api/notifications/ws');
+      console.log('📝 Note: WebSocket server runs independently');
+      console.log(`🔌 WebSocket Endpoint: ${wsUrl}/api/notifications/ws`);
       console.log('='.repeat(60));
     });
 });
