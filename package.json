@@ -55,7 +55,7 @@
     "@tailwindcss/postcss": "^4.0.3",
     "@types/bcryptjs": "^3.0.0",
     "postcss": "^8.5.1",
-    "prisma": "^6.0.1",
+    "prisma": "6.15.0",
     "tailwindcss": "^4.0.3"
   }
 }
