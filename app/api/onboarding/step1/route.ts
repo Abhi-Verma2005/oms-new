@@ -4,10 +4,8 @@ import { auth } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  console.log('Step1 API - Session:', session)
   const userId = (session as any)?.user?.id as string | undefined
   if (!userId) {
-    console.log('Step1 API - No userId found in session')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   try {
