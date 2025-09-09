@@ -41,6 +41,11 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          if (!prisma) {
+            console.error("Prisma client not available")
+            return null
+          }
+
           const user = await prisma.user.findUnique({
             where: { email: credentials.email as string },
           })
@@ -83,6 +88,14 @@ export const authOptions: NextAuthOptions = {
     jwt: async ({ token, user, trigger, account }) => {
       if (user) {
         try {
+          if (!prisma) {
+            console.error("Prisma client not available in JWT callback");
+            token.roles = [];
+            token.permissions = [];
+            token.isAdmin = false;
+            return token;
+          }
+
           const userWithRoles = await prisma.user.findUnique({
             where: { id: user.id },
             include: {
@@ -113,16 +126,20 @@ export const authOptions: NextAuthOptions = {
             token.permissions = permissions;
             token.isAdmin = roles.includes('admin');
 
-            await ActivityLogger.logAuth(
-              user.id,
-              'USER_SIGNIN',
-              `User signed in via ${user.email}`,
-              {
-                provider: account?.provider || 'credentials',
-                roles: roles,
-                isAdmin: roles.includes('admin')
-              }
-            );
+            try {
+              await ActivityLogger.logAuth(
+                user.id,
+                'USER_SIGNIN',
+                `User signed in via ${user.email}`,
+                {
+                  provider: account?.provider || 'credentials',
+                  roles: roles,
+                  isAdmin: roles.includes('admin')
+                }
+              );
+            } catch (activityError) {
+              console.error('Error logging auth activity:', activityError);
+            }
           }
         } catch (error) {
           console.error('Error fetching user roles in JWT callback:', error);

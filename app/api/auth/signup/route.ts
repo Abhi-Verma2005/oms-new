@@ -4,6 +4,11 @@ import * as bcrypt from 'bcryptjs'
 
 export async function POST(req: NextRequest) {
   try {
+    if (!prisma) {
+      console.error('Prisma client not available in signup API')
+      return NextResponse.json({ error: 'Database not available' }, { status: 500 })
+    }
+
     const body = await req.json()
     const { email, password, name, role } = body || {}
 

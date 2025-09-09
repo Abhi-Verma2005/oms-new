@@ -1,18 +1,7 @@
-// Safe dynamic import to avoid build-time type errors if Prisma client isn't generated
-// and to keep deployment environments lenient.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-let PrismaClient: any;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  PrismaClient = require('@prisma/client').PrismaClient;
-} catch (e) {
-  PrismaClient = class {};
-}
+import { PrismaClient } from '@prisma/client'
 
-// Loosen typing to avoid strict coupling to Prisma types at build time
-// while preserving the runtime behavior when Prisma is available.
 const globalForPrisma = globalThis as unknown as {
-  prisma: any | undefined
+  prisma: PrismaClient | undefined
 }
 
 export const prisma =
@@ -23,7 +12,7 @@ export const prisma =
         url: process.env.DATABASE_URL,
       },
     },
-    log: ['error'],
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
