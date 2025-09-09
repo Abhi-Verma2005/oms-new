@@ -5,15 +5,14 @@ import { useTheme } from 'next-themes'
 
 import { chartColors } from '@/components/charts/chartjs-config'
 import {
-  Chart, BarController, BarElement, LinearScale, TimeScale, Tooltip, Legend,
+  Chart, BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend,
 } from 'chart.js'
 import type { ChartData } from 'chart.js'
-import 'chartjs-adapter-moment'
 
 // Import utilities
 import { formatThousands } from '@/components/utils/utils'
 
-Chart.register(BarController, BarElement, LinearScale, TimeScale, Tooltip, Legend)
+Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend)
 
 interface BarChart03Props {
   data: ChartData
@@ -28,13 +27,20 @@ export default function BarChart03({
 }: BarChart03Props) {
 
   const [chart, setChart] = useState<Chart | null>(null)
+  const [mounted, setMounted] = useState(false)
   const canvas = useRef<HTMLCanvasElement>(null)
   const legend = useRef<HTMLUListElement>(null)
   const { theme } = useTheme()
   const darkMode = theme === 'dark'
   const { textColor, gridColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors 
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {    
+    if (!mounted) return
+    
     const ctx = canvas.current
     if (!ctx) return
     
@@ -68,14 +74,7 @@ export default function BarChart03({
           },
           x: {
             stacked: true,
-            type: 'time',
-            time: {
-              parser: 'MM-DD-YYYY',
-              unit: 'month',
-              displayFormats: {
-                month: 'MMM',
-              },
-            },
+            type: 'category',
             border: {
               display: false,
             },
@@ -162,7 +161,7 @@ export default function BarChart03({
     })
     setChart(newChart)
     return () => newChart.destroy()
-  }, [])
+  }, [mounted])
 
   useEffect(() => {
     if (!chart) return
@@ -184,6 +183,10 @@ export default function BarChart03({
     }
     chart.update('none')
   }, [theme])
+
+  if (!mounted) {
+    return <div className="flex items-center justify-center h-full">Loading chart...</div>
+  }
 
   return (
     <>
