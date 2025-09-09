@@ -44,10 +44,10 @@ export default function BarChart01({
       options: {
         layout: {
           padding: {
-            top: 12,
-            bottom: 16,
-            left: 20,
-            right: 20,
+            top: 8,
+            bottom: 8,
+            left: 12,
+            right: 12,
           },
         },
         scales: {
@@ -132,29 +132,28 @@ export default function BarChart01({
             }
             // Color box
             const box = document.createElement('span')
-            box.style.display = 'block'
-            box.style.width = '12px'
-            box.style.height = '12px'
-            box.style.borderRadius = 'calc(infinity * 1px)'
-            box.style.marginRight = '8px'
-            box.style.borderWidth = '3px'
-            box.style.borderColor = item.fillStyle as string
+            box.style.display = 'inline-block'
+            box.style.width = '4px'
+            box.style.height = '4px'
+            box.style.borderRadius = '1px'
+            box.style.marginRight = '1px'
+            box.style.backgroundColor = item.fillStyle as string
             box.style.pointerEvents = 'none'
             // Label
             const labelContainer = document.createElement('span')
-            labelContainer.style.display = 'flex'
+            labelContainer.style.display = 'inline-flex'
             labelContainer.style.alignItems = 'center'
             const value = document.createElement('span')
             value.classList.add('text-gray-800', 'dark:text-gray-100')
-            value.style.fontSize = '30px'
-            value.style.lineHeight = 'calc(2.25 / 1.875)'
-            value.style.fontWeight = '700'
-            value.style.marginRight = '8px'
+            value.style.fontSize = '8px'
+            value.style.lineHeight = '1'
+            value.style.fontWeight = '600'
+            value.style.marginRight = '1px'
             value.style.pointerEvents = 'none'
             const label = document.createElement('span')
             label.classList.add('text-gray-500', 'dark:text-gray-400')
-            label.style.fontSize = '14px'
-            label.style.lineHeight = 'calc(1.25 / 0.875)'
+            label.style.fontSize = '6px'
+            label.style.lineHeight = '1'
             // @ts-ignore
             const theValue: number = c.data.datasets[item.datasetIndex!].data.reduce((a, b) => a + b, 0)
             const valueText = document.createTextNode(formatValue(theValue))
@@ -197,13 +196,13 @@ export default function BarChart01({
   }, [theme])    
 
   return (
-    <>
-      <div className="px-5 py-3">
-        <ul ref={legend} className="flex flex-wrap gap-x-4"></ul>
+    <div className="grow flex flex-col">
+      <div className="flex-shrink-0 px-0.5 py-0.5">
+        <ul ref={legend} className="flex flex-wrap gap-x-0 gap-y-0 text-xs"></ul>
       </div>
-      <div className="grow">
+      <div className="flex-1" style={{ height: `${height * 0.8}px` }}>
         <canvas ref={canvas} width={width} height={height}></canvas>
       </div>
-    </>
+    </div>
   )
 }

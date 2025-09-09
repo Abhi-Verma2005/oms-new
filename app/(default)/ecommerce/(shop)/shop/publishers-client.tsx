@@ -5,6 +5,29 @@ import ModalBasic from "@/components/modal-basic"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Card, CardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader as UITableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import {
+  AlertTriangle,
+  Link2,
+  Clock,
+  Filter as FilterIcon,
+  Globe,
+  Languages,
+  Tag,
+  DollarSign,
+  Shield,
+  TrendingUp,
+  BarChart3,
+  Layers,
+  CheckCircle,
+  RefreshCw
+} from "lucide-react"
 import { fetchSitesWithFilters, transformAPISiteToSite, type APIFilters, type Site, fetchCategoryRecommendations, type CategoryRecommendation } from "@/lib/sample-sites"
 import { CartProvider, useCart } from "@/contexts/cart-context"
 
@@ -205,7 +228,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     const pct = (v: number) => ((v - min) / (max - min)) * 100
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
           <span className="font-medium">{label}</span>
           <span className="tabular-nums">{formatValue(low)} – {formatValue(high)}</span>
@@ -213,7 +236,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         <div className="relative h-8 select-none">
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 dark:bg-gray-700 rounded" />
           <div
-            className="absolute top-1/2 -translate-y-1/2 h-1 bg-amber-400 rounded"
+            className="absolute top-1/2 -translate-y-1/2 h-1 bg-primary rounded"
             style={{ left: `${pct(low)}%`, right: `${100 - pct(high)}%` }}
           />
           <input
@@ -243,11 +266,10 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
             aria-label={`${label} maximum`}
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] text-gray-500 mb-1">Min</label>
-            <input
-              className="form-input w-full"
+            <Input
               type="number"
               value={String(low)}
               onChange={(e) => setMin(Number(e.target.value))}
@@ -255,8 +277,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
           </div>
           <div>
             <label className="block text-[11px] text-gray-500 mb-1">Max</label>
-            <input
-              className="form-input w-full"
+            <Input
               type="number"
               value={String(high)}
               onChange={(e) => setMax(Number(e.target.value))}
@@ -267,11 +288,39 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     )
   }
 
+  const pebbleIconMap: Partial<Record<keyof Filters, React.ReactNode>> = {
+    niche: <Tag className="w-3.5 h-3.5 text-violet-600" />,
+    language: <Languages className="w-3.5 h-3.5 text-violet-600" />,
+    country: <Globe className="w-3.5 h-3.5 text-violet-600" />,
+    priceMin: <DollarSign className="w-3.5 h-3.5 text-violet-600" />,
+    daMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
+    paMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
+    drMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
+    spamMax: <AlertTriangle className="w-3.5 h-3.5 text-violet-600" />,
+    tool: <TrendingUp className="w-3.5 h-3.5 text-violet-600" />,
+    semrushOverallTrafficMin: <BarChart3 className="w-3.5 h-3.5 text-violet-600" />,
+    semrushOrganicTrafficMin: <BarChart3 className="w-3.5 h-3.5 text-violet-600" />,
+    tatDaysMax: <Clock className="w-3.5 h-3.5 text-violet-600" />,
+    trend: <TrendingUp className="w-3.5 h-3.5 text-violet-600" />,
+    backlinkNature: <Link2 className="w-3.5 h-3.5 text-violet-600" />,
+    linkPlacement: <Link2 className="w-3.5 h-3.5 text-violet-600" />,
+    permanence: <Layers className="w-3.5 h-3.5 text-violet-600" />,
+    availability: <CheckCircle className="w-3.5 h-3.5 text-violet-600" />,
+  }
+
   const pebble = (label: string, key: keyof Filters) => (
-    <button onClick={() => open(key)} disabled={loading} className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm border transition-transform active:scale-95 cursor-pointer ${filters[key] ? 'bg-yellow-400 text-gray-900 border-yellow-400' : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700'}`}>
-      {label}
-      {filters[key] ? <span className="ml-1 opacity-70">•</span> : null}
-    </button>
+    <Button
+      type="button"
+      size="sm"
+      variant={filters[key] ? 'default' : 'outline'}
+      className={`rounded-full px-3.5 flex items-center gap-2`}
+      onClick={() => open(key)}
+      disabled={loading}
+    >
+      {pebbleIconMap[key]}
+      <span>{label}</span>
+      {filters[key] ? <span className="ml-0.5 opacity-70">•</span> : null}
+    </Button>
   )
 
   const renderModalBody = () => {
@@ -280,27 +329,47 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       case 'country':
         return (
           <div className="p-4 space-y-2">
-            <input className="form-input w-full" placeholder="Search countries" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} />
-            <select className="form-select w-full" value={filters.country || ""} onChange={(e) => setFilters(f => ({ ...f, country: e.target.value }))}>
-              <option value="">All countries</option>
-              {["United States","United Kingdom","Canada","India","Germany","France","Spain","Australia","Netherlands","Brazil"].filter(c => c.toLowerCase().includes(countrySearch.toLowerCase())).map(c => (<option key={c} value={c}>{c}</option>))}
-            </select>
+            <Input placeholder="Search countries" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} />
+            <Select value={filters.country || undefined} onValueChange={(v) => setFilters(f => ({ ...f, country: v === '__all__' ? '' : v }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="All countries" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Countries</SelectLabel>
+                  <SelectItem value="__all__">All countries</SelectItem>
+                  {["United States","United Kingdom","Canada","India","Germany","France","Spain","Australia","Netherlands","Brazil"].filter(c => c.toLowerCase().includes(countrySearch.toLowerCase())).map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         )
       case 'language':
   return (
           <div className="p-4 space-y-2">
-            <input className="form-input w-full" placeholder="Filter languages" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} />
-            <select className="form-select w-full" value={filters.language || ""} onChange={(e) => setFilters(f => ({ ...f, language: e.target.value }))}>
-              <option value="">All languages</option>
-              {["English","Spanish","French","German","Italian","Portuguese","Dutch","Russian","Chinese","Japanese"].filter(l => l.toLowerCase().includes(countrySearch.toLowerCase())).map(l => (<option key={l} value={l}>{l}</option>))}
-            </select>
+            <Input placeholder="Filter languages" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} />
+            <Select value={filters.language || undefined} onValueChange={(v) => setFilters(f => ({ ...f, language: v === '__all__' ? '' : v }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="All languages" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Languages</SelectLabel>
+                  <SelectItem value="__all__">All languages</SelectItem>
+                  {["English","Spanish","French","German","Italian","Portuguese","Dutch","Russian","Chinese","Japanese"].filter(l => l.toLowerCase().includes(countrySearch.toLowerCase())).map(l => (
+                    <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
         </div>
         )
       case 'niche':
         return (
           <div className="p-4 space-y-2">
-            <input className="form-input w-full" placeholder="Enter niche" value={filters.niche} onChange={(e) => { setFilters(f => ({ ...f, niche: e.target.value })); setNicheSearch(e.target.value) }} />
+            <Input placeholder="Enter niche" value={filters.niche} onChange={(e) => { setFilters(f => ({ ...f, niche: e.target.value })); setNicheSearch(e.target.value) }} />
             <div className="max-h-48 overflow-auto border border-gray-200 dark:border-gray-700/60 rounded p-2">
               {loadingCats ? <div className="text-sm">Loading…</div> : catError ? <div className="text-sm text-red-500">{catError}</div> : recommendations.length ? recommendations.map(r => (
                 <button key={r.category} className="block w-full text-left text-sm px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => { setFilters(f => ({ ...f, niche: r.category })); setModalOpen(false) }}>{r.category}</button>
@@ -394,69 +463,92 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       case 'outboundLinkLimitMax':
         return (
           <div className="p-4">
-            <input className="form-input w-full" type="number" placeholder="Enter value" value={String((filters as any)[activeKey] ?? "")} onChange={(e) => setFilters(f => ({ ...f, [activeKey]: e.target.value === '' ? undefined : Number(e.target.value) }))} />
+            <Input type="number" placeholder="Enter value" value={String((filters as any)[activeKey] ?? "")} onChange={(e) => setFilters(f => ({ ...f, [activeKey]: e.target.value === '' ? undefined : Number(e.target.value) }))} />
           </div>
         )
       case 'availability':
         return (
           <div className="p-4 flex items-center justify-between">
             <div className="text-sm">Show only available</div>
-            <label className="inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="form-checkbox" checked={filters.availability ?? false} onChange={(e) => setFilters(f => ({ ...f, availability: e.target.checked }))} />
-            </label>
+            <Checkbox checked={filters.availability ?? false} onCheckedChange={(checked) => setFilters(f => ({ ...f, availability: Boolean(checked) }))} />
           </div>
         )
       case 'trend':
         return (
           <div className="p-4">
-            <select className="form-select w-full" value={filters.trend || ""} onChange={(e) => setFilters(f => ({ ...f, trend: e.target.value as any }))}>
-              <option value="">Select trend</option>
-              <option value="increasing">Increasing</option>
-              <option value="stable">Stable</option>
-              <option value="decreasing">Decreasing</option>
-            </select>
+            <Select value={filters.trend || undefined} onValueChange={(v) => setFilters(f => ({ ...f, trend: v === 'none' ? undefined : (v as Trend) }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select trend" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any</SelectItem>
+                <SelectItem value="increasing">Increasing</SelectItem>
+                <SelectItem value="stable">Stable</SelectItem>
+                <SelectItem value="decreasing">Decreasing</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )
       case 'backlinkNature':
         return (
           <div className="p-4">
-            <select className="form-select w-full" value={filters.backlinkNature || ""} onChange={(e) => setFilters(f => ({ ...f, backlinkNature: e.target.value as BacklinkNature }))}>
-              <option value="">Select backlink nature</option>
-              <option value="do-follow">Do-Follow</option>
-              <option value="no-follow">No-Follow</option>
-              <option value="sponsored">Sponsored</option>
-            </select>
+            <Select value={filters.backlinkNature || undefined} onValueChange={(v) => setFilters(f => ({ ...f, backlinkNature: v === 'none' ? undefined : (v as BacklinkNature) }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select backlink nature" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any</SelectItem>
+                <SelectItem value="do-follow">Do-Follow</SelectItem>
+                <SelectItem value="no-follow">No-Follow</SelectItem>
+                <SelectItem value="sponsored">Sponsored</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )
       case 'linkPlacement':
         return (
           <div className="p-4">
-            <select className="form-select w-full" value={filters.linkPlacement || ""} onChange={(e) => setFilters(f => ({ ...f, linkPlacement: e.target.value as LinkPlacement }))}>
-              <option value="">Select link placement</option>
-              <option value="in-content">In-content</option>
-              <option value="author-bio">Author Bio</option>
-              <option value="footer">Footer</option>
-            </select>
+            <Select value={filters.linkPlacement || undefined} onValueChange={(v) => setFilters(f => ({ ...f, linkPlacement: v === 'none' ? undefined : (v as LinkPlacement) }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select link placement" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any</SelectItem>
+                <SelectItem value="in-content">In-content</SelectItem>
+                <SelectItem value="author-bio">Author Bio</SelectItem>
+                <SelectItem value="footer">Footer</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )
       case 'permanence':
         return (
           <div className="p-4">
-            <select className="form-select w-full" value={filters.permanence || ""} onChange={(e) => setFilters(f => ({ ...f, permanence: e.target.value as any }))}>
-              <option value="">Select permanence</option>
-              <option value="lifetime">Lifetime</option>
-              <option value="12-months">12 months</option>
-            </select>
+            <Select value={filters.permanence || undefined} onValueChange={(v) => setFilters(f => ({ ...f, permanence: v === 'none' ? undefined : (v as any) }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select permanence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any</SelectItem>
+                <SelectItem value="lifetime">Lifetime</SelectItem>
+                <SelectItem value="12-months">12 months</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )
       case 'tool':
         return (
           <div className="p-4">
-            <select className="form-select w-full" value={filters.tool || ""} onChange={(e) => setFilters(f => ({ ...f, tool: e.target.value as any }))}>
-              <option value="">Select SEO tool</option>
-              <option value="Semrush">Semrush</option>
-              <option value="Ahrefs">Ahrefs</option>
-            </select>
+            <Select value={filters.tool || undefined} onValueChange={(v) => setFilters(f => ({ ...f, tool: v === 'none' ? undefined : (v as any) }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select SEO tool" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Any</SelectItem>
+                <SelectItem value="Semrush">Semrush</SelectItem>
+                <SelectItem value="Ahrefs">Ahrefs</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )
       default:
@@ -493,29 +585,47 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
   }, [filters])
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4 mb-6">
-      <div className="flex items-center justify-between mb-3">
+    <Card className="mb-6 bg-white">
+      <UICardHeader className="pb-2">
+        <UICardTitle className="text-lg">Filters</UICardTitle>
+      </UICardHeader>
+      <CardContent className="pt-2">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M22 3H2l8 9v7l4 2v-9l8-9Z" />
-          </svg>
-          <h2 className="text-lg font-semibold">Filters</h2>
+          <FilterIcon className="w-5 h-5 text-violet-600" />
+          <h2 className="text-base font-medium">Refine Results</h2>
         </div>
         <div className="flex items-center gap-2">
           {/* Apply saved view */}
-          <select className="form-select h-9 text-sm w-56 cursor-pointer" value={applyingViewId} onChange={(e) => applyViewById(e.target.value)} disabled={loading}>
-            <option value="">{views.length ? 'Apply saved view' : 'No saved views'}</option>
-            {views.map(v => (<option key={v.id} value={v.id}>{v.name}</option>))}
-          </select>
+          <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
+            <SelectTrigger className="h-10 w-56">
+              <SelectValue placeholder={views.length ? 'Apply saved view' : 'No saved views'} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Saved Views</SelectLabel>
+                <SelectItem value="__none__">None</SelectItem>
+                {views.map(v => (
+                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
           {/* Save as view */}
-          <input className="form-input h-9 text-sm w-56" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
-          <button className="btn h-9 text-sm transition-transform active:scale-95 cursor-pointer" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>Save</button>
-          <button className="btn border-gray-200 dark:border-gray-700/60 h-9 text-sm transition-transform active:scale-95 cursor-pointer" onClick={() => setFilters(filters)} disabled={loading}>Refresh</button>
-          <button className="btn h-9 text-sm transition-transform active:scale-95 cursor-pointer" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</button>
+          <Input className="h-10 text-sm w-56" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
+          <Button className="h-10 inline-flex items-center gap-2" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
+            <CheckCircle className="w-4 h-4" />
+            Save
+          </Button>
+          <Button variant="outline" className="h-10 inline-flex items-center gap-2" onClick={() => setFilters(defaultFilters)} disabled={loading}>
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
+          <Button className="h-10" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2.5">
         {pebble('Niche', 'niche')}
         {pebble('Language', 'language')}
         {pebble('Country', 'country')}
@@ -536,9 +646,9 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       </div>
 
       {activeChips.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {activeChips.map(chip => (
-            <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs bg-yellow-400 text-gray-900 border border-yellow-400">
+            <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600">
               <span>{chip.label}</span>
               <span onClick={(e) => { e.stopPropagation(); clearKey(chip.key) }} aria-label="Remove" className="opacity-70 hover:opacity-100">✕</span>
             </button>
@@ -549,18 +659,19 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       <ModalBasic title={activeKey ? `Filter: ${String(activeKey)}` : 'Filter'} isOpen={modalOpen} setIsOpen={setModalOpen}>
         {renderModalBody()}
         <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex justify-end gap-2">
-          <button className="btn border-gray-200 dark:border-gray-700/60" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</button>
-          <button className="btn bg-amber-400 hover:bg-amber-300 text-gray-900" onClick={() => setModalOpen(false)} disabled={loading}>Apply</button>
+          <Button variant="outline" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</Button>
+          <Button onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
         </div>
       </ModalBasic>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
 function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
   const { addItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(2)
-  const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-1', 2: 'py-2', 3: 'py-3', 4: 'py-4' }
+  const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-2', 2: 'py-3', 3: 'py-4', 4: 'py-5' }
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
@@ -617,21 +728,27 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
   const toggleColumn = (key: ColumnKey) => setVisibleColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
   const showAllColumns = () => setVisibleColumns(allKeys)
   const hideAllColumns = () => setVisibleColumns([])
+  const rightAligned = useMemo(() => new Set<ColumnKey>([
+    'spam','price','traffic','organicTraffic','authorityScore','outboundLimit','backlinksAllowed','wordLimit','tatDays'
+  ]), [])
 
-  if (loading) return <div className="p-6">Loading…</div>
+  if (loading) return <Card className="p-6 bg-white">Loading…</Card>
   return (
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
-      <div className="flex items-center justify-between px-3 pt-3">
+          <Card className="bg-white">
+      <header className="px-5 py-4">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
+      </header>
+      <div className="flex items-center justify-between px-5 pt-2 pb-3">
         <div className="text-sm text-gray-500 dark:text-gray-400"></div>
         <div className="flex items-center gap-2">
           <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
           <PopoverTrigger asChild>
-            <button className="btn border-gray-200 dark:border-gray-700/60 h-7 text-xs inline-flex items-center gap-2 transition-transform active:scale-95">
+            <Button variant="outline" size="sm" className="h-8 text-xs inline-flex items-center gap-2">
               <span>Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
               <svg className={`w-3.5 h-3.5 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                 <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
               </svg>
-            </button>
+            </Button>
           </PopoverTrigger>
           <PopoverContent className="w-56 bg-white dark:bg-gray-900">
             <div className="space-y-1">
@@ -644,8 +761,10 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
           </PopoverContent>
           </Popover>
           <div className="relative">
-            <button
-              className="btn border-gray-200 dark:border-gray-700/60 h-7 text-xs inline-flex items-center gap-2 transition-transform active:scale-95"
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs inline-flex items-center gap-2"
               onClick={() => setColumnsOpen(o => !o)}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -657,7 +776,7 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
               <svg className={`w-3.5 h-3.5 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                 <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
               </svg>
-            </button>
+            </Button>
             {columnsOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 rounded-lg shadow-lg z-10">
                 <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
@@ -667,11 +786,9 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                 <div className="max-h-64 overflow-auto py-1">
                   {columnDefs.map(col => (
                     <label key={col.key} className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        className="form-checkbox"
+                      <Checkbox
                         checked={visibleColumns.includes(col.key)}
-                        onChange={() => toggleColumn(col.key)}
+                        onCheckedChange={() => toggleColumn(col.key)}
                       />
                       <span>{col.label}</span>
                       {visibleColumns.includes(col.key) ? (
@@ -699,24 +816,24 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
         </div>
       </div>
             <div className="overflow-x-auto">
-              <table className="table-auto w-full dark:text-gray-300 divide-y divide-gray-100 dark:divide-gray-700/60">
-                <thead className="text-xs uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-t border-gray-100 dark:border-gray-700/60">
-                  <tr>
+              <Table className="dark:text-gray-300">
+                <UITableHeader>
+                  <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-t border-b border-gray-100 dark:border-gray-700/60">
                     {columnDefs.map(col => (
                       visibleColumns.includes(col.key) ? (
-                        <th key={col.key} className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-left">{col.label}</th>
+                        <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : 'text-left'}`}>{col.label}</TableHead>
                       ) : null
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
+                  </TableRow>
+                </UITableHeader>
+                <TableBody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
-              <tr><td className="px-5 py-6" colSpan={visibleColumns.length || 1}>No results</td></tr>
+              <TableRow><TableCell className="px-5 py-6" colSpan={visibleColumns.length || 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
-              <tr key={s.id} className={`border-b border-gray-100 dark:border-gray-700/60 ${rowPaddingByLevel[rowLevel]} cursor-pointer`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
+              <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-900/10`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {visibleColumns.includes('website') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="font-medium"><a href={s.url} target="_blank" rel="noreferrer" className="text-amber-500 hover:text-amber-400 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a></div>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  <div className="font-medium"><a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a></div>
                   {rowLevel >= 2 && (
                     <div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>
                   )}
@@ -726,17 +843,17 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                   {rowLevel >= 4 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>
                   )}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('niche') && (
-                <td className={`px-2 first:pl-5 last:pr-5 ${rowPaddingByLevel[rowLevel]}`}>
+                <TableCell className={`px-5 ${rowPaddingByLevel[rowLevel]}`}>
                   <div className="flex flex-wrap gap-1 max-w-[320px]">
                     {s.niche
                       .split(',')
                       .map(n => n.trim())
                       .filter(Boolean)
                       .map((n, idx) => (
-                        <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-400/15 text-amber-700 border border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400/20">{n}</span>
+                        <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600">{n}</span>
                       ))}
                   </div>
                   {rowLevel >= 3 && (
@@ -745,15 +862,15 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                   {rowLevel >= 4 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Country:</span> {s.country}</div>
                   )}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('countryLang') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
                   <div className="text-sm">{s.country} • <span className="text-xs">{s.language}</span></div>
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('authority') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
                   {s.da}/{s.pa}/{s.dr}
                   {rowLevel >= 3 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">DA:</span> {s.da}</div>
@@ -761,33 +878,38 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                   {rowLevel >= 4 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">PA:</span> {s.pa} <span className="text-gray-400">| DR:</span> {s.dr}</div>
                   )}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('spam') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.spamScore}%
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('spam') ? 'text-right' : ''}`}>
+                  <div className="inline-flex items-center gap-2">
+                    <span className="tabular-nums">{s.spamScore}%</span>
+                    {(() => {
+                      const risk = s.spamScore <= 3 ? 'Low' : s.spamScore <= 6 ? 'Medium' : 'High'
+                      if (risk === 'High') return <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3.5 h-3.5" /> High</Badge>
+                      if (risk === 'Medium') return <Badge variant="outline">Medium</Badge>
+                      return <Badge variant="secondary">Low</Badge>
+                    })()}
+                  </div>
                   {rowLevel >= 3 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Score:</span> {s.spamScore}/10</div>
                   )}
-                  {rowLevel >= 4 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Risk:</span> {s.spamScore <= 3 ? 'Low' : s.spamScore <= 6 ? 'Medium' : 'High'}</div>
-                  )}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('price') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {"$"}{s.publishing.price.toLocaleString()}
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('price') ? 'text-right' : ''}`}>
+                  <span className="font-medium tabular-nums">{"$"}{s.publishing.price.toLocaleString()}</span>
                   {rowLevel >= 3 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Base:</span> ${s.publishing.price}</div>
                   )}
                   {rowLevel >= 4 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">With Content:</span> ${s.publishing.priceWithContent}</div>
                   )}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('traffic') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('traffic') ? 'text-right' : ''}`}>
+                  <span className="tabular-nums">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
                   {rowLevel >= 2 && (
                     <div className="text-xs text-gray-500">overall</div>
                   )}
@@ -797,96 +919,112 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                   {rowLevel >= 4 && (
                     <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Authority:</span> {s.toolScores.semrushAuthority}</div>
                   )}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('organicTraffic') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('organicTraffic') ? 'text-right' : ''}`}>
+                  <span className="tabular-nums">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
+                </TableCell>
                 )}
                 {visibleColumns.includes('authorityScore') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.toolScores.semrushAuthority}
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('authorityScore') ? 'text-right' : ''}`}>
+                  <span className="tabular-nums">{s.toolScores.semrushAuthority}</span>
+                </TableCell>
                 )}
                 {visibleColumns.includes('availability') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s.additional.availability ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                    {s.additional.availability ? 'Available' : 'Unavailable'}
-                  </span>
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  {s.additional.availability ? (
+                    <Badge variant="secondary">Available</Badge>
+                  ) : (
+                    <Badge variant="outline">Unavailable</Badge>
+                  )}
+                </TableCell>
                 )}
                 {visibleColumns.includes('sampleUrl') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
                   {s.quality?.sampleUrl ? (
-                    <a className="text-amber-500 hover:text-amber-400 underline" href={s.quality.sampleUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>View</a>
+                    <a className="text-violet-600 hover:text-violet-700 underline" href={s.quality.sampleUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>View</a>
                   ) : (
                     <span className="text-gray-400">-</span>
                   )}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('lastPublished') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
                   {s.quality?.lastPublished || 'Unknown'}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('outboundLimit') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.quality?.outboundLinkLimit ?? '-'}
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('outboundLimit') ? 'text-right' : ''}`}>
+                  <span className="tabular-nums">{s.quality?.outboundLinkLimit ?? '-'}</span>
+                </TableCell>
                 )}
                 {visibleColumns.includes('backlinkNature') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.publishing.backlinkNature}
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  <div className="inline-flex items-center gap-1.5 text-sm">
+                    <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>{s.publishing.backlinkNature}</span>
+                  </div>
+                </TableCell>
                 )}
                 {visibleColumns.includes('backlinksAllowed') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.publishing.backlinksAllowed}
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('backlinksAllowed') ? 'text-right' : ''}`}>
+                  <span className="tabular-nums">{s.publishing.backlinksAllowed}</span>
+                </TableCell>
                 )}
                 {visibleColumns.includes('wordLimit') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.publishing.wordLimit ?? '-'}
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('wordLimit') ? 'text-right' : ''}`}>
+                  <span className="tabular-nums">{s.publishing.wordLimit ?? '-'}</span>
+                </TableCell>
                 )}
                 {visibleColumns.includes('tatDays') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.publishing.tatDays}
-                </td>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('tatDays') ? 'text-right' : ''}`}>
+                  <div className={`inline-flex items-center gap-1.5 ${rightAligned.has('tatDays') ? 'justify-end' : ''}`}>
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="tabular-nums">{s.publishing.tatDays}</span>
+                  </div>
+                </TableCell>
                 )}
                 {visibleColumns.includes('linkPlacement') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
                   {s.publishing.linkPlacement ?? '-'}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('permanence') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
                   {s.publishing.permanence ?? '-'}
-                </td>
+                </TableCell>
                 )}
                 {visibleColumns.includes('cart') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <button className={`btn h-8 px-3 text-xs transition-transform active:scale-95 ${isItemInCart(s.id) ? 'bg-amber-400 text-black' : 'border border-amber-300 text-amber-700'}`} onClick={(e) => { e.stopPropagation(); addItem(s) }}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  <Button
+                    size="sm"
+                    variant={isItemInCart(s.id) ? 'default' : 'outline'}
+                    onClick={(e) => { e.stopPropagation(); addItem(s) }}
+                  >
                     {isItemInCart(s.id) ? 'In Cart' : 'Add to Cart'}
-                  </button>
-                </td>
+                  </Button>
+                </TableCell>
                 )}
                 {visibleColumns.includes('order') && (
-                <td className={`px-2 first:pl-5 last:pr-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <a
-                    className="btn h-8 px-3 text-xs transition-transform active:scale-95"
-                    onClick={(e) => e.stopPropagation()}
-                    href={`/checkout?siteId=${encodeURIComponent(s.id)}&siteName=${encodeURIComponent(s.name)}&priceCents=${encodeURIComponent(String(Math.round((s.publishing.price || 0) * 100)))}`}
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  <Button
+                    asChild
+                    size="sm"
                   >
-                    Order This Site
-                  </a>
-                </td>
+                    <a
+                      onClick={(e) => e.stopPropagation()}
+                      href={`/checkout?siteId=${encodeURIComponent(s.id)}&siteName=${encodeURIComponent(s.name)}&priceCents=${encodeURIComponent(String(Math.round((s.publishing.price || 0) * 100)))}`}
+                    >
+                      Order This Site
+                    </a>
+                  </Button>
+                </TableCell>
                 )}
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogContent className="max-w-4xl">
@@ -901,7 +1039,7 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <div className="text-gray-500">Website</div>
-                        <div className="font-medium"><a href={selectedSite.url} className="text-amber-500 underline" target="_blank" rel="noreferrer">{selectedSite.url}</a></div>
+                        <div className="font-medium"><a href={selectedSite.url} className="text-violet-600 hover:text-violet-700 underline" target="_blank" rel="noreferrer">{selectedSite.url}</a></div>
                       </div>
                       <div>
                         <div className="text-gray-500">Niche</div>
@@ -941,14 +1079,14 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                       </div>
                       <div>
                         <div className="text-gray-500">Sample URL</div>
-                        <div className="font-medium">{selectedSite.quality?.sampleUrl ? <a className="text-amber-500 underline" href={selectedSite.quality.sampleUrl} target="_blank" rel="noreferrer">View</a> : '-'}</div>
+                        <div className="font-medium">{selectedSite.quality?.sampleUrl ? <a className="text-violet-600 hover:text-violet-700 underline" href={selectedSite.quality.sampleUrl} target="_blank" rel="noreferrer">View</a> : '-'}</div>
                       </div>
                     </div>
                   </div>
                 )}
               </DialogContent>
             </Dialog>
-          </div>
+          </Card>
   )
 }
 
@@ -958,9 +1096,11 @@ export default function PublishersClient() {
     const count = getTotalItems()
     if (count <= 0) return null
     return (
-      <a className="btn h-9 text-sm bg-amber-400 text-black hover:bg-amber-300 transition-transform active:scale-95 cursor-pointer" href="/checkout">
-        Checkout ({count})
-      </a>
+      <Button asChild className="h-10">
+        <a href="/checkout">
+          Checkout ({count})
+        </a>
+      </Button>
     )
   }
 
@@ -1009,11 +1149,11 @@ export default function PublishersClient() {
     <CartProvider>
       <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
         <div className="sm:flex sm:justify-between sm:items-center mb-6">
-          <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Publishers</h1>
-          <div className="flex items-center gap-2">
-            <input className="form-input h-9 text-sm w-60" placeholder="Search by website or URL" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            <button className="btn border-gray-200 dark:border-gray-700/60 h-9 text-sm transition-transform active:scale-95 cursor-pointer" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</button>
-            <button className="btn h-9 text-sm transition-transform active:scale-95 cursor-pointer" onClick={() => setFilters(defaultFilters)}>Reset</button>
+          <h1 className="text-2xl md:text-3xl text-foreground font-bold">Publishers</h1>
+          <div className="flex items-center gap-2.5">
+            <Input className="h-10 text-sm w-60" placeholder="Search by website or URL" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Button variant="outline" className="h-10" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
+            <Button className="h-10" variant="secondary" onClick={() => setFilters(defaultFilters)}>Reset</Button>
             <HeaderCheckout />
           </div>
         </div>

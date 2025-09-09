@@ -128,19 +128,19 @@ export default function LineChart02({
               }
               // Color box
               const box = document.createElement('span')
-              box.style.display = 'block'
-              box.style.width = '12px'
-              box.style.height = '12px'
-              box.style.borderRadius = 'calc(infinity * 1px)'
-              box.style.marginRight = '8px'
-              box.style.borderWidth = '3px'
+              box.style.display = 'inline-block'
+              box.style.width = '8px'
+              box.style.height = '8px'
+              box.style.borderRadius = '2px'
+              box.style.marginRight = '4px'
+              box.style.borderWidth = '2px'
               box.style.borderColor = c.data.datasets[item.datasetIndex!].borderColor as string
               box.style.pointerEvents = 'none'
               // Label
               const label = document.createElement('span')
               label.classList.add('text-gray-500', 'dark:text-gray-400')
-              label.style.fontSize = '14px'
-              label.style.lineHeight = 'calc(1.25 / 0.875)'
+              label.style.fontSize = '10px'
+              label.style.lineHeight = '1'
               const labelText = document.createTextNode(item.text)
               label.appendChild(labelText)
               li.appendChild(button)
@@ -179,14 +179,14 @@ export default function LineChart02({
 
   return (
     <>
-      <div className="px-5 py-3">
-        <div className="flex flex-wrap justify-between items-end gap-y-2 gap-x-4">
+      <div className="px-3 py-2">
+        <div className="flex flex-wrap justify-between items-end gap-y-1 gap-x-2">
           <div className="flex items-start">
-            <div className="text-3xl font-bold text-gray-800 dark:text-gray-100 mr-2">$1,482</div>
-            <div className="text-sm font-medium text-red-700 px-1.5 bg-red-500/20 rounded-full">-22%</div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100 mr-2">+23%</div>
+            <div className="text-xs font-medium text-green-700 px-1 bg-green-500/20 rounded-full">+23%</div>
           </div>
           <div className="grow mb-1">
-            <ul ref={legend} className="flex flex-wrap gap-x-4 sm:justify-end"></ul>
+            <ul ref={legend} className="flex flex-wrap gap-x-2 gap-y-1 text-xs sm:justify-end"></ul>
           </div>
         </div>
       </div>
