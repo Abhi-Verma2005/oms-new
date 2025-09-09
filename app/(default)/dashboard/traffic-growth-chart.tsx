@@ -3,97 +3,106 @@
 import { useState, useEffect } from 'react'
 import LineChart03 from '@/components/charts/line-chart-03'
 import { chartAreaGradient } from '@/components/charts/chartjs-config'
-
-// Import utilities
 import { chartColors, getRgbaColor } from './chart-colors'
 
-export default function CaseStudyAnalytics01() {
+interface TrafficData {
+  client: string
+  data: Array<{
+    month: string
+    traffic: number
+  }>
+}
+
+export default function TrafficGrowthChart() {
+  const [trafficData, setTrafficData] = useState<TrafficData[]>([])
+  const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
-  // Combined traffic growth data for all case studies
-  const chartData = {
-    labels: [
-      'Dec 2024', 'Jan 2025', 'Feb 2025', 'Mar 2025', 'Apr 2025', 'May 2025', 'Jun 2025', 'Jul 2025'
-    ],
-    datasets: [
-      // Mahindra Auto
-      {
-        label: 'Mahindra Auto',
-        data: [null, null, 18.17, 19.5, 22.1, 25.8, 28.9, 32.37],
-        fill: true,
-        backgroundColor: function(context: any) {
-          const chart = context.chart;
-          const {ctx, chartArea} = chart;
-          const gradientOrColor = chartAreaGradient(ctx, chartArea, [
-            { stop: 0, color: 'rgba(139, 92, 246, 0)' },
-            { stop: 1, color: 'rgba(139, 92, 246, 0.2)' }
-          ]);
-          return gradientOrColor || 'transparent';
-        },     
-        borderColor: '#8b5cf6',
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 3,
-        pointBackgroundColor: '#8b5cf6',
-        pointHoverBackgroundColor: '#8b5cf6',
-        pointBorderWidth: 0,
-        pointHoverBorderWidth: 0,
-        clip: 20,
-        tension: 0.2,
-      },
-      // Protean eGov
-      {
-        label: 'Protean eGov',
-        data: [null, 1.45, 2.1, 3.2, 5.8, 8.9, 12.1, 15.2],
-        borderColor: '#0ea5e9',
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 3,
-        pointBackgroundColor: '#0ea5e9',
-        pointHoverBackgroundColor: '#0ea5e9',
-        pointBorderWidth: 0,
-        pointHoverBorderWidth: 0,        
-        clip: 20,
-        tension: 0.2,
-      },
-      // UpGrad
-      {
-        label: 'UpGrad',
-        data: [5.84, 6.2, 6.8, 7.4, 8.1, 8.87, null, null],
-        borderColor: '#10b981',
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 3,
-        pointBackgroundColor: '#10b981',
-        pointHoverBackgroundColor: '#10b981',
-        pointBorderWidth: 0,
-        pointHoverBorderWidth: 0,        
-        clip: 20,
-        tension: 0.2,
-      },
-    ],
+
+  useEffect(() => {
+    if (mounted) {
+      fetchTrafficData()
+    }
+  }, [mounted])
+
+  const fetchTrafficData = async () => {
+    try {
+      const response = await fetch('/api/case-studies/analytics')
+      const data = await response.json()
+      setTrafficData(data.monthlyTrafficData || [])
+    } catch (error) {
+      console.error('Error fetching traffic data:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!mounted) {
+  if (!mounted || loading) {
     return (
       <div className="flex flex-col col-span-full xl:col-span-8 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
-        <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 flex items-center">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100">EMIAC Case Studies - Traffic Growth</h2>
+        <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100">Traffic Growth Analysis</h2>
         </header>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-gray-500">Initializing...</div>
+          <div className="text-lg text-gray-500">{!mounted ? 'Initializing...' : 'Loading traffic data...'}</div>
         </div>
       </div>
     )
   }
 
-  return(
+  // Prepare chart data
+  const allMonths = Array.from(new Set(
+    trafficData.flatMap(client => client.data.map(d => d.month))
+  )).sort()
+
+  const chartData = {
+    labels: allMonths,
+    datasets: trafficData.map((client, index) => {
+      const colors = [
+        chartColors.violet[500],
+        chartColors.sky[500],
+        chartColors.emerald[500]
+      ]
+      
+      const data = allMonths.map(month => {
+        const clientMonth = client.data.find(d => d.month === month)
+        return clientMonth ? clientMonth.traffic : null
+      })
+
+      return {
+        label: client.client,
+        data,
+        fill: index === 0, // Only fill the first dataset
+        backgroundColor: index === 0 ? function(context: any) {
+          const chart = context.chart;
+          const {ctx, chartArea} = chart;
+          const gradientOrColor = chartAreaGradient(ctx, chartArea, [
+            { stop: 0, color: getRgbaColor(`${index === 0 ? 'violet' : index === 1 ? 'sky' : 'emerald'}-500`, 0) },
+            { stop: 1, color: getRgbaColor(`${index === 0 ? 'violet' : index === 1 ? 'sky' : 'emerald'}-500`, 0.2) }
+          ]);
+          return gradientOrColor || 'transparent';
+        } : 'transparent',
+        borderColor: colors[index],
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        pointBackgroundColor: colors[index],
+        pointHoverBackgroundColor: colors[index],
+        pointBorderWidth: 0,
+        pointHoverBorderWidth: 0,
+        clip: 20,
+        tension: 0.2,
+      }
+    })
+  }
+
+  return (
     <div className="flex flex-col col-span-full xl:col-span-8 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60 flex items-center">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">EMIAC Case Studies - Traffic Growth</h2>
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">Traffic Growth Analysis</h2>
       </header>
       <div className="px-5 py-1">
         <div className="flex flex-wrap max-sm:*:w-1/2">
@@ -144,7 +153,6 @@ export default function CaseStudyAnalytics01() {
       </div>
       {/* Chart built with Chart.js 3 */}
       <div className="grow">
-        {/* Change the height attribute to adjust the chart height */}
         <LineChart03 data={chartData} width={800} height={300} />
       </div>
     </div>

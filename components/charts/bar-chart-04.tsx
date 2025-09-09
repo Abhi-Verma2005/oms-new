@@ -5,15 +5,14 @@ import { useTheme } from 'next-themes'
 
 import { chartColors } from '@/components/charts/chartjs-config'
 import {
-  Chart, BarController, BarElement, LinearScale, TimeScale, Tooltip, Legend,
+  Chart, BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend,
 } from 'chart.js'
 import type { ChartData } from 'chart.js'
-import 'chartjs-adapter-moment'
 
 // Import utilities
 import { formatThousands } from '@/components/utils/utils'
 
-Chart.register(BarController, BarElement, LinearScale, TimeScale, Tooltip, Legend)
+Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend)
 
 interface BarChart04Props {
   data: ChartData
@@ -28,13 +27,20 @@ export default function BarChart04({
 }: BarChart04Props) {
 
   const [chart, setChart] = useState<Chart | null>(null)
+  const [mounted, setMounted] = useState(false)
   const canvas = useRef<HTMLCanvasElement>(null)
   const legend = useRef<HTMLUListElement>(null)
   const { theme } = useTheme()
   const darkMode = theme === 'dark'
   const { textColor, gridColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors  
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {    
+    if (!mounted) return
+    
     const ctx = canvas.current
     if (!ctx) return
     
@@ -53,14 +59,7 @@ export default function BarChart04({
         },
         scales: {
           y: {
-            type: 'time',
-            time: {
-              parser: 'MM-DD-YYYY',
-              unit: 'month',
-              displayFormats: {
-                month: 'MMM',
-              },
-            },
+            type: 'category',
             border: {
               display: false,
             },
@@ -71,7 +70,9 @@ export default function BarChart04({
               color: darkMode ? textColor.dark : textColor.light,
             },              
           },
+          // Left x-axis for Traffic Growth %
           x: {
+            position: 'bottom',
             border: {
               display: false,
             },
@@ -83,6 +84,22 @@ export default function BarChart04({
             },
             grid: {
               color: darkMode ? gridColor.dark : gridColor.light,
+            },
+          },
+          // Right x-axis for Keywords (hundreds)
+          x1: {
+            position: 'top',
+            border: {
+              display: false,
+            },
+            ticks: {
+              maxTicksLimit: 3,
+              align: 'start',
+              callback: (value) => `${formatThousands(+value)}`,
+              color: darkMode ? textColor.dark : textColor.light,
+            },
+            grid: {
+              display: false,
             },
           },
         },
@@ -159,7 +176,7 @@ export default function BarChart04({
     })
     setChart(newChart)
     return () => newChart.destroy()
-  }, [])
+  }, [mounted])
 
   useEffect(() => {
     if (!chart) return
@@ -181,6 +198,10 @@ export default function BarChart04({
     }
     chart.update('none')
   }, [theme])   
+
+  if (!mounted) {
+    return <div className="flex items-center justify-center h-full">Loading chart...</div>
+  }
 
   return (
     <>

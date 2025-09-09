@@ -5,15 +5,14 @@ import { useTheme } from 'next-themes'
 
 import { chartColors } from '@/components/charts/chartjs-config'
 import {
-  Chart, LineController, LineElement, Filler, PointElement, LinearScale, TimeScale, Tooltip,
+  Chart, LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip,
 } from 'chart.js'
 import type { ChartData } from 'chart.js'
-import 'chartjs-adapter-moment'
 
 // Import utilities
 import { formatValue } from '@/components/utils/utils'
 
-Chart.register(LineController, LineElement, Filler, PointElement, LinearScale, TimeScale, Tooltip)
+Chart.register(LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip)
 
 interface LineChart01Props {
   data: ChartData
@@ -28,12 +27,19 @@ export default function LineChart01({
 }: LineChart01Props) {
 
   const [chart, setChart] = useState<Chart | null>(null)
+  const [mounted, setMounted] = useState(false)
   const canvas = useRef<HTMLCanvasElement>(null)
   const { theme } = useTheme()
   const darkMode = theme === 'dark'
   const { tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors     
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {    
+    if (!mounted) return
+    
     const ctx = canvas.current
     if (!ctx) return
     
@@ -50,11 +56,7 @@ export default function LineChart01({
             beginAtZero: true,
           },
           x: {
-            type: 'time',
-            time: {
-              parser: 'MM-DD-YYYY',
-              unit: 'month',
-            },
+            type: 'category',
             display: false,
           },
         },
@@ -82,7 +84,7 @@ export default function LineChart01({
     })
     setChart(newChart)
     return () => newChart.destroy()
-  }, [])
+  }, [mounted])
 
   useEffect(() => {
     if (!chart) return
@@ -98,6 +100,10 @@ export default function LineChart01({
     }
     chart.update('none')
   }, [theme])  
+
+  if (!mounted) {
+    return <div className="flex items-center justify-center h-full">Loading chart...</div>
+  }
 
   return (
     <canvas ref={canvas} width={width} height={height}></canvas>

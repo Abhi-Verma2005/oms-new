@@ -47,31 +47,31 @@ export const chartAreaGradient = (
 
 export const chartColors = {
   textColor: {
-    light: getCssVariable('--color-gray-400'),
-    dark: getCssVariable('--color-gray-500')
+    light: '#9ca3af',
+    dark: '#6b7280'
   },  
   gridColor: {
-    light: getCssVariable('--color-gray-100'),
-    dark: adjustColorOpacity(getCssVariable('--color-gray-700'), 0.6)
+    light: '#f3f4f6',
+    dark: 'rgba(55, 65, 81, 0.6)'
   },
   backdropColor: {
-    light: getCssVariable('--color-white'),
-    dark: getCssVariable('--color-gray-800')
+    light: '#ffffff',
+    dark: '#1f2937'
   },
   tooltipTitleColor: {
-    light: getCssVariable('--color-gray-800'),
-    dark: getCssVariable('--color-gray-100')
+    light: '#1f2937',
+    dark: '#f9fafb'
   },
   tooltipBodyColor: {
-    light: getCssVariable('--color-gray-500'),
-    dark: getCssVariable('--color-gray-400')
+    light: '#6b7280',
+    dark: '#9ca3af'
   },
   tooltipBgColor: {
-    light: getCssVariable('--color-white'),
-    dark: getCssVariable('--color-gray-700')
+    light: '#ffffff',
+    dark: '#374151'
   },
   tooltipBorderColor: {
-    light: getCssVariable('--color-gray-200'),
-    dark: getCssVariable('--color-gray-600')
+    light: '#e5e7eb',
+    dark: '#4b5563'
   },
 };

@@ -1,104 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/db'
 
-const prisma = new PrismaClient()
-
-// GET /api/case-studies/[id] - Get single case study
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const caseStudy = await prisma.caseStudy.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
-        monthlyData: true,
+        monthlyData: {
+          orderBy: { month: 'asc' }
+        },
         keywordData: true,
-        serpFeaturesList: true,
+        serpFeaturesList: true
       }
     })
 
     if (!caseStudy) {
-      return NextResponse.json(
-        { error: 'Case study not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Case study not found' }, { status: 404 })
     }
 
     return NextResponse.json(caseStudy)
   } catch (error) {
     console.error('Error fetching case study:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch case study' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch case study' }, { status: 500 })
   }
 }
 
-// PUT /api/case-studies/[id] - Update case study
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const body = await request.json()
+    const { id } = await params
+    const data = await request.json()
     
     const caseStudy = await prisma.caseStudy.update({
-      where: { id: params.id },
+      where: { id },
       data: {
-        clientName: body.clientName,
-        industry: body.industry,
-        campaignDuration: body.campaignDuration,
-        startDate: new Date(body.startDate),
-        endDate: body.endDate ? new Date(body.endDate) : null,
-        isActive: body.isActive,
-        trafficGrowth: parseFloat(body.trafficGrowth),
-        initialTraffic: parseFloat(body.initialTraffic),
-        finalTraffic: parseFloat(body.finalTraffic),
-        keywordsRanked: parseInt(body.keywordsRanked),
-        backlinksPerMonth: parseInt(body.backlinksPerMonth),
-        domainRatingStart: body.domainRatingStart ? parseInt(body.domainRatingStart) : null,
-        domainRatingEnd: body.domainRatingEnd ? parseInt(body.domainRatingEnd) : null,
-        objective: body.objective,
-        challenge: body.challenge,
-        solution: body.solution,
-        finalOutcomes: body.finalOutcomes,
-        serpFeatures: body.serpFeatures,
-        aiOverview: body.aiOverview,
-      },
-      include: {
-        monthlyData: true,
-        keywordData: true,
-        serpFeaturesList: true,
+        clientName: data.clientName,
+        industry: data.industry,
+        campaignDuration: data.campaignDuration,
+        startDate: new Date(data.startDate),
+        endDate: data.endDate ? new Date(data.endDate) : null,
+        isActive: data.isActive,
+        trafficGrowth: parseFloat(data.trafficGrowth),
+        initialTraffic: parseFloat(data.initialTraffic),
+        finalTraffic: parseFloat(data.finalTraffic),
+        keywordsRanked: parseInt(data.keywordsRanked),
+        backlinksPerMonth: parseInt(data.backlinksPerMonth),
+        domainRatingStart: data.domainRatingStart ? parseInt(data.domainRatingStart) : null,
+        domainRatingEnd: data.domainRatingEnd ? parseInt(data.domainRatingEnd) : null,
+        objective: data.objective,
+        challenge: data.challenge,
+        solution: data.solution,
+        finalOutcomes: data.finalOutcomes,
+        serpFeatures: data.serpFeatures,
+        aiOverview: data.aiOverview
       }
     })
 
     return NextResponse.json(caseStudy)
   } catch (error) {
     console.error('Error updating case study:', error)
-    return NextResponse.json(
-      { error: 'Failed to update case study' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to update case study' }, { status: 500 })
   }
 }
 
-// DELETE /api/case-studies/[id] - Delete case study
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     await prisma.caseStudy.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
-    return NextResponse.json({ message: 'Case study deleted successfully' })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting case study:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete case study' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to delete case study' }, { status: 500 })
   }
 }
