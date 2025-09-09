@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminForAPI } from '@/lib/rbac';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,10 +8,10 @@ export async function GET(request: NextRequest) {
 
     // Get basic counts
     const [totalUsers, totalRoles, totalPermissions, activeUserRoles] = await Promise.all([
-      supabase.from('users').select('*', { count: 'exact', head: true }),
-      supabase.from('roles').select('*', { count: 'exact', head: true }),
-      supabase.from('permissions').select('*', { count: 'exact', head: true }),
-      supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('is_active', true)
+      prisma.user.count(),
+      prisma.role.count(),
+      prisma.permission.count(),
+      prisma.userRole.count({ where: { isActive: true } })
     ]);
 
     // Get recent activity (mock data for now - you can implement audit logs later)
@@ -42,10 +37,10 @@ export async function GET(request: NextRequest) {
     ];
 
     return NextResponse.json({
-      totalUsers: totalUsers.count || 0,
-      totalRoles: totalRoles.count || 0,
-      totalPermissions: totalPermissions.count || 0,
-      activeUserRoles: activeUserRoles.count || 0,
+      totalUsers,
+      totalRoles,
+      totalPermissions,
+      activeUserRoles,
       recentActivity
     });
   } catch (error) {

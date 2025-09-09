@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import { requireAdminForAPI } from "@/lib/auth-middleware"
+import { requireAdminForAPI } from "@/lib/rbac"
 import { prisma } from "@/lib/db"
-import { addSecurityHeaders } from "@/lib/security"
 
 export async function GET() {
   try {
@@ -16,7 +15,5 @@ export async function GET() {
     prisma.userActivity.findMany({ orderBy: { createdAt: 'desc' }, take: 10, include: { user: { select: { id: true, name: true, email: true } } } }),
   ])
 
-  const res = NextResponse.json({ total, byCategory, recent })
-  addSecurityHeaders(res)
-  return res
+  return NextResponse.json({ total, byCategory, recent })
 }

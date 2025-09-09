@@ -1,21 +1,24 @@
 export const metadata = {
-  title: 'Dashboard - Mosaic',
-  description: 'Page description',
+  title: 'EMIAC Dashboard - Case Studies Analytics',
+  description: 'EMIAC Technologies - SEO Growth Case Studies Dashboard',
 }
 
 import FilterButton from '@/components/dropdown-filter'
 import Datepicker from '@/components/datepicker'
+// First 3 main dashboard cards (as requested)
 import DashboardCard01 from './dashboard-card-01'
 import DashboardCard02 from './dashboard-card-02'
 import DashboardCard03 from './dashboard-card-03'
-import DashboardCard04 from './dashboard-card-04'
-import DashboardCard05 from './dashboard-card-05'
-import DashboardCard06 from './dashboard-card-06'
-import DashboardCard07 from './dashboard-card-07'
-import DashboardCard08 from './dashboard-card-08'
-import DashboardCard09 from './dashboard-card-09'
-import DashboardCard10 from './dashboard-card-10'
-import DashboardCard11 from './dashboard-card-11'
+// Case study cards
+import CaseStudyCard01 from './case-study-card-01'
+import CaseStudyCard02 from './case-study-card-02'
+import CaseStudyCard03 from './case-study-card-03'
+// Analytics components
+import CaseStudyAnalytics01 from './case-study-analytics-01'
+import CaseStudyAnalytics02 from './case-study-analytics-02'
+import CaseStudyAnalytics03 from './case-study-analytics-03'
+import CaseStudyAnalytics04 from './case-study-analytics-04'
+import CaseStudyTable from './case-study-table'
 
 export default function Dashboard() {
   return (
@@ -24,7 +27,8 @@ export default function Dashboard() {
       <div className="sm:flex sm:justify-between sm:items-center mb-8">
         {/* Left: Title */}
         <div className="mb-4 sm:mb-0">
-          <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">EMIAC Case Studies Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">SEO Growth Analytics & Performance Metrics</p>
         </div>
         {/* Right: Actions */}
         <div className="grid grid-flow-col sm:auto-cols-max justify-start sm:justify-end gap-2">
@@ -45,28 +49,24 @@ export default function Dashboard() {
       {/* Cards */}
       <div className="grid grid-cols-12 gap-6">
 
-        {/* Line chart (Acme Plus) */}
+        {/* First 3 main dashboard cards (as requested) */}
         <DashboardCard01 />
-        {/* Line chart (Acme Advanced) */}
         <DashboardCard02 />
-        {/* Line chart (Acme Professional) */}
         <DashboardCard03 />
-        {/* Bar chart (Direct vs Indirect) */}
-        <DashboardCard04 />
-        {/* Line chart (Real Time Value) */}
-        <DashboardCard05 />
-        {/* Doughnut chart (Top Countries) */}
-        <DashboardCard06 />
-        {/* Table (Top Channels) */}
-        <DashboardCard07 />
-        {/* Line chart (Sales Over Time) */}
-        <DashboardCard08 />
-        {/* Stacked bar chart (Sales VS Refunds) */}
-        <DashboardCard09 />
-        {/* Card (Recent Activity) */}
-        <DashboardCard10 />
-        {/* Card (Income/Expenses) */}
-        <DashboardCard11 />        
+        
+        {/* Case Study Cards */}
+        <CaseStudyCard01 />
+        <CaseStudyCard02 />
+        <CaseStudyCard03 />
+        
+        {/* Analytics Components */}
+        <CaseStudyAnalytics01 />
+        <CaseStudyAnalytics02 />
+        <CaseStudyAnalytics03 />
+        <CaseStudyAnalytics04 />
+        
+        {/* Case Studies Table */}
+        <CaseStudyTable />
 
       </div>      
     </div>

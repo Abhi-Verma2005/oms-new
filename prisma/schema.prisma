@@ -248,4 +248,93 @@ enum TransactionStatus {
   FAILED
 }
 
+// Case Studies Models for EMIAC Dashboard
+model CaseStudy {
+  id                String   @id @default(cuid())
+  clientName        String   @map("client_name")
+  industry          String
+  campaignDuration  String   @map("campaign_duration")
+  startDate         DateTime @map("start_date")
+  endDate           DateTime? @map("end_date")
+  isActive          Boolean  @default(true) @map("is_active")
+  
+  // Key Results
+  trafficGrowth     Float    @map("traffic_growth") // Percentage growth
+  initialTraffic    Float    @map("initial_traffic") // In lacs
+  finalTraffic      Float    @map("final_traffic") // In lacs
+  keywordsRanked    Int      @map("keywords_ranked")
+  backlinksPerMonth Int      @map("backlinks_per_month")
+  domainRatingStart Int?     @map("domain_rating_start")
+  domainRatingEnd   Int?     @map("domain_rating_end")
+  
+  // Content
+  objective         String
+  challenge         String
+  solution          String
+  finalOutcomes     String   @map("final_outcomes")
+  
+  // SEO Features
+  serpFeatures      Boolean  @default(false) @map("serp_features")
+  aiOverview        Boolean  @default(false) @map("ai_overview")
+  
+  // Metadata
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdBy         String?  @map("created_by")
+  
+  // Relations
+  monthlyData       MonthlyData[]
+  keywordData       KeywordData[]
+  serpFeaturesList      SerpFeature[]
+  
+  @@map("case_studies")
+}
+
+model MonthlyData {
+  id           String    @id @default(cuid())
+  caseStudyId  String    @map("case_study_id")
+  month        String    // e.g., "Feb 2025"
+  traffic      Float     // Traffic in lacs
+  keywords     Int       // Number of keywords ranked
+  backlinks    Int       // Backlinks generated
+  createdAt    DateTime  @default(now()) @map("created_at")
+  
+  caseStudy    CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  
+  @@unique([caseStudyId, month])
+  @@map("monthly_data")
+}
+
+model KeywordData {
+  id           String    @id @default(cuid())
+  caseStudyId  String    @map("case_study_id")
+  keyword      String
+  jan2025      Int?      @map("jan_2025")
+  feb2025      Int?      @map("feb_2025")
+  mar2025      Int?      @map("mar_2025")
+  apr2025      Int?      @map("apr_2025")
+  may2025      Int?      @map("may_2025")
+  jun2025      Int?      @map("jun_2025")
+  jul2025      Int?      @map("jul_2025")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  
+  caseStudy    CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  
+  @@map("keyword_data")
+}
+
+model SerpFeature {
+  id           String    @id @default(cuid())
+  caseStudyId  String    @map("case_study_id")
+  featureType  String    @map("feature_type") // "AI Overview", "Featured Snippet", etc.
+  keyword      String
+  url          String
+  position     Int?      // Position in SERP
+  createdAt    DateTime  @default(now()) @map("created_at")
+  
+  caseStudy    CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+  
+  @@map("serp_features")
+}
+
 

@@ -11,6 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User } from 'lucide-react';
 import { signOut } from 'next-auth/react';
+import ThemeToggle from '@/components/theme-toggle';
 
 export function AdminHeader() {
   const { data: session } = useSession();
@@ -23,9 +24,10 @@ export function AdminHeader() {
         </div>
         
         <div className="flex items-center space-x-4">
+          <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="outline" className="relative h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={session?.user?.image || ''} alt={session?.user?.name || ''} />
                   <AvatarFallback>

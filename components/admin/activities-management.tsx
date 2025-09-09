@@ -62,9 +62,9 @@ export function ActivitiesManagement() {
   }, []);
 
   const filteredActivities = activities.filter(activity =>
-    activity.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    activity.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    activity.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (activity.action && activity.action.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (activity.user && activity.user.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (activity.resource && activity.resource.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (activity.details && activity.details.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 

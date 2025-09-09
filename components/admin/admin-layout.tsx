@@ -3,9 +3,9 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Sidebar } from './sidebar';
-import { AdminHeader } from './admin-header';
-import { AdminBreadcrumbs } from './admin-breadcrumbs';
+import { Sidebar } from '@/components/admin/sidebar'
+import { AdminHeader } from '@/components/admin/admin-header';
+import { AdminBreadcrumbs } from '@/components/admin/admin-breadcrumbs';
 import { Loader2 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -24,7 +24,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       return;
     }
 
-    if (!session.user.isAdmin) {
+    if (!(session as any)?.user?.isAdmin) {
       router.push('/dashboard');
       return;
     }
@@ -41,7 +41,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!session?.user.isAdmin) {
+  if (!((session as any)?.user?.isAdmin)) {
     return null; // Will redirect
   }
 
@@ -55,7 +55,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminHeader />
         <AdminBreadcrumbs />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-muted/30">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

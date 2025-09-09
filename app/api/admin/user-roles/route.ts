@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminForAPI } from '@/lib/rbac';
-import { createClient } from '@supabase/supabase-js';
+import { prisma } from '@/lib/db';
 import { z } from 'zod';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const assignRoleSchema = z.object({
-  userId: z.string().uuid(),
-  roleId: z.string().uuid(),
+  userId: z.string().cuid(),
+  roleId: z.string().cuid(),
   expiresAt: z.string().datetime().optional()
 });
 
@@ -21,57 +16,42 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
-    let query = supabase
-      .from('user_roles')
-      .select(`
-        *,
-        role:roles(
-          id,
-          name,
-          display_name,
-          is_system
-        ),
-        user:users(
-          id,
-          name,
-          email
-        )
-      `)
-      .order('assigned_at', { ascending: false });
-
     if (userId) {
-      query = query.eq('user_id', userId);
+      // Get roles for specific user
+      const userRoles = await prisma.userRole.findMany({
+        where: { userId },
+        include: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { assignedAt: 'desc' }
+      });
+
+      return NextResponse.json(userRoles);
+    } else {
+      // Get all user-role assignments
+      const userRoles = await prisma.userRole.findMany({
+        include: {
+          role: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { assignedAt: 'desc' }
+      });
+
+      return NextResponse.json(userRoles);
     }
-
-    const { data: userRoles, error } = await query;
-
-    if (error) {
-      throw error;
-    }
-
-    // Transform the data to match the expected format
-    const transformedUserRoles = userRoles?.map(userRole => ({
-      id: userRole.id,
-      userId: userRole.user_id,
-      roleId: userRole.role_id,
-      assignedBy: userRole.assigned_by,
-      assignedAt: userRole.assigned_at,
-      expiresAt: userRole.expires_at,
-      isActive: userRole.is_active,
-      role: {
-        id: userRole.role.id,
-        name: userRole.role.name,
-        displayName: userRole.role.display_name,
-        isSystem: userRole.role.is_system
-      },
-      user: {
-        id: userRole.user.id,
-        name: userRole.user.name,
-        email: userRole.user.email
-      }
-    })) || [];
-
-    return NextResponse.json(transformedUserRoles);
   } catch (error) {
     console.error('Error fetching user roles:', error);
     return NextResponse.json(
@@ -89,131 +69,77 @@ export async function POST(request: NextRequest) {
     const validatedData = assignRoleSchema.parse(body);
     
     // Check if assignment already exists
-    const { data: existingAssignment } = await supabase
-      .from('user_roles')
-      .select('*')
-      .eq('user_id', validatedData.userId)
-      .eq('role_id', validatedData.roleId)
-      .single();
+    const existingAssignment = await prisma.userRole.findUnique({
+      where: {
+        userId_roleId: {
+          userId: validatedData.userId,
+          roleId: validatedData.roleId
+        }
+      }
+    });
     
     if (existingAssignment) {
-      if (existingAssignment.is_active) {
+      if (existingAssignment.isActive) {
         return NextResponse.json(
           { error: 'User already has this role assigned' },
           { status: 400 }
         );
       } else {
         // Reactivate existing assignment
-        const { data: updatedAssignment, error: updateError } = await supabase
-          .from('user_roles')
-          .update({
-            is_active: true,
-            assigned_by: adminUser.id,
-            assigned_at: new Date().toISOString(),
-            expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt).toISOString() : null
-          })
-          .eq('user_id', validatedData.userId)
-          .eq('role_id', validatedData.roleId)
-          .select(`
-            *,
-            role:roles(
-              id,
-              name,
-              display_name,
-              is_system
-            ),
-            user:users(
-              id,
-              name,
-              email
-            )
-          `)
-          .single();
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        const transformedAssignment = {
-          id: updatedAssignment.id,
-          userId: updatedAssignment.user_id,
-          roleId: updatedAssignment.role_id,
-          assignedBy: updatedAssignment.assigned_by,
-          assignedAt: updatedAssignment.assigned_at,
-          expiresAt: updatedAssignment.expires_at,
-          isActive: updatedAssignment.is_active,
-          role: {
-            id: updatedAssignment.role.id,
-            name: updatedAssignment.role.name,
-            displayName: updatedAssignment.role.display_name,
-            isSystem: updatedAssignment.role.is_system
+        const updatedAssignment = await prisma.userRole.update({
+          where: {
+            userId_roleId: {
+              userId: validatedData.userId,
+              roleId: validatedData.roleId
+            }
           },
-          user: {
-            id: updatedAssignment.user.id,
-            name: updatedAssignment.user.name,
-            email: updatedAssignment.user.email
+          data: {
+            isActive: true,
+            assignedBy: adminUser.id,
+            assignedAt: new Date(),
+            expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : null
+          },
+          include: {
+            role: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
-        };
+        });
 
-        return NextResponse.json(transformedAssignment, { status: 201 });
+        return NextResponse.json(updatedAssignment, { status: 201 });
       }
     }
 
     // Create new assignment
-    const { data: userRole, error: createError } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: validatedData.userId,
-        role_id: validatedData.roleId,
-        assigned_by: adminUser.id,
-        expires_at: validatedData.expiresAt ? new Date(validatedData.expiresAt).toISOString() : null
-      })
-      .select(`
-        *,
-        role:roles(
-          id,
-          name,
-          display_name,
-          is_system
-        ),
-        user:users(
-          id,
-          name,
-          email
-        )
-      `)
-      .single();
-
-    if (createError) {
-      throw createError;
-    }
-
-    const transformedUserRole = {
-      id: userRole.id,
-      userId: userRole.user_id,
-      roleId: userRole.role_id,
-      assignedBy: userRole.assigned_by,
-      assignedAt: userRole.assigned_at,
-      expiresAt: userRole.expires_at,
-      isActive: userRole.is_active,
-      role: {
-        id: userRole.role.id,
-        name: userRole.role.name,
-        displayName: userRole.role.display_name,
-        isSystem: userRole.role.is_system
+    const userRole = await prisma.userRole.create({
+      data: {
+        userId: validatedData.userId,
+        roleId: validatedData.roleId,
+        assignedBy: adminUser.id,
+        expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : null
       },
-      user: {
-        id: userRole.user.id,
-        name: userRole.user.name,
-        email: userRole.user.email
+      include: {
+        role: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
-    };
+    });
 
-    return NextResponse.json(transformedUserRole, { status: 201 });
+    return NextResponse.json(userRole, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: 'Validation failed', details: error.issues },
         { status: 400 }
       );
     }

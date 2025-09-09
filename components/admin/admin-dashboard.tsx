@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AdminCard as Card, AdminCardContent as CardContent, AdminCardDescription as CardDescription, AdminCardHeader as CardHeader, AdminCardTitle as CardTitle } from '@/components/admin/AdminCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
@@ -93,7 +93,7 @@ export function AdminDashboard() {
             <div className="mt-2 flex items-center space-x-2">
               <span className="text-sm text-muted-foreground">Welcome, {session.user.name || session.user.email}</span>
               <div className="flex space-x-1">
-                {session.user.roles?.map((role) => (
+                {(((session as any)?.user?.roles) ?? []).map((role: string) => (
                   <Badge key={role} variant="secondary" className="text-xs">
                     {role}
                   </Badge>

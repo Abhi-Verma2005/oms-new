@@ -38,7 +38,7 @@ import {
   Shield,
   Calendar
 } from 'lucide-react';
-import { UserRoleAssignmentForm } from './user-role-assignment-form';
+import { UserRoleAssignmentForm } from '@/components/admin/user-role-assignment-form';
 import { toast } from 'sonner';
 
 interface UserRole {
@@ -286,7 +286,7 @@ export function UserRolesManagement() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>

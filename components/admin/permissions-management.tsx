@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AdminCard as Card, AdminCardContent as CardContent, AdminCardDescription as CardDescription, AdminCardHeader as CardHeader, AdminCardTitle as CardTitle } from '@/components/admin/AdminCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ import {
   Key,
   Shield
 } from 'lucide-react';
-import { PermissionForm } from './permission-form';
+import { PermissionForm } from '@/components/admin/permission-form';
 import { toast } from 'sonner';
 
 interface Permission {
@@ -269,9 +269,9 @@ export function PermissionsManagement() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                        <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem

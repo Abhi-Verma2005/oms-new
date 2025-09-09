@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminForAPI } from '@/lib/rbac';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,37 +10,35 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const { data: activities, error } = await supabase
-      .from('activity_logs')
-      .select(`
-        *,
-        user:users(
-          id,
-          name,
-          email
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) {
-      throw error;
-    }
+    const activities = await prisma.userActivity.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limit
+    });
 
     // Transform the data to match the expected format
-    const transformedActivities = activities?.map(activity => ({
+    const transformedActivities = activities.map(activity => ({
       id: activity.id,
-      action: activity.action,
+      action: activity.activity,
       user: activity.user?.name || activity.user?.email || 'Unknown User',
-      userId: activity.user_id,
-      resource: activity.resource,
-      resourceId: activity.resource_id,
-      details: activity.details,
-      ipAddress: activity.ip_address,
-      userAgent: activity.user_agent,
-      timestamp: activity.created_at,
-      createdAt: activity.created_at
-    })) || [];
+      userId: activity.userId,
+      resource: activity.category,
+      resourceId: null,
+      details: activity.description,
+      ipAddress: activity.ipAddress,
+      userAgent: activity.userAgent,
+      timestamp: activity.createdAt.toISOString(),
+      createdAt: activity.createdAt.toISOString()
+    }));
 
     return NextResponse.json(transformedActivities);
   } catch (error) {

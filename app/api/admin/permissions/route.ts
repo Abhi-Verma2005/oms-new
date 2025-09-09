@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminForAPI } from '@/lib/rbac';
-import { createClient } from '@supabase/supabase-js';
+import { prisma } from '@/lib/db';
 import { z } from 'zod';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 const createPermissionSchema = z.object({
   name: z.string().min(1).max(100).regex(/^[a-z._-]+$/, 'Name must contain only lowercase letters, dots, hyphens, and underscores'),
@@ -20,36 +15,21 @@ export async function GET(request: NextRequest) {
   try {
     await requireAdminForAPI();
 
-    const { data: permissions, error } = await supabase
-      .from('permissions')
-      .select(`
-        *,
-        role_permissions(count)
-      `)
-      .order('resource', { ascending: true })
-      .order('action', { ascending: true });
+    const permissions = await prisma.permission.findMany({
+      include: {
+        _count: {
+          select: {
+            rolePermissions: true
+          }
+        }
+      },
+      orderBy: [
+        { resource: 'asc' },
+        { action: 'asc' }
+      ]
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    // Transform the data to match the expected format
-    const transformedPermissions = permissions?.map(permission => ({
-      id: permission.id,
-      name: permission.name,
-      displayName: permission.display_name,
-      description: permission.description,
-      resource: permission.resource,
-      action: permission.action,
-      isSystem: permission.is_system,
-      createdAt: permission.created_at,
-      updatedAt: permission.updated_at,
-      _count: {
-        rolePermissions: permission.role_permissions?.[0]?.count || 0
-      }
-    })) || [];
-
-    return NextResponse.json(transformedPermissions);
+    return NextResponse.json(permissions);
   } catch (error) {
     console.error('Error fetching permissions:', error);
     return NextResponse.json(
@@ -67,11 +47,9 @@ export async function POST(request: NextRequest) {
     const validatedData = createPermissionSchema.parse(body);
     
     // Check if permission name already exists
-    const { data: existingPermission } = await supabase
-      .from('permissions')
-      .select('id')
-      .eq('name', validatedData.name)
-      .single();
+    const existingPermission = await prisma.permission.findUnique({
+      where: { name: validatedData.name }
+    });
     
     if (existingPermission) {
       return NextResponse.json(
@@ -81,12 +59,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if resource-action combination already exists
-    const { data: existingResourceAction } = await supabase
-      .from('permissions')
-      .select('id')
-      .eq('resource', validatedData.resource)
-      .eq('action', validatedData.action)
-      .single();
+    const existingResourceAction = await prisma.permission.findUnique({
+      where: {
+        resource_action: {
+          resource: validatedData.resource,
+          action: validatedData.action
+        }
+      }
+    });
     
     if (existingResourceAction) {
       return NextResponse.json(
@@ -96,42 +76,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Create permission
-    const { data: permission, error: permissionError } = await supabase
-      .from('permissions')
-      .insert({
+    const permission = await prisma.permission.create({
+      data: {
         name: validatedData.name,
-        display_name: validatedData.displayName,
+        displayName: validatedData.displayName,
         description: validatedData.description,
         resource: validatedData.resource,
-        action: validatedData.action,
-        is_system: false
-      })
-      .select(`
-        *,
-        role_permissions(count)
-      `)
-      .single();
-
-    if (permissionError) {
-      throw permissionError;
-    }
-
-    const transformedPermission = {
-      id: permission.id,
-      name: permission.name,
-      displayName: permission.display_name,
-      description: permission.description,
-      resource: permission.resource,
-      action: permission.action,
-      isSystem: permission.is_system,
-      createdAt: permission.created_at,
-      updatedAt: permission.updated_at,
-      _count: {
-        rolePermissions: permission.role_permissions?.[0]?.count || 0
+        action: validatedData.action
+      },
+      include: {
+        _count: {
+          select: {
+            rolePermissions: true
+          }
+        }
       }
-    };
+    });
 
-    return NextResponse.json(transformedPermission, { status: 201 });
+    return NextResponse.json(permission, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
