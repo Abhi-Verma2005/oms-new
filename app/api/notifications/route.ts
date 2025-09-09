@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 // WebSocket server is now independent - we'll call it via HTTP API
 
-const WS_SERVER_URL = process.env.WS_SERVER_URL || 'http://localhost:8001';
+const WS_SERVER_URL = process.env.WS_SERVER_URL || 'http://localhost:8000';
 
 async function broadcastNotification(notification: any) {
   try {

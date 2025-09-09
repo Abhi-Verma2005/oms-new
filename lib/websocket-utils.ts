@@ -16,15 +16,24 @@ export function getWebSocketUrl(): string {
  * Handles protocol detection (ws:// vs wss://) based on current location
  */
 export function getClientWebSocketUrl(): string {
-  const baseUrl = process.env.WEBSOCKET_URL || 'ws://localhost:8000';
-  
-  // If WEBSOCKET_URL is set, use it as-is
-  if (process.env.WEBSOCKET_URL) {
-    return baseUrl;
+  // Check for client-side environment variable first (NEXT_PUBLIC_ prefix required)
+  const clientWsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+  if (clientWsUrl) {
+    return clientWsUrl;
   }
   
-  // For fallback, determine protocol based on current location
+  // For localhost in development, always use ws:// regardless of page protocol
   if (typeof window !== 'undefined') {
+    // Check if we're in development (localhost or 127.0.0.1)
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname === '0.0.0.0';
+    
+    if (isLocalhost) {
+      return 'ws://localhost:8000';
+    }
+    
+    // For non-localhost, determine protocol based on current location
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//localhost:8000`;
   }
@@ -71,5 +80,20 @@ export function getFullClientWebSocketUrl(): string {
   
   // Ensure proper URL joining
   const separator = baseUrl.endsWith('/') ? '' : '/';
-  return `${baseUrl}${separator}${endpoint.replace(/^\//, '')}`;
+  const fullUrl = `${baseUrl}${separator}${endpoint.replace(/^\//, '')}`;
+  
+  // Debug logging in development
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('🔌 WebSocket URL generated:', {
+      baseUrl,
+      endpoint,
+      fullUrl,
+      hostname: window.location.hostname,
+      protocol: window.location.protocol,
+      NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
+      WEBSOCKET_URL: process.env.WEBSOCKET_URL
+    });
+  }
+  
+  return fullUrl;
 }
