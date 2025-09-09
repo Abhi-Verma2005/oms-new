@@ -1,14 +1,32 @@
-export const metadata = {
-  title: "Tell us about your company - Mosaic",
-  description: 'Page description',
-}
-
+"use client"
 import Link from 'next/link'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import OnboardingHeader from '../onboarding-header'
 import OnboardingImage from '../onboarding-image'
 import OnboardingProgress from '../onboarding-progress'
 
 export default function Onboarding02() {
+  const router = useRouter()
+  const [companyType, setCompanyType] = useState<'Individual' | 'Organization'>('Individual')
+  const [marketingOptIn, setMarketingOptIn] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/onboarding/step2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyType, marketingOptIn }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
+      router.push(data.next || '/onboarding-03')
+    } finally {
+      setSaving(false)
+    }
+  }
   return (
     <main className="bg-white dark:bg-gray-900">
 
@@ -31,10 +49,10 @@ export default function Onboarding02() {
 
                 <h1 className="text-3xl text-gray-800 dark:text-gray-100 font-bold mb-6">Tell us about your company</h1>
                 {/* Form */}
-                <form>
+                <form onSubmit={(e) => { e.preventDefault(); submit() }}>
                   <div className="sm:flex space-y-3 sm:space-y-0 sm:space-x-4 mb-8">
                     <label className="flex-1 relative block cursor-pointer">
-                      <input type="radio" name="radio-buttons" className="peer sr-only" defaultChecked />
+                      <input type="radio" name="radio-buttons" className="peer sr-only" checked={companyType==='Individual'} onChange={() => setCompanyType('Individual')} />
                       <div className="h-full text-center bg-white dark:bg-gray-800 px-4 py-6 rounded-lg border border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm transition">
                         <svg
                           className="inline-flex fill-current text-violet-500 mt-2 mb-4"
@@ -54,7 +72,7 @@ export default function Onboarding02() {
                       <div className="absolute inset-0 border-2 border-transparent peer-checked:border-violet-400 dark:peer-checked:border-violet-500 rounded-lg pointer-events-none" aria-hidden="true"></div>
                     </label>
                     <label className="flex-1 relative block cursor-pointer">
-                      <input type="radio" name="radio-buttons" className="peer sr-only" />
+                      <input type="radio" name="radio-buttons" className="peer sr-only" checked={companyType==='Organization'} onChange={() => setCompanyType('Organization')} />
                       <div className="h-full text-center bg-white dark:bg-gray-800 px-4 py-6 rounded-lg border border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 shadow-sm transition">
                         <svg
                           className="inline-flex fill-current text-violet-500 mt-2 mb-4"
@@ -78,7 +96,7 @@ export default function Onboarding02() {
                     </div>
                     <div className="flex items-center">
                       <div className="form-switch">
-                        <input type="checkbox" id="switch" className="sr-only" defaultChecked />
+                        <input type="checkbox" id="switch" className="sr-only" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} />
                         <label htmlFor="switch">
                           <span className="bg-white shadow-sm" aria-hidden="true"></span>
                           <span className="sr-only">Switch label</span>
@@ -88,7 +106,7 @@ export default function Onboarding02() {
                   </div>
                   <div className="flex items-center justify-between">
                     <Link className="text-sm underline hover:no-underline" href="/onboarding-01">&lt;- Back</Link>
-                    <Link className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white ml-auto" href="/onboarding-03">Next Step -&gt;</Link>
+                    <button type="submit" disabled={saving} className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white ml-auto">{saving ? 'Saving...' : 'Next Step ->'}</button>
                   </div>
                 </form>
 

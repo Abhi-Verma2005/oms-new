@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
   // Get the JWT token from the request
   const token = await getToken({ 
     req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
   })
 
   const isProtectedRoute = nextUrl.pathname.startsWith('/dashboard') || 

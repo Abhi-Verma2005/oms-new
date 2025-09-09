@@ -1,14 +1,25 @@
-export const metadata = {
-  title: "Company information - Mosaic",
-  description: 'Page description',
-}
+"use client"
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import OnboardingHeader from '../onboarding-header'
 import OnboardingImage from '../onboarding-image'
 import OnboardingProgress from '../onboarding-progress'
 
 export default function Onboarding04() {
+  const [companyName, setCompanyName] = useState<string | null>(null)
+  useEffect(() => {
+    // Try to fetch company name from profile to personalize
+    ;(async () => {
+      try {
+        const res = await fetch('/api/user/onboarding-profile', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setCompanyName(data?.companyName || null)
+        }
+      } catch {}
+    })()
+  }, [])
   return (
     <main className="bg-white dark:bg-gray-900">
 
@@ -34,8 +45,8 @@ export default function Onboarding04() {
                     <circle className="text-green-500/20" cx="32" cy="32" r="32" />
                     <path className="text-green-700" d="M37.22 26.375a1 1 0 1 1 1.56 1.25l-8 10a1 1 0 0 1-1.487.082l-4-4a1 1 0 0 1 1.414-1.414l3.21 3.21 7.302-9.128Z" />
                   </svg>
-                  <h1 className="text-3xl text-gray-800 dark:text-gray-100 font-bold mb-8">Nice to have you, Acme Inc. 🙌</h1>
-                  <Link className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white" href="/dashboards">Go To Dashboard -&gt;</Link>
+                  <h1 className="text-3xl text-gray-800 dark:text-gray-100 font-bold mb-8">Nice to have you{companyName ? `, ${companyName}` : ''} 🙌</h1>
+                  <Link className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white" href="/dashboard">Go To Dashboard -&gt;</Link>
                 </div>
 
               </div>

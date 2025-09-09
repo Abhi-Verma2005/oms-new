@@ -61,6 +61,7 @@ model User {
   userRoles      UserRole[]
   activities     UserActivity[]
   notificationReads UserNotificationRead[]
+  onboardingProfile OnboardingProfile?
 
   @@map("users")
 }
@@ -399,6 +400,36 @@ enum NotificationPriority {
   NORMAL
   HIGH
   URGENT
+}
+
+
+/// Optional, progressive onboarding data captured post-signup
+model OnboardingProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique @map("user_id")
+  // Step tracking
+  currentStep   Int      @default(1) @map("current_step")
+
+  // Step 1 - situation
+  situation     String?  // "company" | "freelancer" | "getting_started"
+
+  // Step 2 - company type and preferences
+  companyType   String?  @map("company_type") // "individual" | "organization"
+  marketingOptIn Boolean? @map("marketing_opt_in")
+
+  // Step 3 - company information
+  companyName   String?  @map("company_name")
+  city          String?
+  postalCode    String?  @map("postal_code")
+  street        String?
+  country       String?
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_profiles")
 }
 
 

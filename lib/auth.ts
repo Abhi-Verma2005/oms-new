@@ -9,6 +9,7 @@ import * as bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   providers: [
     GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID!,
@@ -132,16 +133,20 @@ export const authOptions: NextAuthOptions = {
       }
       return token
     },
-    session: ({ session, token }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: token.sub!,
-        roles: (token.roles as string[]) || [],
-        permissions: (token.permissions as string[]) || [],
-        isAdmin: (token.isAdmin as boolean) || false,
-      },
-    }),
+    session: ({ session, token }) => {
+      console.log('Session callback - token:', token)
+      console.log('Session callback - session:', session)
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.sub!,
+          roles: (token.roles as string[]) || [],
+          permissions: (token.permissions as string[]) || [],
+          isAdmin: (token.isAdmin as boolean) || false,
+        },
+      }
+    },
     // authorized is not part of v4 options; handled via middleware
   },
   pages: {
