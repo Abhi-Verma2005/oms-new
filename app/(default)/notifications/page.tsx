@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Bell, Loader2, Calendar, Users, Globe, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNotifications } from '@/contexts/notification-context';
 
 interface NotificationType {
   id: string;
@@ -34,7 +35,7 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { notifications, markAsRead, markAllAsRead, isWebSocketConnected } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
 
@@ -47,7 +48,8 @@ export default function NotificationsPage() {
       const response = await fetch('/api/notifications?limit=50');
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.notifications || []);
+        // The context will handle updating notifications
+        // We just need to trigger the initial fetch
       } else {
         toast.error('Failed to fetch notifications');
       }
@@ -59,43 +61,6 @@ export default function NotificationsPage() {
     }
   };
 
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'POST',
-      });
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId 
-            ? { ...n, isRead: true, readAt: new Date().toISOString() }
-            : n
-        )
-      );
-      toast.success('Notification marked as read');
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      toast.error('Failed to mark notification as read');
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      const unreadNotifications = notifications.filter(n => !n.isRead);
-      await Promise.all(
-        unreadNotifications.map(n => 
-          fetch(`/api/notifications/${n.id}/read`, { method: 'POST' })
-        )
-      );
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, isRead: true, readAt: new Date().toISOString() }))
-      );
-      toast.success('All notifications marked as read');
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-      toast.error('Failed to mark all notifications as read');
-    }
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

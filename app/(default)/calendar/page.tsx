@@ -9,7 +9,7 @@ import CalendarClient from './CalendarClient'
 
 export default async function Calendar() {
   const session = await auth()
-  if (!session) redirect('/auth/signin')
+  if (!session) redirect('/signin')
   
   return <CalendarClient />
 }

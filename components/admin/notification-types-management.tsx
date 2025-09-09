@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+// import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { 
   Table, 
@@ -25,18 +25,18 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from '@/components/ui/dialog';
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
-} from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Bell } from 'lucide-react';
+// import { 
+//   AlertDialog, 
+//   AlertDialogAction, 
+//   AlertDialogCancel, 
+//   AlertDialogContent, 
+//   AlertDialogDescription, 
+//   AlertDialogFooter, 
+//   AlertDialogHeader, 
+//   AlertDialogTitle, 
+//   AlertDialogTrigger 
+// } from '@/components/ui/alert-dialog';
+import { Plus, Edit, Trash2, Bell, EyeIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface NotificationType {
@@ -56,6 +56,8 @@ export function NotificationTypesManagement() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<NotificationType | null>(null);
+  const [previewType, setPreviewType] = useState<NotificationType | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     displayName: '',
@@ -148,6 +150,11 @@ export function NotificationTypesManagement() {
       console.error('Error deleting notification type:', error);
       toast.error('Failed to delete notification type');
     }
+  };
+
+  const handlePreview = (type: NotificationType) => {
+    setPreviewType(type);
+    setIsPreviewOpen(true);
   };
 
   const resetForm = () => {
@@ -260,10 +267,12 @@ export function NotificationTypesManagement() {
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <Switch
+                <input
+                  type="checkbox"
                   id="isActive"
                   checked={formData.isActive}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="rounded border-gray-300"
                 />
                 <Label htmlFor="isActive">Active</Label>
               </div>
@@ -339,31 +348,24 @@ export function NotificationTypesManagement() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Notification Type</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{type.displayName}"? This action cannot be undone.
-                                Note: You cannot delete a notification type that has associated notifications.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(type.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handlePreview(type)}
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete "${type.displayName}"? This action cannot be undone. Note: You cannot delete a notification type that has associated notifications.`)) {
+                              handleDelete(type.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -373,6 +375,93 @@ export function NotificationTypesManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Preview Modal */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Notification Type Preview</DialogTitle>
+            <DialogDescription>
+              This is how the notification type will appear in the system
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewType && (
+            <div className="space-y-4">
+              {/* Type Preview */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Notification Type Details</h3>
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      {previewType.icon ? (
+                        <span className="text-2xl">{previewType.icon}</span>
+                      ) : (
+                        <Bell className="h-6 w-6 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        {previewType.displayName}
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {previewType.description || 'No description provided'}
+                      </p>
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Badge variant={previewType.isActive ? 'default' : 'secondary'}>
+                          {previewType.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                        {previewType.color && (
+                          <div 
+                            className="w-4 h-4 rounded-full border border-gray-300"
+                            style={{ backgroundColor: previewType.color }}
+                          ></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Usage Example */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Usage Example</h3>
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {previewType.icon ? (
+                        <span className="text-lg">{previewType.icon}</span>
+                      ) : (
+                        <Bell className="h-4 w-4 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          Sample notification using this type
+                        </p>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        This is how notifications of this type will appear to users
+                      </p>
+                      <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mt-1">
+                        {new Date().toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+              Close Preview
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

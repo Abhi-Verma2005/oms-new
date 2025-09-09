@@ -9,7 +9,7 @@ export const metadata = {
 
 async function CheckoutServer() {
   const session = await auth()
-  if (!session) redirect('/auth/signin')
+  if (!session) redirect('/signin')
   return <CheckoutClient />
 }
 

@@ -145,7 +145,7 @@ export const authOptions: NextAuthOptions = {
     // authorized is not part of v4 options; handled via middleware
   },
   pages: {
-    signIn: '/auth/signin',
+    signIn: '/signin',
     error: '/auth/error',
   },
   session: {

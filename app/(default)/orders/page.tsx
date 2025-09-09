@@ -9,6 +9,6 @@ export const metadata = {
 
 export default async function Page() {
   const session = await auth()
-  if (!session) redirect('/auth/signin')
+  if (!session) redirect('/signin')
   return <OrdersClient />
 }

@@ -5,6 +5,8 @@ import Theme from './theme-provider'
 import AppProvider from './app-provider'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { CartProvider } from '@/contexts/cart-context'
+import { NotificationProvider } from '@/contexts/notification-context'
+import { NotificationToastContainer } from '@/components/notification-toast'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -29,7 +31,10 @@ export default function RootLayout({
           <AuthProvider>
             <AppProvider>
               <CartProvider>
-                {children}
+                <NotificationProvider>
+                  {children}
+                  <NotificationToastContainer />
+                </NotificationProvider>
               </CartProvider>
             </AppProvider>
           </AuthProvider>

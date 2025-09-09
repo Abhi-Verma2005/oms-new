@@ -425,12 +425,24 @@ export function AdminDashboard() {
                   Permissions
                 </Link>
               </Button>
-              <Button asChild size="sm" variant="outline" className="w-full justify-start">
-                <Link href="/admin/activities">
-                  <Activity className="h-4 w-4 mr-2" />
-                  Activity Log
-                </Link>
-              </Button>
+               <Button asChild size="sm" variant="outline" className="w-full justify-start">
+                 <Link href="/admin/activities">
+                   <Activity className="h-4 w-4 mr-2" />
+                   Activity Log
+                 </Link>
+               </Button>
+               <Button asChild size="sm" variant="outline" className="w-full justify-start">
+                 <Link href="/admin/notification-types">
+                   <Eye className="h-4 w-4 mr-2" />
+                   Notification Types
+                 </Link>
+               </Button>
+               <Button asChild size="sm" variant="outline" className="w-full justify-start">
+                 <Link href="/admin/notifications">
+                   <Clock className="h-4 w-4 mr-2" />
+                   Notifications
+                 </Link>
+               </Button>
             </div>
           </div>
         </div>

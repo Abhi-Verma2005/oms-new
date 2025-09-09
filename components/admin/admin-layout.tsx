@@ -20,7 +20,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     if (status === 'loading') return;
     
     if (!session) {
-      router.push('/auth/signin');
+      router.push('/signin');
       return;
     }
 

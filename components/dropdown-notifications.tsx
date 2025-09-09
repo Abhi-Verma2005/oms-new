@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import { Bell, Loader2 } from 'lucide-react'
+import { useNotifications } from '@/contexts/notification-context'
 
 interface NotificationType {
   id: string;
@@ -34,9 +35,8 @@ interface Notification {
 export default function DropdownNotifications({ align }: {
   align?: 'left' | 'right'
 }) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const [loading, setLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     fetchNotifications();
@@ -46,33 +46,13 @@ export default function DropdownNotifications({ align }: {
     try {
       const response = await fetch('/api/notifications?limit=5');
       if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.notifications?.filter((n: Notification) => !n.isRead).length || 0);
+        // The context will handle updating notifications
+        // We just need to trigger the initial fetch
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'POST',
-      });
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId 
-            ? { ...n, isRead: true, readAt: new Date().toISOString() }
-            : n
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
     }
   };
 

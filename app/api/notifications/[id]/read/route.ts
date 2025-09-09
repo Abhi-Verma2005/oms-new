@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 // POST /api/notifications/[id]/read - Mark notification as read
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions);

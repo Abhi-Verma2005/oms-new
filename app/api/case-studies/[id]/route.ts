@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 // GET /api/case-studies/[id] - Get single case study
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const caseStudy = await prisma.caseStudy.findUnique({
@@ -38,7 +38,7 @@ export async function GET(
 // PUT /api/case-studies/[id] - Update case study
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const body = await request.json()
@@ -86,7 +86,7 @@ export async function PUT(
 // DELETE /api/case-studies/[id] - Delete case study
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     await prisma.caseStudy.delete({

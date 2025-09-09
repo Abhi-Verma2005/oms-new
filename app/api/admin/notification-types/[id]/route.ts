@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 // PUT /api/admin/notification-types/[id] - Update notification type
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -96,7 +96,7 @@ export async function PUT(
 // DELETE /api/admin/notification-types/[id] - Delete notification type
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions);

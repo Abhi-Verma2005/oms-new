@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+// WebSocket server is now independent - we'll call it via HTTP API
+
+const WS_SERVER_URL = process.env.WS_SERVER_URL || 'http://localhost:8001';
+
+async function broadcastNotification(notification: any) {
+  try {
+    const response = await fetch(`${WS_SERVER_URL}/api/broadcast`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ notification }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to broadcast notification:', await response.text());
+    } else {
+      console.log('✅ Notification broadcasted successfully');
+    }
+  } catch (error) {
+    console.error('❌ Error broadcasting notification:', error);
+  }
+}
 
 // GET /api/notifications - Get notifications for the current user
 export async function GET(request: NextRequest) {
@@ -159,6 +182,32 @@ export async function POST(request: NextRequest) {
         type: true
       }
     });
+
+    // Prepare notification data for WebSocket broadcast
+    const notificationData = {
+      id: notification.id,
+      title: notification.title,
+      body: notification.body,
+      imageUrl: notification.imageUrl,
+      typeId: notification.typeId,
+      isActive: notification.isActive,
+      isGlobal: notification.isGlobal,
+      targetUserIds: notification.targetUserIds,
+      priority: notification.priority,
+      expiresAt: notification.expiresAt?.toISOString(),
+      createdAt: notification.createdAt.toISOString(),
+      updatedAt: notification.updatedAt.toISOString(),
+      type: {
+        id: notification.type.id,
+        name: notification.type.name,
+        displayName: notification.type.displayName,
+        icon: notification.type.icon,
+        color: notification.type.color
+      }
+    };
+
+    // Note: Notification is created but not automatically broadcast
+    // Use the "Push Now" button in admin panel to broadcast manually
 
     return NextResponse.json(notification, { status: 201 });
 
