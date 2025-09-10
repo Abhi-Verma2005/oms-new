@@ -2,6 +2,7 @@
 
 import React, { Suspense } from "react"
 import OrdersTable, { type Order as UiOrder } from "./orders-table"
+import OrdersSkeleton from "./orders-skeleton"
 import Image01 from '@/public/images/icon-01.svg'
 import { SelectedItemsProvider } from '@/app/selected-items-context'
 
@@ -18,7 +19,7 @@ function OrdersList() {
     }).catch((e) => setError(e.message)).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="p-8">Loading orders...</div>
+  if (loading) return <OrdersSkeleton />
   if (error) return <div className="p-8 text-red-600">{error}</div>
 
   const orders: UiOrder[] = (data?.orders ?? []).map((o: any, idx: number) => ({
@@ -54,7 +55,7 @@ function OrdersList() {
 export default function OrdersClient() {
   return (
     <SelectedItemsProvider>
-      <Suspense fallback={<div className="p-8">Loading orders...</div>}>
+      <Suspense fallback={<OrdersSkeleton />}>
         <OrdersList />
       </Suspense>
     </SelectedItemsProvider>

@@ -1,15 +1,16 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
+const { notificationWebSocketServer } = require('./ws-server/src/websocket-server.js');
 
 // WebSocket URL utility function
 function getWebSocketUrl() {
-  return process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8000';
+  return process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:3000';
 }
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
-const port = process.env.WS_PORT || 8000;
+const port = process.env.PORT || 3000; // Use standard Next.js port for development
 
 console.log('🚀 Starting Next.js server...');
 console.log(`📡 Environment: ${dev ? 'development' : 'production'}`);
@@ -33,15 +34,26 @@ app.prepare().then(() => {
       // Log all incoming requests
       console.log(`📥 ${req.method} ${pathname} - ${new Date().toISOString()}`);
 
-      // WebSocket connections are now handled by the independent ws-server
-      // Redirect WebSocket requests to the WebSocket server
+      // Handle WebSocket upgrade requests
       if (pathname === '/api/notifications/ws') {
-        const wsUrl = getWebSocketUrl();
-        console.log('🔌 WebSocket connection attempt - redirecting to independent ws-server');
-        res.writeHead(302, {
-          'Location': `${wsUrl}${pathname}`
+        console.log('🔌 WebSocket connection attempt detected');
+        console.log('📋 Headers:', {
+          upgrade: req.headers.upgrade,
+          connection: req.headers.connection,
+          'sec-websocket-key': req.headers['sec-websocket-key'],
+          'sec-websocket-version': req.headers['sec-websocket-version']
         });
-        res.end();
+        
+        // Handle WebSocket upgrade
+        if (req.headers.upgrade !== 'websocket') {
+          console.log('❌ WebSocket upgrade failed - not a websocket request');
+          res.writeHead(400);
+          res.end('Expected WebSocket upgrade');
+          return;
+        }
+        
+        console.log('✅ WebSocket upgrade request validated, passing to WebSocket server');
+        // The WebSocket server will handle this
         return;
       }
 
@@ -53,7 +65,10 @@ app.prepare().then(() => {
     }
   });
 
-  // WebSocket server is now independent and runs separately
+  // Set up WebSocket server on the same server
+  console.log('🔧 Setting up WebSocket server...');
+  notificationWebSocketServer.createWebSocketServer(server);
+  console.log('✅ WebSocket server configured');
 
   server
     .once('error', (err) => {
@@ -62,10 +77,10 @@ app.prepare().then(() => {
     })
     .listen(port, () => {
       const wsUrl = getWebSocketUrl();
-      console.log('🎉 Next.js server started successfully!');
+      console.log('🎉 Next.js server with WebSocket started successfully!');
       console.log(`🌐 HTTP Server: http://${hostname}:${port}`);
-      console.log('📝 Note: WebSocket server runs independently');
       console.log(`🔌 WebSocket Endpoint: ${wsUrl}/api/notifications/ws`);
+      console.log('📊 Both HTTP and WebSocket running on the same port!');
       console.log('='.repeat(60));
     });
 });

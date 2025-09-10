@@ -5,10 +5,19 @@
 /**
  * Get the WebSocket URL with consistent fallback
  * Primary: process.env.NEXT_PUBLIC_WEBSOCKET_URL
- * Fallback: ws://localhost:8000
+ * Fallback: ws://localhost:8000 for dev, wss://oms-ws.onrender.com for production
  */
 export function getWebSocketUrl(): string {
-  return process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8000';
+  if (process.env.NEXT_PUBLIC_WEBSOCKET_URL) {
+    return process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+  }
+  
+  // Default to production URL if in production, localhost for development
+  if (process.env.NODE_ENV === 'production') {
+    return 'wss://oms-ws.onrender.com';
+  }
+  
+  return 'ws://localhost:3000';
 }
 
 /**
@@ -30,16 +39,18 @@ export function getClientWebSocketUrl(): string {
                        window.location.hostname === '0.0.0.0';
     
     if (isLocalhost) {
-      return 'ws://localhost:8000';
+      return 'ws://localhost:3000';
     }
     
-    // For non-localhost, determine protocol based on current location
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//localhost:8000`;
+    // For production (non-localhost), use the Render URL
+    return 'wss://oms-ws.onrender.com';
   }
   
-  // Server-side fallback
-  return 'ws://localhost:8000';
+  // Server-side fallback - use production URL in production
+  if (process.env.NODE_ENV === 'production') {
+    return 'wss://oms-ws.onrender.com';
+  }
+  return 'ws://localhost:3000';
 }
 
 /**

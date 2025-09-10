@@ -22,7 +22,7 @@ export default function Product() {
         {/* Content */}
         <div>
           <div className="mb-3">
-            <Link className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="/ecommerce/shop/">&lt;- Back To Listing</Link>
+            <Link className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="/ecommerce/publishers/">&lt;- Back To Listing</Link>
           </div>
           <header className="mb-4">
             {/* Title */}

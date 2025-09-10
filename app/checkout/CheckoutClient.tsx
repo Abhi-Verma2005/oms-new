@@ -227,7 +227,7 @@ function PaymentForm() {
         <div className="text-sm text-gray-400">Your order has been placed successfully.</div>
         <div className="flex gap-2">
           <a className="btn bg-gray-900 text-gray-100 hover:bg-gray-800" href="/orders">Go to Orders</a>
-          <a className="btn border border-gray-300 dark:border-gray-700" href="/ecommerce/shop">Continue Browsing</a>
+          <a className="btn border border-gray-300 dark:border-gray-700" href="/ecommerce/publishers">Continue Browsing</a>
         </div>
       </div>
     )
