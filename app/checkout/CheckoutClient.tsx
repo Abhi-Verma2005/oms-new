@@ -4,7 +4,7 @@ import React from 'react'
 import { Elements, useElements, useStripe, PaymentElement } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { useCart } from '@/contexts/cart-context'
-import CartItems from '@/app/(default)/ecommerce/(cart)/cart-items'
+import CartItems from '../(default)/ecommerce/(cart)/cart-items'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string)
 
@@ -227,7 +227,7 @@ function PaymentForm() {
         <div className="text-sm text-gray-400">Your order has been placed successfully.</div>
         <div className="flex gap-2">
           <a className="btn bg-gray-900 text-gray-100 hover:bg-gray-800" href="/orders">Go to Orders</a>
-          <a className="btn border border-gray-300 dark:border-gray-700" href="/ecommerce/publishers">Continue Browsing</a>
+          <a className="btn border border-gray-300 dark:border-gray-700" href="/publishers">Continue Browsing</a>
         </div>
       </div>
     )

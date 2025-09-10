@@ -1153,6 +1153,7 @@ export default function PublishersClient() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastPostedQueryRef = useRef<string>("")
 
   const fetchData = async (apiFilters: APIFilters = {}, skipLoading = false) => {
     if (loading && !skipLoading) return
@@ -1187,6 +1188,37 @@ export default function PublishersClient() {
     if (!q) return sites
     return sites.filter(s => s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
   }, [sites, searchQuery])
+
+  // Save interest only if, after a short delay, results remain zero for a meaningful query
+  useEffect(() => {
+    const q = searchQuery.trim()
+    if (!q || q.length < 3) return
+    if (lastPostedQueryRef.current === q) return
+
+    const timeoutId = setTimeout(async () => {
+      // Re-check latest state after delay to avoid saving transient/noisy queries
+      const latestQuery = searchQuery.trim()
+      const stillSameQuery = latestQuery === q
+      const stillLoading = loading
+      const stillZeroResults = results.length === 0
+      if (!stillSameQuery || stillLoading || !stillZeroResults) return
+      try {
+        const controller = new AbortController()
+        const apiFilters = convertFiltersToAPI(filters, latestQuery)
+        await fetch('/api/search-interest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: latestQuery, filters: apiFilters }),
+          signal: controller.signal,
+        })
+        lastPostedQueryRef.current = latestQuery
+      } catch {}
+    }, 1200)
+
+    return () => {
+      clearTimeout(timeoutId)
+    }
+  }, [searchQuery, results.length, loading, filters])
 
   return (
     <CartProvider>

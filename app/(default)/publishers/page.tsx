@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import PublishersClient from "../(default)/ecommerce/publishers/publishers-client"
+import PublishersClient from "../ecommerce/publishers/publishers-client"
 
 export const metadata = {
   title: 'Publishers',

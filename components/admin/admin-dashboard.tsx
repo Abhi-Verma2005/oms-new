@@ -402,6 +402,12 @@ export function AdminDashboard() {
             <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase mb-3">Admin Tasks</div>
             <div className="space-y-3">
               <Button asChild size="sm" className="w-full justify-start">
+                <Link href="/publishers">
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Filter your preferred publishers
+                </Link>
+              </Button>
+              <Button asChild size="sm" className="w-full justify-start" variant="outline">
                 <Link href="/admin/users">
                   <Users className="h-4 w-4 mr-2" />
                   Users

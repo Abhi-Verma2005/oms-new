@@ -146,6 +146,18 @@ export default function Sidebar({
                   )
                 }}
               </SidebarLinkGroup>
+              {/* Top-level Publishers */}
+              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('publishers') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`}>
+                <SidebarLink href="/publishers">
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('publishers') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                      <path d="M2 2.75A1.75 1.75 0 0 1 3.75 1h8.5A1.75 1.75 0 0 1 14 2.75v10.5A1.75 1.75 0 0 1 12.25 15H3.75A1.75 1.75 0 0 1 2 13.25V2.75Zm1.75-.25a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25h-8.5Z" />
+                      <path d="M4 4h8v2H4zM4 7h8v2H4zM4 10h5v2H4z" />
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Publishers</span>
+                  </div>
+                </SidebarLink>
+              </li>
               {/* E-Commerce */}
               <SidebarLinkGroup open={segments.includes('ecommerce')}>
                 {(handleClick, open) => {
@@ -200,13 +212,6 @@ export default function Sidebar({
                             <SidebarLink href="/ecommerce/invoices">
                               <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
                                 Invoices
-                              </span>
-                            </SidebarLink>
-                          </li>
-                          <li className="mb-1 last:mb-0">
-                            <SidebarLink href="/ecommerce/publishers">
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Publishers
                               </span>
                             </SidebarLink>
                           </li>
@@ -397,20 +402,7 @@ export default function Sidebar({
                               </span>
                             </SidebarLink>
                           </li>
-                          <li className="mb-1 last:mb-0">
-                            <SidebarLink href="/utility/empty-state">
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Empty State
-                              </span>
-                            </SidebarLink>
-                          </li>
-                          <li className="mb-1 last:mb-0">
-                            <SidebarLink href="/utility/404">
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                404
-                              </span>
-                            </SidebarLink>
-                          </li>
+                          
                         </ul>
                       </div>
                     </>

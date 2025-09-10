@@ -19,6 +19,9 @@ export default function OnboardingProgress({ step = 1 }: { step?: number}) {
             <li>
               <Link className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${step >= 4 ? 'bg-violet-500 text-white' : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400'}`} href="/onboarding-04">4</Link>
             </li>
+            <li>
+              <Link className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-semibold ${step >= 5 ? 'bg-violet-500 text-white' : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400'}`} href="/onboarding-05">5</Link>
+            </li>
           </ul>
         </div>
       </div>

@@ -8,6 +8,7 @@ import Notifications from '@/components/dropdown-notifications'
 import DropdownHelp from '@/components/dropdown-help'
 import ThemeToggle from '@/components/theme-toggle'
 import UserMenu from '@/components/user-menu'
+import Link from 'next/link'
 
 export default function Header({
   variant = 'default',
@@ -45,6 +46,10 @@ export default function Header({
 
           {/* Header: Right side */}
           <div className="flex items-center space-x-3 relative z-30">
+            {/* Quick link to Publishers */}
+            <Link href="/publishers" className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10">
+              Publishers
+            </Link>
             <div>
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ml-3 ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}

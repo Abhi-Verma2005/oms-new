@@ -117,6 +117,21 @@ export function Sidebar() {
                   <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Notifications</span>
                 </SidebarLink>
               </li>
+              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('feedback') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
+                <SidebarLink href="/admin/feedback">
+                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Feedback</span>
+                </SidebarLink>
+              </li>
+              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('changelog') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
+                <SidebarLink href="/admin/changelog">
+                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Changelog</span>
+                </SidebarLink>
+              </li>
+              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('search-interests') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
+                <SidebarLink href="/admin/search-interests">
+                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Search Interests</span>
+                </SidebarLink>
+              </li>
             </ul>
           </div>
         </div>

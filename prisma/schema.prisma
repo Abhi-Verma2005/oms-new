@@ -62,6 +62,8 @@ model User {
   activities     UserActivity[]
   notificationReads UserNotificationRead[]
   onboardingProfile OnboardingProfile?
+  searchInterests SearchInterest[]
+  feedbacks      Feedback[]
 
   @@map("users")
 }
@@ -424,12 +426,71 @@ model OnboardingProfile {
   street        String?
   country       String?
 
+  // Step 4 - campaign preferences (optional)
+  monthlyBudget String?  @map("monthly_budget")
+  promotedUrl   String?  @map("promoted_url")
+  competitorUrl String?  @map("competitor_url")
+
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("onboarding_profiles")
+}
+
+
+// Changelog entries, manageable from Admin panel
+model ChangelogEntry {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  category    String   // Announcement | Bug Fix | Product | Exciting News
+  isPublished Boolean  @default(true) @map("is_published")
+  publishedAt DateTime @default(now()) @map("published_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  authorId    String?  @map("author_id")
+
+  @@map("changelog_entries")
+  @@index([isPublished, publishedAt])
+  @@index([category])
+}
+
+
+// Save user search interests when no publishers matched
+model SearchInterest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  email     String
+  query     String
+  filters   Json?
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, query])
+  @@index([notified, createdAt])
+  @@map("search_interests")
+}
+
+
+// Collect user feedback (UI: Settings → Feedback)
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  rating    Int      // 1-5 likelihood
+  category  String?  // optional category/type
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  metadata  Json?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([rating])
+  @@map("feedback")
 }
 
 

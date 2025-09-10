@@ -15,7 +15,13 @@ export async function POST(req: NextRequest) {
       where: { userId },
       data: { currentStep: target },
     })
-    const nextPath = target === 2 ? '/onboarding-02' : target === 3 ? '/onboarding-03' : '/onboarding-04'
+    const nextPath = target === 2
+      ? '/onboarding-02'
+      : target === 3
+      ? '/onboarding-03'
+      : target === 4
+      ? '/onboarding-04'
+      : '/onboarding-05'
     return NextResponse.json({ success: true, next: nextPath })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to skip' }, { status: 500 })

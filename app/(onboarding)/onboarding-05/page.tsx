@@ -5,9 +5,8 @@ import { useEffect, useState } from 'react'
 import OnboardingHeader from '../onboarding-header'
 import OnboardingImage from '../onboarding-image'
 import OnboardingProgress from '../onboarding-progress'
-import Step4Form from './Step4Form'
 
-export default function Onboarding04() {
+export default function Onboarding05() {
   const [companyName, setCompanyName] = useState<string | null>(null)
   useEffect(() => {
     ;(async () => {
@@ -33,16 +32,24 @@ export default function Onboarding04() {
             <div className="flex-1">
 
               <OnboardingHeader />
-              <OnboardingProgress step={4} />
+              <OnboardingProgress step={5} />
 
             </div>
 
             <div className="px-4 py-8">
               <div className="max-w-md mx-auto">
 
-                <h1 className="text-3xl text-gray-800 dark:text-gray-100 font-bold mb-6">Tell us more about your future campaigns</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">All fields are optional. This helps us tailor recommendations.</p>
-                <Step4Form />
+                <div className="text-center">
+                  <svg className="inline-flex w-16 h-16 fill-current mb-6" viewBox="0 0 64 64">
+                    <circle className="text-green-500/20" cx="32" cy="32" r="32" />
+                    <path className="text-green-700" d="M37.22 26.375a1 1 0 1 1 1.56 1.25l-8 10a1 1 0 0 1-1.487.082l-4-4a1 1 0 0 1 1.414-1.414l3.21 3.21 7.302-9.128Z" />
+                  </svg>
+                  <h1 className="text-3xl text-gray-800 dark:text-gray-100 font-bold mb-8">Welcome{companyName ? `, ${companyName}` : ''}! 🎉</h1>
+                  <div className="flex items-center justify-center space-x-4">
+                    <Link className="btn bg-violet-600 text-white hover:bg-violet-500" href="/publishers">Go to Publishers</Link>
+                    <Link className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white" href="/dashboard">Go to Dashboard</Link>
+                  </div>
+                </div>
 
               </div>
             </div>
@@ -58,3 +65,5 @@ export default function Onboarding04() {
     </main>
   )
 }
+
+

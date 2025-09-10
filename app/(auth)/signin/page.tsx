@@ -18,13 +18,19 @@ export default function SignIn() {
     setLoading(true)
     try {
       const res = await signIn('credentials', {
-        redirect: true,
-        callbackUrl: '/dashboard',
+        redirect: false,
         email,
         password,
       })
+      
+      if (res?.error) {
+        setError('Invalid email or password')
+        setLoading(false)
+      } else if (res?.ok) {
+        window.location.href = '/dashboard'
+      }
     } catch (err: any) {
-      setError('Sign in failed')
+      setError('Sign in failed. Please try again.')
       setLoading(false)
     }
   }
