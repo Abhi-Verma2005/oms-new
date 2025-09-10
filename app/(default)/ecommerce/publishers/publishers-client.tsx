@@ -323,6 +323,62 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     </Button>
   )
 
+  // Grouped filter pebbles (compact layout like OMS filter-page)
+  type FilterPebble = {
+    key: keyof Filters
+    label: string
+    category: 'basic' | 'authority' | 'traffic' | 'publishing'
+  }
+
+  const filterPebbles: FilterPebble[] = [
+    // Basic
+    { key: 'niche', label: 'Niche', category: 'basic' },
+    { key: 'language', label: 'Language', category: 'basic' },
+    { key: 'country', label: 'Country', category: 'basic' },
+
+    // Authority & SEO
+    { key: 'daMin', label: 'Domain Authority', category: 'authority' },
+    { key: 'paMin', label: 'Page Authority', category: 'authority' },
+    { key: 'drMin', label: 'Domain Rating', category: 'authority' },
+    { key: 'spamMax', label: 'Spam Score', category: 'authority' },
+    { key: 'tool', label: 'SEO Tool', category: 'authority' },
+
+    // Traffic & Performance
+    { key: 'semrushOverallTrafficMin', label: 'Overall Traffic', category: 'traffic' },
+    { key: 'semrushOrganicTrafficMin', label: 'Organic Traffic', category: 'traffic' },
+    { key: 'trend', label: 'Traffic Trend', category: 'traffic' },
+
+    // Publishing Details
+    { key: 'priceMin', label: 'Price Range', category: 'publishing' },
+    { key: 'tatDaysMax', label: 'TAT Days', category: 'publishing' },
+    { key: 'backlinkNature', label: 'Backlink Nature', category: 'publishing' },
+    { key: 'linkPlacement', label: 'Link Placement', category: 'publishing' },
+    { key: 'permanence', label: 'Permanence', category: 'publishing' },
+  ]
+
+  const categoryIcons = {
+    basic: <FilterIcon className="w-4 h-4" />,
+    authority: <Shield className="w-4 h-4" />,
+    traffic: <BarChart3 className="w-4 h-4" />,
+    publishing: <Clock className="w-4 h-4" />,
+  }
+
+  const categoryLabels = {
+    basic: 'Basic Info',
+    authority: 'Authority & SEO',
+    traffic: 'Traffic & Performance',
+    publishing: 'Publishing Details',
+  }
+
+  const groupedPebbles = React.useMemo(() => {
+    const groups: Record<string, FilterPebble[]> = {}
+    for (const p of filterPebbles) {
+      if (!groups[p.category]) groups[p.category] = []
+      groups[p.category].push(p)
+    }
+    return groups
+  }, [])
+
   const renderModalBody = () => {
     if (!activeKey) return null
     switch (activeKey) {
@@ -625,24 +681,21 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2.5">
-        {pebble('Niche', 'niche')}
-        {pebble('Language', 'language')}
-        {pebble('Country', 'country')}
-        {pebble('Price', 'priceMin')}
-        {pebble('DA', 'daMin')}
-        {pebble('PA', 'paMin')}
-        {pebble('DR', 'drMin')}
-        {pebble('Spam', 'spamMax')}
-        {pebble('SEO Tool', 'tool')}
-        {pebble('Traffic', 'semrushOverallTrafficMin')}
-        {pebble('Organic', 'semrushOrganicTrafficMin')}
-        {pebble('TAT', 'tatDaysMax')}
-        {pebble('Trend', 'trend')}
-        {pebble('Backlink Nature', 'backlinkNature')}
-        {pebble('Link Placement', 'linkPlacement')}
-        {pebble('Permanence', 'permanence')}
-        {pebble('Availability', 'availability')}
+      {/* Grouped filter pebbles */}
+      <div className="space-y-3">
+        {Object.entries(groupedPebbles).map(([category, pebbles]) => (
+          <div key={category} className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+              {categoryIcons[category as keyof typeof categoryIcons]}
+              <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              {pebbles.map(p => (
+                <span key={p.key}>{pebble(p.label, p.key)}</span>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {activeChips.length > 0 && (
@@ -1008,17 +1061,7 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                 )}
                 {visibleColumns.includes('order') && (
                 <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <Button
-                    asChild
-                    size="sm"
-                  >
-                    <a
-                      onClick={(e) => e.stopPropagation()}
-                      href={`/checkout?siteId=${encodeURIComponent(s.id)}&siteName=${encodeURIComponent(s.name)}&priceCents=${encodeURIComponent(String(Math.round((s.publishing.price || 0) * 100)))}`}
-                    >
-                      Order This Site
-                    </a>
-                  </Button>
+                  {/* Order button removed per request */}
                 </TableCell>
                 )}
                     </TableRow>
