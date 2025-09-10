@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppProvider } from '@/app/app-provider'
 
 import SearchModal from '@/components/search-modal'
@@ -8,7 +8,9 @@ import Notifications from '@/components/dropdown-notifications'
 import DropdownHelp from '@/components/dropdown-help'
 import ThemeToggle from '@/components/theme-toggle'
 import UserMenu from '@/components/user-menu'
+import { AIChatbot } from '@/components/ai-chatbot'
 import Link from 'next/link'
+import { Bot, Search } from 'lucide-react'
 
 export default function Header({
   variant = 'default',
@@ -18,6 +20,20 @@ export default function Header({
 
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
+  const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
+
+  // Keyboard shortcut for search (Cmd/Ctrl + K)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault()
+        setSearchModalOpen(true)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <header className={`sticky top-0 before:absolute before:inset-0 before:backdrop-blur-md max-lg:before:bg-white/90 dark:max-lg:before:bg-gray-800/90 before:-z-10 z-30 ${variant === 'v2' || variant === 'v3' ? 'before:bg-white after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'max-lg:shadow-sm lg:before:bg-gray-100/90 dark:lg:before:bg-gray-900/90'} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
@@ -50,23 +66,29 @@ export default function Header({
             <Link href="/publishers" className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10">
               Publishers
             </Link>
-            <div>
+            {/* AI Chatbot Button */}
+            <button
+              onClick={() => setChatbotOpen(!chatbotOpen)}
+              className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
+            >
+              <Bot className="h-4 w-4 mr-2" />
+              AI Assistant
+            </button>
+            <div className="relative group">
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ml-3 ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
                 onClick={() => { setSearchModalOpen(true) }}
+                title="Search (⌘K)"
               >
                 <span className="sr-only">Search</span>
-                <svg
-                  className="fill-current text-gray-500/80 dark:text-gray-400/80"
-                  width={16}
-                  height={16}
-                  viewBox="0 0 16 16"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M7 14c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7ZM7 2C4.243 2 2 4.243 2 7s2.243 5 5 5 5-2.243 5-5-2.243-5-5-5Z" />
-                  <path d="m13.314 11.9 2.393 2.393a.999.999 0 1 1-1.414 1.414L11.9 13.314a8.019 8.019 0 0 0 1.414-1.414Z" />
-                </svg>
+                <Search className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
+              
+              {/* Keyboard shortcut hint */}
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                ⌘K
+              </div>
+              
               <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
             </div>
             <Notifications align="right" />
@@ -80,6 +102,9 @@ export default function Header({
 
         </div>
       </div>
+      
+      {/* AI Chatbot */}
+      <AIChatbot isOpen={chatbotOpen} onToggle={() => setChatbotOpen(!chatbotOpen)} />
     </header>
   )
 }

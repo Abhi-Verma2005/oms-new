@@ -493,4 +493,28 @@ model Feedback {
   @@map("feedback")
 }
 
+model AIChatbotConfig {
+  id            String   @id @default(cuid())
+  systemPrompt  String   @map("system_prompt")
+  navigationData Json    @map("navigation_data")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_chatbot_config")
+}
+
+model AIChatbotNavigation {
+  id          String   @id @default(cuid())
+  name        String
+  route       String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([name, route])
+  @@map("ai_chatbot_navigation")
+}
+
 

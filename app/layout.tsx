@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/auth/auth-provider'
 import { CartProvider } from '@/contexts/cart-context'
 import { NotificationProvider } from '@/contexts/notification-context'
 import { NotificationToastContainer } from '@/components/notification-toast'
+import { AIChatbotProvider } from '@/components/ai-chatbot-provider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -32,8 +33,10 @@ export default function RootLayout({
             <AppProvider>
               <CartProvider>
                 <NotificationProvider>
-                  {children}
-                  <NotificationToastContainer />
+                  <AIChatbotProvider>
+                    {children}
+                    <NotificationToastContainer />
+                  </AIChatbotProvider>
                 </NotificationProvider>
               </CartProvider>
             </AppProvider>
