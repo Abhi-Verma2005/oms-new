@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!)
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, messages } = await request.json()
+    const { message, messages, config: clientConfig } = await request.json()
 
     if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
       return NextResponse.json(
@@ -15,31 +15,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get system prompt and navigation data from database
-    let systemPrompt = 'You are a helpful AI assistant for this application.'
-    let navigationData: any[] = []
+    // Prefer config supplied by client (preloaded on app startup) to avoid DB hits
+    let systemPrompt = clientConfig?.systemPrompt || 'You are a helpful AI assistant for this application.'
+    let navigationData: any[] = Array.isArray(clientConfig?.navigationData) ? clientConfig.navigationData : []
 
-    try {
-      // Fetch config directly from database
-      const config = await prisma?.aIChatbotConfig.findFirst({
-        where: { isActive: true },
-        orderBy: { updatedAt: 'desc' }
-      })
+    // If not supplied by client, fall back to DB
+    if (!clientConfig) {
+      try {
+        const config = await prisma?.aIChatbotConfig.findFirst({
+          where: { isActive: true },
+          orderBy: { updatedAt: 'desc' }
+        })
 
-      const navigationItems = await prisma?.aIChatbotNavigation.findMany({
-        where: { isActive: true },
-        orderBy: { name: 'asc' }
-      })
+        const navigationItems = await prisma?.aIChatbotNavigation.findMany({
+          where: { isActive: true },
+          orderBy: { name: 'asc' }
+        })
 
-      systemPrompt = config?.systemPrompt || systemPrompt
-      navigationData = navigationItems.map(nav => ({
-        id: nav.id,
-        name: nav.name,
-        route: nav.route,
-        description: nav.description
-      }))
-    } catch (error) {
-      console.warn('Failed to fetch AI chatbot config from database, using defaults:', error)
+        systemPrompt = config?.systemPrompt || systemPrompt
+        navigationData = navigationItems.map(nav => ({
+          id: nav.id,
+          name: nav.name,
+          route: nav.route,
+          description: nav.description
+        }))
+      } catch (error) {
+        console.warn('Failed to fetch AI chatbot config from database, using defaults:', error)
+      }
     }
 
     // Build conversation history

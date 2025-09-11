@@ -817,7 +817,6 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     { key: 'price', label: 'Price' },
     { key: 'trend', label: 'Trend' },
     { key: 'cart', label: 'Cart' },
-    { key: 'website', label: 'Website' },
     { key: 'traffic', label: 'Traffic' },
     { key: 'organicTraffic', label: 'Organic' },
     { key: 'authorityScore', label: 'Authority Score' },
@@ -844,6 +843,148 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     'price','traffic','organicTraffic','authorityScore','outboundLimit','backlinksAllowed','wordLimit','tatDays'
   ]), [])
   const centerAligned = useMemo(() => new Set<ColumnKey>(['spam']), [])
+
+  const renderCell = (key: ColumnKey, s: Site) => {
+    switch (key) {
+      case 'name':
+        return (
+          <div className="font-medium">
+            <a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a>
+            {rowLevel >= 2 && (<div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>)}
+            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Category:</span> {s.category}</div>)}
+            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>)}
+          </div>
+        )
+      case 'niche':
+        return (
+          <div>
+            <div className="flex flex-wrap gap-1 max-w-[320px]">
+              {s.niche.split(',').map(n => n.trim()).filter(Boolean).map((n, idx) => (
+                <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600">{n}</span>
+              ))}
+            </div>
+            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Type:</span> {s.category}</div>)}
+            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Country:</span> {s.country}</div>)}
+          </div>
+        )
+      case 'countryLang':
+        return (<div className="text-sm">{s.country} • <span className="text-xs">{s.language}</span></div>)
+      case 'authority':
+        return (
+          <>
+            {s.da}/{s.pa}/{s.dr}
+            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">DA:</span> {s.da}</div>)}
+            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">PA:</span> {s.pa} <span className="text-gray-400">| DR:</span> {s.dr}</div>)}
+          </>
+        )
+      case 'spam':
+        return (
+          <div className="inline-flex items-center gap-2 justify-center w-full">
+            <span className="tabular-nums">{s.spamScore}%</span>
+            {(() => {
+              const risk = s.spamScore <= 3 ? 'Low' : s.spamScore <= 6 ? 'Medium' : 'High'
+              if (risk === 'High') return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700">
+                  <AlertTriangle className="w-3.5 h-3.5" /> High
+                </span>
+              )
+              if (risk === 'Medium') return (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">Medium</span>
+              )
+              return (
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700">Low</span>
+              )
+            })()}
+          </div>
+        )
+      case 'price':
+        return (
+          <>
+            <span className="font-medium tabular-nums">{"$"}{s.publishing.price.toLocaleString()}</span>
+            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Base:</span> ${s.publishing.price}</div>)}
+            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">With Content:</span> ${s.publishing.priceWithContent}</div>)}
+          </>
+        )
+      case 'trend':
+        return (
+          <div className="inline-flex items-center gap-1.5 text-sm">
+            <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="capitalize">{s.toolScores.trafficTrend || 'stable'}</span>
+          </div>
+        )
+      case 'cart':
+        return (
+          <>
+            {isItemInCart(s.id) ? (
+              <div className="flex items-center gap-2">
+                <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
+                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); addItem(s) }}>Add to Cart</Button>
+            )}
+          </>
+        )
+      case 'website':
+        return (
+          <div className="font-medium">
+            <a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a>
+            {rowLevel >= 2 && (<div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>)}
+            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Category:</span> {s.category}</div>)}
+            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>)}
+          </div>
+        )
+      case 'traffic':
+        return (
+          <>
+            <span className="tabular-nums">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
+            {rowLevel >= 2 && (<div className="text-xs text-gray-500">overall</div>)}
+            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Organic:</span> {(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>)}
+            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Authority:</span> {s.toolScores.semrushAuthority}</div>)}
+          </>
+        )
+      case 'organicTraffic':
+        return (<span className="tabular-nums">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>)
+      case 'authorityScore':
+        return (<span className="tabular-nums">{s.toolScores.semrushAuthority}</span>)
+      case 'availability':
+        return s.additional.availability ? (<Badge variant="secondary">Available</Badge>) : (<Badge variant="outline">Unavailable</Badge>)
+      case 'sampleUrl':
+        return s.quality?.sampleUrl ? (
+          <a className="text-violet-600 hover:text-violet-700 underline" href={s.quality.sampleUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>View</a>
+        ) : (<span className="text-gray-400">-</span>)
+      case 'lastPublished':
+        return s.quality?.lastPublished || 'Unknown'
+      case 'outboundLimit':
+        return (<span className="tabular-nums">{s.quality?.outboundLinkLimit ?? '-'}</span>)
+      case 'backlinkNature':
+        return (
+          <div className="inline-flex items-center gap-1.5 text-sm">
+            <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>{s.publishing.backlinkNature}</span>
+          </div>
+        )
+      case 'backlinksAllowed':
+        return (<span className="tabular-nums">{s.publishing.backlinksAllowed}</span>)
+      case 'wordLimit':
+        return (<span className="tabular-nums">{s.publishing.wordLimit ?? '-'}</span>)
+      case 'tatDays':
+        return (
+          <div className={`inline-flex items-center gap-1.5 ${rightAligned.has('tatDays') ? 'justify-end' : ''}`}>
+            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="tabular-nums">{s.publishing.tatDays}</span>
+          </div>
+        )
+      case 'linkPlacement':
+        return s.publishing.linkPlacement ?? '-'
+      case 'permanence':
+        return s.publishing.permanence ?? '-'
+      case 'order':
+        return null
+      default:
+        return null
+    }
+  }
 
   if (loading) return <Card className="p-6 bg-white dark:bg-gray-800">Loading…</Card>
   return (
@@ -956,211 +1097,17 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               <TableRow><TableCell className="px-5 py-6" colSpan={visibleColumns.length || 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
               <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
-                {visibleColumns.includes('name') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="font-medium"><a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a></div>
-                  {rowLevel >= 2 && (
-                    <div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>
-                  )}
-                  {rowLevel >= 3 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Category:</span> {s.category}</div>
-                  )}
-                  {rowLevel >= 4 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('website') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="font-medium"><a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a></div>
-                  {rowLevel >= 2 && (
-                    <div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>
-                  )}
-                  {rowLevel >= 3 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Category:</span> {s.category}</div>
-                  )}
-                  {rowLevel >= 4 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('niche') && (
-                <TableCell className={`px-5 ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="flex flex-wrap gap-1 max-w-[320px]">
-                    {s.niche
-                      .split(',')
-                      .map(n => n.trim())
-                      .filter(Boolean)
-                      .map((n, idx) => (
-                        <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600">{n}</span>
-                      ))}
-                  </div>
-                  {rowLevel >= 3 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Type:</span> {s.category}</div>
-                  )}
-                  {rowLevel >= 4 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Country:</span> {s.country}</div>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('countryLang') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="text-sm">{s.country} • <span className="text-xs">{s.language}</span></div>
-                </TableCell>
-                )}
-                {visibleColumns.includes('authority') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.da}/{s.pa}/{s.dr}
-                  {rowLevel >= 3 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">DA:</span> {s.da}</div>
-                  )}
-                  {rowLevel >= 4 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">PA:</span> {s.pa} <span className="text-gray-400">| DR:</span> {s.dr}</div>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('spam') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="inline-flex items-center gap-2 justify-center w-full">
-                    <span className="tabular-nums">{s.spamScore}%</span>
-                    {(() => {
-                      const risk = s.spamScore <= 3 ? 'Low' : s.spamScore <= 6 ? 'Medium' : 'High'
-                      if (risk === 'High') return <Badge variant="destructive" className="gap-1"><AlertTriangle className="w-3.5 h-3.5" /> High</Badge>
-                      if (risk === 'Medium') return <Badge variant="outline">Medium</Badge>
-                      return <Badge variant="secondary">Low</Badge>
-                    })()}
-                  </div>
-                  {rowLevel >= 3 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Score:</span> {s.spamScore}/10</div>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('price') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('price') ? 'text-right' : ''}`}>
-                  <span className="font-medium tabular-nums">{"$"}{s.publishing.price.toLocaleString()}</span>
-                  {rowLevel >= 3 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Base:</span> ${s.publishing.price}</div>
-                  )}
-                  {rowLevel >= 4 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">With Content:</span> ${s.publishing.priceWithContent}</div>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('traffic') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('traffic') ? 'text-right' : ''}`}>
-                  <span className="tabular-nums">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
-                  {rowLevel >= 2 && (
-                    <div className="text-xs text-gray-500">overall</div>
-                  )}
-                  {rowLevel >= 3 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Organic:</span> {(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>
-                  )}
-                  {rowLevel >= 4 && (
-                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Authority:</span> {s.toolScores.semrushAuthority}</div>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('organicTraffic') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('organicTraffic') ? 'text-right' : ''}`}>
-                  <span className="tabular-nums">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
-                </TableCell>
-                )}
-                {visibleColumns.includes('authorityScore') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('authorityScore') ? 'text-right' : ''}`}>
-                  <span className="tabular-nums">{s.toolScores.semrushAuthority}</span>
-                </TableCell>
-                )}
-                {visibleColumns.includes('availability') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.additional.availability ? (
-                    <Badge variant="secondary">Available</Badge>
-                  ) : (
-                    <Badge variant="outline">Unavailable</Badge>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('sampleUrl') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.quality?.sampleUrl ? (
-                    <a className="text-violet-600 hover:text-violet-700 underline" href={s.quality.sampleUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>View</a>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('lastPublished') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.quality?.lastPublished || 'Unknown'}
-                </TableCell>
-                )}
-                {visibleColumns.includes('outboundLimit') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('outboundLimit') ? 'text-right' : ''}`}>
-                  <span className="tabular-nums">{s.quality?.outboundLinkLimit ?? '-'}</span>
-                </TableCell>
-                )}
-                {visibleColumns.includes('backlinkNature') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="inline-flex items-center gap-1.5 text-sm">
-                    <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>{s.publishing.backlinkNature}</span>
-                  </div>
-                </TableCell>
-                )}
-                {visibleColumns.includes('backlinksAllowed') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('backlinksAllowed') ? 'text-right' : ''}`}>
-                  <span className="tabular-nums">{s.publishing.backlinksAllowed}</span>
-                </TableCell>
-                )}
-                {visibleColumns.includes('wordLimit') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('wordLimit') ? 'text-right' : ''}`}>
-                  <span className="tabular-nums">{s.publishing.wordLimit ?? '-'}</span>
-                </TableCell>
-                )}
-                {visibleColumns.includes('tatDays') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('tatDays') ? 'text-right' : ''}`}>
-                  <div className={`inline-flex items-center gap-1.5 ${rightAligned.has('tatDays') ? 'justify-end' : ''}`}>
-                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="tabular-nums">{s.publishing.tatDays}</span>
-                  </div>
-                </TableCell>
-                )}
-                {visibleColumns.includes('linkPlacement') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.publishing.linkPlacement ?? '-'}
-                </TableCell>
-                )}
-                {visibleColumns.includes('permanence') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {s.publishing.permanence ?? '-'}
-                </TableCell>
-                )}
-                {visibleColumns.includes('trend') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <div className="inline-flex items-center gap-1.5 text-sm">
-                    <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="capitalize">{s.toolScores.trafficTrend || 'stable'}</span>
-                  </div>
-                </TableCell>
-                )}
-                {visibleColumns.includes('cart') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {isItemInCart(s.id) ? (
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
-                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
-                    </div>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); addItem(s) }}>Add to Cart</Button>
-                  )}
-                </TableCell>
-                )}
-                {visibleColumns.includes('order') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  {/* Order button removed per request */}
-                </TableCell>
-                )}
-                    </TableRow>
-                  ))}
+                {columnDefs.map(col => (
+                  visibleColumns.includes(col.key) ? (
+                    <TableCell key={col.key}
+                      className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'}`}
+                    >
+                      {renderCell(col.key, s)}
+                    </TableCell>
+                  ) : null
+                ))}
+              </TableRow>
+            ))}
                 </TableBody>
               </Table>
             </div>
@@ -1188,9 +1135,15 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                             <span className="text-gray-600 dark:text-gray-400">URL</span>
                             <span className="font-medium truncate ml-3"><a href={selectedSite.url} className="text-violet-600 hover:text-violet-700 underline" target="_blank" rel="noreferrer">{selectedSite.url}</a></span>
                       </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600 dark:text-gray-400">Niche</span>
-                            <span className="font-medium ml-3">{selectedSite.niche}</span>
+                          <div className="flex items-start justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 mt-0.5">Niche</span>
+                            <span className="ml-3 inline-flex flex-wrap gap-1.5 max-w-[18rem] justify-end">
+                              {selectedSite.niche.split(',').map(n => n.trim()).filter(Boolean).map((n, idx) => (
+                                <span key={`${n}-${idx}`} className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                                  {n}
+                                </span>
+                              ))}
+                            </span>
                       </div>
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-gray-600 dark:text-gray-400">Category</span>

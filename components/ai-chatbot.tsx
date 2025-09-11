@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Send, Bot, X, Minimize2 } from 'lucide-react'
+import { useAIChatbot } from './ai-chatbot-provider'
 
 interface Message {
   id: string
@@ -21,6 +22,7 @@ interface AIChatbotProps {
 
 export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const router = useRouter()
+  const { config, configLoading } = useAIChatbot()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -63,7 +65,9 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
         },
         body: JSON.stringify({
           message: userMessage.content,
-          messages: messages
+          messages: messages,
+          // Include preloaded config so the API doesn't need to fetch again
+          config: config ?? undefined
         })
       })
 
@@ -175,6 +179,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                 <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                   <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Hi! I'm your AI assistant. How can I help you today?</p>
+                  {configLoading && <p className="text-xs mt-2">Loading config…</p>}
                 </div>
               )}
               
@@ -190,7 +195,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                     className={cn(
                       "max-w-[80%] rounded-lg px-3 py-2 text-sm",
                       message.role === 'user'
-                        ? "bg-primary text-white"
+                        ? "bg-violet-600 text-white"
                         : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                     )}
                   >
