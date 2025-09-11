@@ -39,14 +39,16 @@ export default function LineChart01({
 
   useEffect(() => {    
     if (!mounted) return
-    
+
     const ctx = canvas.current
-    if (!ctx) return
-    
+    // Guard against initializing on a detached canvas (e.g., in a hidden hover panel)
+    if (!ctx || !ctx.isConnected || !ctx.ownerDocument) return
+
     const newChart = new Chart(ctx, {
       type: 'line',
       data: data,
       options: {
+        responsive: false, // avoid Chart.js querying styles of a detached element
         layout: {
           padding: 20,
         },

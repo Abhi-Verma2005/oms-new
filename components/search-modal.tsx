@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -66,9 +66,10 @@ export default function SearchModal({
   const router = useRouter()
   const { data: session } = useSession()
   
-  // Get user roles and admin status
-  const userRoles = (session?.user as any)?.roles || []
-  const isAdmin = (session?.user as any)?.isAdmin || false
+  // Get user roles and admin status (stabilize references)
+  const rolesFromSession = (session?.user as any)?.roles as string[] | undefined
+  const userRoles = useMemo(() => rolesFromSession ?? [], [rolesFromSession])
+  const isAdmin = Boolean((session?.user as any)?.isAdmin)
 
   // Load recent searches and pages from localStorage (mount only)
   useEffect(() => {

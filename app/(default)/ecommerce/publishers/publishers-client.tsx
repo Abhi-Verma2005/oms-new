@@ -95,6 +95,123 @@ function convertFiltersToAPI(f: Filters, searchQuery: string): APIFilters {
   return api
 }
 
+function FloatingFiltersDock({
+  filters,
+  onClearKey,
+  onOpenKey,
+}: {
+  filters: Filters
+  onClearKey: (key: keyof Filters) => void
+  onOpenKey: (key: keyof Filters) => void
+}) {
+  const [hidden, setHidden] = React.useState<boolean>(false)
+  React.useEffect(() => {
+    try {
+      const v = localStorage.getItem('filtersDockHidden')
+      if (v) setHidden(v === '1')
+    } catch {}
+  }, [])
+  const setHiddenPersist = (v: boolean) => {
+    setHidden(v)
+    try { localStorage.setItem('filtersDockHidden', v ? '1' : '0') } catch {}
+  }
+
+  const chips = React.useMemo(() => {
+    const out: { key: keyof Filters; label: string }[] = []
+    const add = (key: keyof Filters, label?: string, value?: unknown) => {
+      if (value !== undefined && value !== '' && value !== null) out.push({ key, label: label || String(value) })
+    }
+    add('niche', `Niche: ${filters.niche}`, filters.niche)
+    add('language', `Lang: ${filters.language}`, filters.language)
+    add('country', `Country: ${filters.country}`, filters.country)
+    add('daMin', `DA ≥ ${filters.daMin}`, filters.daMin)
+    add('daMax', `DA ≤ ${filters.daMax}`, filters.daMax)
+    add('paMin', `PA ≥ ${filters.paMin}`, filters.paMin)
+    add('paMax', `PA ≤ ${filters.paMax}`, filters.paMax)
+    add('drMin', `DR ≥ ${filters.drMin}`, filters.drMin)
+    add('drMax', `DR ≤ ${filters.drMax}`, filters.drMax)
+    add('spamMax', `Spam ≤ ${filters.spamMax}`, filters.spamMax)
+    add('spamMin', `Spam ≥ ${filters.spamMin}`, filters.spamMin)
+    add('semrushOverallTrafficMin', `Traffic ≥ ${filters.semrushOverallTrafficMin}`, filters.semrushOverallTrafficMin)
+    add('semrushOrganicTrafficMin', `Organic ≥ ${filters.semrushOrganicTrafficMin}`, filters.semrushOrganicTrafficMin)
+    add('priceMin', `$ ≥ ${filters.priceMin}`, filters.priceMin)
+    add('priceMax', `$ ≤ ${filters.priceMax}`, filters.priceMax)
+    add('tatDaysMin', `TAT ≥ ${filters.tatDaysMin}`, filters.tatDaysMin)
+    add('tatDaysMax', `TAT ≤ ${filters.tatDaysMax}`, filters.tatDaysMax)
+    add('backlinksAllowedMin', `Backlinks ≥ ${filters.backlinksAllowedMin}`, filters.backlinksAllowedMin)
+    add('outboundLinkLimitMax', `Outbound ≤ ${filters.outboundLinkLimitMax}`, filters.outboundLinkLimitMax)
+    add('tool', `Tool: ${filters.tool}`, filters.tool)
+    add('trend', `Trend: ${filters.trend}`, filters.trend)
+    add('backlinkNature', `Backlink: ${filters.backlinkNature}`, filters.backlinkNature)
+    add('linkPlacement', `Placement: ${filters.linkPlacement}`, filters.linkPlacement)
+    add('permanence', `Permanence: ${filters.permanence}`, filters.permanence)
+    add('availability', `Available only`, filters.availability)
+    return out
+  }, [filters])
+
+  const count = chips.length
+  if (!count && hidden) return null
+
+  return (
+    <div className="fixed left-1/2 -translate-x-1/2 bottom-5 z-[60]">
+      {hidden ? (
+        <button
+          className="inline-flex items-center gap-2 px-3 h-9 rounded-full bg-violet-100 text-violet-700 shadow-md border border-violet-200 hover:bg-violet-200 transition-colors"
+          onClick={() => setHiddenPersist(false)}
+          aria-label="Show filters dock"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M3 4h18" /><path d="M5 8h14" /><path d="M7 12h10" /><path d="M9 16h6" />
+          </svg>
+          <span className="text-xs font-medium">Filters ({count})</span>
+        </button>
+      ) : (
+        <div className="max-w-[92vw] md:max-w-4xl bg-white/95 dark:bg-white/10 text-violet-800 dark:text-violet-100 rounded-2xl shadow-xl border border-violet-100 dark:border-white/15 backdrop-blur supports-[backdrop-filter]:backdrop-blur px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-2 text-xs font-medium pl-1">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polygon points="22 3 2 3 10 12 10 19 14 21 14 12 22 3" />
+              </svg>
+              <span>Active Filters</span>
+              <span className="opacity-60">({count})</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                className="px-2 h-7 rounded-full text-[11px] bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-100 dark:bg-white/10 dark:text-violet-100 dark:hover:bg-white/15 dark:border-white/15 transition-colors"
+                onClick={() => setHiddenPersist(true)}
+                aria-label="Hide filters dock"
+              >
+                Hide
+              </button>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto pr-1">
+            {chips.length === 0 ? (
+              <span className="text-[11px] opacity-60">No filters applied</span>
+            ) : chips.map(chip => (
+              <span key={chip.key as string} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] bg-violet-100 text-violet-800 border border-violet-200 hover:bg-violet-200/80 dark:bg-violet-800/60 dark:text-violet-100 dark:border-violet-700 shadow-sm transition-colors">
+                <button
+                  className="font-medium hover:underline"
+                  onClick={() => onOpenKey(chip.key)}
+                >
+                  {chip.label}
+                </button>
+                <button
+                  className="ml-0.5 opacity-50 hover:opacity-100"
+                  aria-label="Remove"
+                  onClick={() => onClearKey(chip.key)}
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilters: React.Dispatch<React.SetStateAction<Filters>>; loading: boolean }) {
   // Saved views (localStorage)
   const [views, setViews] = useState<Array<{ id: string; name: string; filters: any }>>([])
@@ -341,6 +458,8 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
               ? "bg-violet-600 text-white border-violet-600 shadow-md" 
               : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
           } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+          id={`filter-pebble-${String(key)}`}
+          data-filter-key={String(key)}
         >
           {pebbleIconMap[key]}
           <span>{label}</span>
@@ -925,9 +1044,69 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'trend':
         return (
-          <div className="inline-flex items-center gap-1.5 text-sm">
+          <div className="group relative inline-flex items-center gap-1.5 text-sm">
             <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="capitalize">{s.toolScores.trafficTrend || 'stable'}</span>
+            {/* Hover panel with mini charts */}
+            <div className="pointer-events-none absolute right-0 bottom-full mb-2 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity p-3 z-[5000] max-h-64 overflow-auto">
+              <div className="flex flex-col gap-2">
+                <div>
+                  <div className="text-[11px] text-gray-500 mb-0.5">Overall Traffic</div>
+                  <LineChart01
+                    width={260}
+                    height={60}
+                    data={{
+                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                      datasets: [
+                        {
+                          data: Array.from({ length: 12 }, () =>
+                            Math.max(1000, (s.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
+                          ),
+                          borderColor: '#7c3aed',
+                          fill: true,
+                        },
+                      ],
+                    }}
+                  />
+                </div>
+                <div>
+                  <div className="text-[11px] text-gray-500 mb-0.5">Organic Traffic</div>
+                  <LineChart01
+                    width={260}
+                    height={60}
+                    data={{
+                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                      datasets: [
+                        {
+                          data: Array.from({ length: 12 }, () =>
+                            Math.max(1000, (s.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
+                          ),
+                          borderColor: '#22c55e',
+                          fill: true,
+                        },
+                      ],
+                    }}
+                  />
+                </div>
+                <div>
+                  <div className="text-[11px] text-gray-500 mb-0.5">Semrush Authority</div>
+                  <LineChart01
+                    width={260}
+                    height={60}
+                    data={{
+                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                      datasets: [
+                        {
+                          data: Array.from({ length: 12 }, () => Math.max(1, s.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
+                          borderColor: '#6366f1',
+                          fill: true,
+                        },
+                      ],
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         )
       case 'cart':
@@ -1105,7 +1284,14 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
                     {columnDefs.map(col => (
                       visibleColumns.includes(col.key) ? (
-                        <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'}`}>{col.label}</TableHead>
+                        <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'}`}>
+                          <div className="inline-flex items-center gap-2">
+                            <span>{col.label}</span>
+                            {col.key === 'trend' && (
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover for charts</span>
+                            )}
+                          </div>
+                        </TableHead>
                       ) : null
                     ))}
                   </TableRow>
@@ -1121,11 +1307,11 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                       className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'}`}
                     >
                       {renderCell(col.key, s)}
-                    </TableCell>
+                </TableCell>
                   ) : null
                 ))}
-              </TableRow>
-            ))}
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -1192,7 +1378,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                           <div className="group flex items-center justify-between text-xs relative">
                             <span className="text-gray-600 dark:text-gray-400">Semrush Authority</span>
                             <span className="font-semibold tabular-nums">{selectedSite.toolScores.semrushAuthority}</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
                               <div className="p-2 h-full">
                                 <LineChart01
                                   width={300}
@@ -1214,7 +1400,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                           <div className="group flex items-center justify-between text-xs relative">
                             <span className="text-gray-600 dark:text-gray-400">Overall Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
                               <div className="p-2 h-full">
                                 <LineChart01
                                   width={300}
@@ -1238,7 +1424,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                           <div className="group flex items-center justify-between text-xs relative">
                             <span className="text-gray-600 dark:text-gray-400">Organic Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
                               <div className="p-2 h-full">
                                 <LineChart01
                                   width={300}
@@ -1443,6 +1629,29 @@ export default function PublishersClient() {
         {error && <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300">{error}</div>}
 
         <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} />
+
+        {/* Floating Filters Dock */}
+        <FloatingFiltersDock
+          filters={filters}
+          onClearKey={(k) => {
+            setFilters(f => {
+              const current = (f as any)[k]
+              let reset: any = ""
+              if (typeof current === 'boolean') reset = undefined
+              else if (typeof current === 'number') reset = undefined
+              else reset = ""
+              return { ...f, [k]: reset }
+            })
+          }}
+          onOpenKey={(k) => {
+            const el = document.getElementById(`filter-pebble-${String(k)}`)
+            if (el) {
+              el.click()
+              // If the original filters header scrolled off, scroll into view softly
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          }}
+        />
       </div>
     </CartProvider>
   )
