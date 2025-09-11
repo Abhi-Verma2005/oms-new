@@ -773,7 +773,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 
 function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void }) {
   const { addItem, removeItem, isItemInCart } = useCart()
-  const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(2)
+  const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
   const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-2.5', 2: 'py-3.5', 3: 'py-4.5', 4: 'py-5.5' }
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -835,6 +835,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   const allKeys = useMemo(() => columnDefs.map(c => c.key), [])
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(defaultVisibleColumns)
   const [columnsOpen, setColumnsOpen] = useState(false)
+  const columnsRef = useRef<HTMLDivElement | null>(null)
   const toggleColumn = (key: ColumnKey) => setVisibleColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
   const showAllColumns = () => setVisibleColumns(allKeys)
   const hideAllColumns = () => setVisibleColumns([])
@@ -843,6 +844,23 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     'price','traffic','organicTraffic','authorityScore','outboundLimit','backlinksAllowed','wordLimit','tatDays'
   ]), [])
   const centerAligned = useMemo(() => new Set<ColumnKey>(['spam']), [])
+  // Close Columns dropdown on outside click or Escape
+  useEffect(() => {
+    if (!columnsOpen) return
+    const onDown = (e: MouseEvent) => {
+      const el = columnsRef.current
+      if (el && !el.contains(e.target as Node)) setColumnsOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setColumnsOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [columnsOpen])
 
   const renderCell = (key: ColumnKey, s: Site) => {
     switch (key) {
@@ -1011,7 +1029,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             </div>
           </PopoverContent>
           </Popover>
-          <div className="relative">
+          <div className="relative" ref={columnsRef}>
             <Button
               variant="outline"
               size="sm"
@@ -1171,81 +1189,75 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
                         <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Traffic Data</div>
                         <div className="space-y-2.5">
-                          <div className="flex items-center justify-between text-xs">
+                          <div className="group flex items-center justify-between text-xs relative">
                             <span className="text-gray-600 dark:text-gray-400">Semrush Authority</span>
-                            <span className="font-semibold tabular-nums relative group">
-                              {selectedSite.toolScores.semrushAuthority}
-                              <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="p-2 h-full">
-                                  <LineChart01
-                                    width={300}
-                                    height={120}
-                                    data={{
-                                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                      datasets: [
-                                        {
-                                          data: Array.from({ length: 12 }, () => Math.max(1, selectedSite.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
-                                          borderColor: '#7c3aed',
-                                          fill: true,
-                                        },
-                                      ],
-                                    }}
-                                  />
-                                </div>
+                            <span className="font-semibold tabular-nums">{selectedSite.toolScores.semrushAuthority}</span>
+                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="p-2 h-full">
+                                <LineChart01
+                                  width={300}
+                                  height={120}
+                                  data={{
+                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                                    datasets: [
+                                      {
+                                        data: Array.from({ length: 12 }, () => Math.max(1, selectedSite.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
+                                        borderColor: '#7c3aed',
+                                        fill: true,
+                                      },
+                                    ],
+                                  }}
+                                />
                               </div>
-                            </span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
+                          <div className="group flex items-center justify-between text-xs relative">
                             <span className="text-gray-600 dark:text-gray-400">Overall Traffic</span>
-                            <span className="font-semibold tabular-nums relative group">
-                              {(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M
-                              <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="p-2 h-full">
-                                  <LineChart01
-                                    width={300}
-                                    height={120}
-                                    data={{
-                                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                      datasets: [
-                                        {
-                                          data: Array.from({ length: 12 }, () =>
-                                            Math.max(1000, (selectedSite.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
-                                          ),
-                                          borderColor: '#7c3aed',
-                                          fill: true,
-                                        },
-                                      ],
-                                    }}
-                                  />
-                                </div>
+                            <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
+                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="p-2 h-full">
+                                <LineChart01
+                                  width={300}
+                                  height={120}
+                                  data={{
+                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                                    datasets: [
+                                      {
+                                        data: Array.from({ length: 12 }, () =>
+                                          Math.max(1000, (selectedSite.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
+                                        ),
+                                        borderColor: '#7c3aed',
+                                        fill: true,
+                                      },
+                                    ],
+                                  }}
+                                />
                               </div>
-                            </span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
+                          <div className="group flex items-center justify-between text-xs relative">
                             <span className="text-gray-600 dark:text-gray-400">Organic Traffic</span>
-                            <span className="font-semibold tabular-nums relative group">
-                              {(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M
-                              <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                <div className="p-2 h-full">
-                                  <LineChart01
-                                    width={300}
-                                    height={120}
-                                    data={{
-                                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                      datasets: [
-                                        {
-                                          data: Array.from({ length: 12 }, () =>
-                                            Math.max(1000, (selectedSite.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
-                                          ),
-                                          borderColor: '#22c55e',
-                                          fill: true,
-                                        },
-                                      ],
-                                    }}
-                                  />
-                                </div>
+                            <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
+                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="p-2 h-full">
+                                <LineChart01
+                                  width={300}
+                                  height={120}
+                                  data={{
+                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                                    datasets: [
+                                      {
+                                        data: Array.from({ length: 12 }, () =>
+                                          Math.max(1000, (selectedSite.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
+                                        ),
+                                        borderColor: '#22c55e',
+                                        fill: true,
+                                      },
+                                    ],
+                                  }}
+                                />
                               </div>
-                            </span>
+                            </div>
                           </div>
                           <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Traffic Trend</span><span className="font-semibold capitalize">{selectedSite.toolScores.trafficTrend}</span></div>
                         </div>
