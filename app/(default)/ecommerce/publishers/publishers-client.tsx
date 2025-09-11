@@ -936,8 +936,8 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     | 'permanence'
     | 'order'
   
-  // Default visible columns matching OMS data page (8 columns)
-  const defaultVisibleColumns: ColumnKey[] = ['name', 'niche', 'countryLang', 'authority', 'spam', 'price', 'trend', 'cart']
+  // Default visible columns matching OMS data page (7 columns + cart always visible)
+  const defaultVisibleColumns: ColumnKey[] = ['name', 'niche', 'countryLang', 'authority', 'spam', 'price', 'trend']
   
   const columnDefs: { key: ColumnKey; label: string }[] = [
     { key: 'name', label: 'Website' },
@@ -947,7 +947,6 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     { key: 'spam', label: 'Spam' },
     { key: 'price', label: 'Price' },
     { key: 'trend', label: 'Trend' },
-    { key: 'cart', label: 'Cart' },
     { key: 'traffic', label: 'Traffic' },
     { key: 'organicTraffic', label: 'Organic' },
     { key: 'authorityScore', label: 'Authority Score' },
@@ -993,16 +992,16 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     }
   }, [columnsOpen])
 
-  // Consistent width per column to align headers and data
+  // Consistent width per column to align headers and data - optimized for no horizontal scroll
   const columnWidthClasses: Record<ColumnKey, string> = useMemo(() => ({
-    name: 'min-w-[14rem] w-[15rem] max-w-[18rem]',
-    niche: 'min-w-[10rem] w-[12rem] max-w-[14rem]',
-    countryLang: 'min-w-[13rem] w-[14rem] max-w-[18rem]',
-    authority: 'min-w-[10rem] w-[12rem] max-w-[14rem]',
-    spam: 'min-w-[6.5rem] w-[7rem] max-w-[7.5rem]',
-    price: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
-    trend: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
-    cart: 'min-w-[9rem] w-[10rem] max-w-[12rem]',
+    name: 'min-w-[12rem] w-[13rem] max-w-[15rem]',
+    niche: 'min-w-[8rem] w-[9rem] max-w-[11rem]',
+    countryLang: 'min-w-[10rem] w-[11rem] max-w-[13rem]',
+    authority: 'min-w-[8rem] w-[9rem] max-w-[11rem]',
+    spam: 'min-w-[5rem] w-[6rem] max-w-[7rem]',
+    price: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    trend: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    cart: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
     website: 'min-w-[12rem] w-[13rem] max-w-[16rem]',
     traffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
     organicTraffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
@@ -1040,6 +1039,16 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               }
               return null
             })()}
+            {rowLevel >= 3 && (
+              <div className="text-xs text-gray-500 mt-1">
+                <span className="text-gray-400">Category:</span> {s.category}
+              </div>
+            )}
+            {rowLevel >= 4 && (
+              <div className="text-xs text-gray-500 mt-1">
+                <span className="text-gray-400">Language:</span> {s.language}
+              </div>
+            )}
           </div>
         )
       case 'niche':
@@ -1048,7 +1057,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             <div className="flex flex-wrap gap-1 max-w-full">
               {s.niche.split(',').map(n => n.trim()).filter(Boolean).map((n, idx) => (
                 <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                  <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[8rem]" title={n}>{n}</span>
+                  <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={n}>{n}</span>
                 </span>
               ))}
             </div>
@@ -1379,7 +1388,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         
         {/* Column Headers Row */}
         <div className="overflow-x-auto">
-          <Table className="dark:text-gray-300">
+          <Table className="dark:text-gray-300 w-full">
             <UITableHeader>
               <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
                 {columnDefs.map(col => (
@@ -1394,6 +1403,12 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                     </TableHead>
                   ) : null
                 ))}
+                {/* Cart column always visible */}
+                <TableHead className="px-5 py-3 whitespace-nowrap text-center min-w-[7rem] w-[8rem] max-w-[9rem]">
+                  <div className="inline-flex items-center gap-2">
+                    <span>Cart</span>
+                  </div>
+                </TableHead>
               </TableRow>
             </UITableHeader>
           </Table>
@@ -1402,10 +1417,10 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       
       {/* Scrollable Data Body */}
       <div className="overflow-x-auto">
-        <Table className="dark:text-gray-300">
+        <Table className="dark:text-gray-300 table-fixed w-full">
           <TableBody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
-              <TableRow><TableCell className="px-5 py-6" colSpan={visibleColumns.length || 1}>No results</TableCell></TableRow>
+              <TableRow><TableCell className="px-5 py-6" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
               <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
@@ -1417,6 +1432,10 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 </TableCell>
                   ) : null
                 ))}
+                {/* Cart column always visible */}
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[7rem] w-[8rem] max-w-[9rem]`}>
+                  {renderCell('cart', s)}
+                </TableCell>
                     </TableRow>
                   ))}
           </TableBody>
