@@ -28,10 +28,14 @@ import {
   BarChart3,
   Layers,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  Bot
 } from "lucide-react"
 import { fetchSitesWithFilters, transformAPISiteToSite, type APIFilters, type Site, fetchCategoryRecommendations, type CategoryRecommendation } from "@/lib/sample-sites"
 import { CartProvider, useCart } from "@/contexts/cart-context"
+import { useAIChatbot } from "@/components/ai-chatbot-provider"
+import { Flag } from "@/components/ui/flag"
+import { AhrefsIcon, SemrushIcon, MozIcon } from "@/components/ui/brand-icons"
 
 type Trend = "increasing" | "decreasing" | "stable"
 type BacklinkNature = "do-follow" | "no-follow" | "sponsored"
@@ -416,7 +420,14 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     paMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
     drMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
     spamMax: <AlertTriangle className="w-3.5 h-3.5 text-violet-600" />,
-    tool: <TrendingUp className="w-3.5 h-3.5 text-violet-600" />,
+    tool: (
+      <span className="inline-flex items-center gap-1">
+        <TrendingUp className="w-3.5 h-3.5 text-violet-600" />
+        <SemrushIcon className="w-3 h-3" />
+        <AhrefsIcon className="w-3 h-3" />
+        <MozIcon className="w-3 h-3" />
+      </span>
+    ),
     semrushOverallTrafficMin: <BarChart3 className="w-3.5 h-3.5 text-violet-600" />,
     semrushOrganicTrafficMin: <BarChart3 className="w-3.5 h-3.5 text-violet-600" />,
     tatDaysMax: <Clock className="w-3.5 h-3.5 text-violet-600" />,
@@ -982,38 +993,104 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     }
   }, [columnsOpen])
 
+  // Consistent width per column to align headers and data
+  const columnWidthClasses: Record<ColumnKey, string> = useMemo(() => ({
+    name: 'min-w-[14rem] w-[15rem] max-w-[18rem]',
+    niche: 'min-w-[10rem] w-[12rem] max-w-[14rem]',
+    countryLang: 'min-w-[13rem] w-[14rem] max-w-[18rem]',
+    authority: 'min-w-[10rem] w-[12rem] max-w-[14rem]',
+    spam: 'min-w-[6.5rem] w-[7rem] max-w-[7.5rem]',
+    price: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
+    trend: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
+    cart: 'min-w-[9rem] w-[10rem] max-w-[12rem]',
+    website: 'min-w-[12rem] w-[13rem] max-w-[16rem]',
+    traffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    organicTraffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    authorityScore: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    availability: 'min-w-[7.5rem] w-[8.5rem] max-w-[9.5rem]',
+    sampleUrl: 'min-w-[7.5rem] w-[8.5rem] max-w-[10rem]',
+    lastPublished: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
+    outboundLimit: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
+    backlinkNature: 'min-w-[9rem] w-[10.5rem] max-w-[12rem]',
+    backlinksAllowed: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
+    wordLimit: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    tatDays: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    linkPlacement: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
+    permanence: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
+    order: 'min-w-[4rem] w-[5rem] max-w-[6rem]'
+  }), [])
+
   const renderCell = (key: ColumnKey, s: Site) => {
     switch (key) {
       case 'name':
         return (
           <div className="font-medium">
-            <a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a>
-            {rowLevel >= 2 && (<div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>)}
-            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Category:</span> {s.category}</div>)}
-            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>)}
+            <div className="overflow-hidden text-ellipsis whitespace-nowrap" title={s.name}>
+              <a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a>
+            </div>
+            {(() => {
+              const stripped = s.url.replace(/^https?:\/\//, "")
+              const isDifferent = stripped.toLowerCase() !== s.name.toLowerCase()
+              if (rowLevel >= 2 && isDifferent) {
+                return (
+                  <div className="text-xs text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap" title={stripped}>
+                    {stripped}
+                  </div>
+                )
+              }
+              return null
+            })()}
           </div>
         )
       case 'niche':
         return (
-          <div>
-            <div className="flex flex-wrap gap-1 max-w-[320px]">
+          <div className="max-w-full">
+            <div className="flex flex-wrap gap-1 max-w-full">
               {s.niche.split(',').map(n => n.trim()).filter(Boolean).map((n, idx) => (
-                <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600">{n}</span>
+                <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
+                  <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[8rem]" title={n}>{n}</span>
+                </span>
               ))}
             </div>
             {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Type:</span> {s.category}</div>)}
-            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Country:</span> {s.country}</div>)}
           </div>
         )
       case 'countryLang':
-        return (<div className="text-sm">{s.country} • <span className="text-xs">{s.language}</span></div>)
+        return (
+          <div className="text-sm">
+            <div className="flex items-center gap-1.5">
+              <Flag country={s.country} withBg className="shrink-0" />
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={s.country}>{s.country}</span>
+              <span className="opacity-60">•</span>
+              <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap" title={s.language}>{s.language}</span>
+            </div>
+            {rowLevel >= 3 && (
+              <div className="text-[11px] text-gray-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap" title={s.country}>
+                <span className="text-gray-400">Country:</span> {s.country}
+              </div>
+            )}
+            {rowLevel >= 4 && (
+              <div className="text-[11px] text-gray-500 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" title={s.language}>
+                <span className="text-gray-400">Language:</span> {s.language}
+              </div>
+            )}
+          </div>
+        )
       case 'authority':
         return (
-          <>
-            {s.da}/{s.pa}/{s.dr}
-            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">DA:</span> {s.da}</div>)}
-            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">PA:</span> {s.pa} <span className="text-gray-400">| DR:</span> {s.dr}</div>)}
-          </>
+          <div>
+            <div className="tabular-nums">{s.da}/{s.pa}/{s.dr}</div>
+            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                <MozIcon className="w-3 h-3" />
+                DA/PA
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                <AhrefsIcon className="w-3 h-3" />
+                DR
+              </span>
+            </div>
+          </div>
         )
       case 'spam':
         return (
@@ -1134,17 +1211,34 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'traffic':
         return (
-          <>
-            <span className="tabular-nums">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
-            {rowLevel >= 2 && (<div className="text-xs text-gray-500">overall</div>)}
-            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Organic:</span> {(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>)}
-            {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Authority:</span> {s.toolScores.semrushAuthority}</div>)}
-          </>
+          <div>
+            <div className="tabular-nums">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</div>
+            <div className="mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+              <SemrushIcon className="w-3 h-3" />
+              Overall
+            </div>
+          </div>
         )
       case 'organicTraffic':
-        return (<span className="tabular-nums">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>)
+        return (
+          <div>
+            <div className="tabular-nums">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>
+            <div className="mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+              <SemrushIcon className="w-3 h-3" />
+              Organic
+            </div>
+          </div>
+        )
       case 'authorityScore':
-        return (<span className="tabular-nums">{s.toolScores.semrushAuthority}</span>)
+        return (
+          <div className={`${rightAligned.has('authorityScore') ? 'text-right' : ''}`}>
+            <div className="tabular-nums">{s.toolScores.semrushAuthority}</div>
+            <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 ${rightAligned.has('authorityScore') ? 'ml-auto' : ''}`}>
+              <SemrushIcon className="w-3 h-3" />
+              Score
+            </div>
+          </div>
+        )
       case 'availability':
         return s.additional.availability ? (<Badge variant="secondary">Available</Badge>) : (<Badge variant="outline">Unavailable</Badge>)
       case 'sampleUrl':
@@ -1187,117 +1281,129 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   if (loading) return <Card className="p-6 bg-white dark:bg-gray-800">Loading…</Card>
   return (
           <Card className="bg-white dark:bg-gray-800">
-      <header className="px-4 py-1.5 flex items-center justify-between">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
-        <div className="flex items-center gap-1.5">
-          <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
-              <span>Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
-              <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
-              </svg>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10">
-            <div className="space-y-1">
-              {[1,2,3,4].map((lvl) => (
-                <button key={lvl} className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${rowLevel===lvl ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'}`} onClick={() => setRowLevel(lvl as 1|2|3|4)}>
-                  {lvl===1?'Short':lvl===2?'Medium':lvl===3?'Tall':'Extra Tall'}
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-          </Popover>
-          <div className="relative" ref={columnsRef}>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs inline-flex items-center gap-1.5 px-2"
-              onClick={() => setColumnsOpen(o => !o)}
-            >
-              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <rect x="3" y="4" width="5" height="16" rx="1" />
-                <rect x="10" y="4" width="5" height="16" rx="1" />
-                <rect x="17" y="4" width="4" height="16" rx="1" />
-              </svg>
-              <span>Columns</span>
-              <svg className={`w-3 h-3 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
-              </svg>
-            </Button>
-            {columnsOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10 rounded-lg shadow-lg z-50">
-                <div className="px-2 py-1.5 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
-                  <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={showAllColumns}>Show all</button>
-                  <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={resetColumns}>Reset</button>
-                  <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={hideAllColumns}>Hide all</button>
-                </div>
-                <div className="max-h-48 overflow-auto py-1">
-                  {columnDefs.map(col => (
-                    <label key={col.key} className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none">
-                      <Checkbox
-                        checked={visibleColumns.includes(col.key)}
-                        onCheckedChange={() => toggleColumn(col.key)}
-                      />
-                      <span>{col.label}</span>
-                      {visibleColumns.includes(col.key) ? (
-                        <svg className="w-3 h-3 text-green-500 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                      ) : (
-                        <svg className="w-3 h-3 text-gray-400 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94" />
-                          <path d="M1 1l22 22" />
-                        </svg>
-                      )}
-                    </label>
-                  ))}
-                </div>
-                {visibleColumns.length !== allKeys.length && (
-                  <div className="px-2 py-1.5 text-[10px] text-center text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60">
-                    Showing {visibleColumns.length} of {allKeys.length} columns
-                  </div>
-                )}
+      {/* Sticky Header Container */}
+      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        {/* Controls Row */}
+        <header className="px-4 py-2.5 flex items-center justify-between">
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
+          <div className="flex items-center gap-1.5">
+            <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
+                <span>Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
+                <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+                </svg>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10">
+              <div className="space-y-1">
+                {[1,2,3,4].map((lvl) => (
+                  <button key={lvl} className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${rowLevel===lvl ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'}`} onClick={() => setRowLevel(lvl as 1|2|3|4)}>
+                    {lvl===1?'Short':lvl===2?'Medium':lvl===3?'Tall':'Extra Tall'}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
-          <div className="hidden sm:flex items-center gap-2 ml-2">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Sort by</span>
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-              <SelectTrigger className="h-8 w-44 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="relevance">Relevance</SelectItem>
-                <SelectItem value="nameAsc">Name: A → Z</SelectItem>
-                <SelectItem value="priceLow">Price: Low → High</SelectItem>
-                <SelectItem value="authorityHigh">Authority: High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </header>
-            <div className="overflow-x-auto">
-              <Table className="dark:text-gray-300">
-                <UITableHeader>
-                  <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+            </PopoverContent>
+            </Popover>
+            <div className="relative" ref={columnsRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs inline-flex items-center gap-1.5 px-2"
+                onClick={() => setColumnsOpen(o => !o)}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="4" width="5" height="16" rx="1" />
+                  <rect x="10" y="4" width="5" height="16" rx="1" />
+                  <rect x="17" y="4" width="4" height="16" rx="1" />
+                </svg>
+                <span>Columns</span>
+                <svg className={`w-3 h-3 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+                </svg>
+              </Button>
+              {columnsOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10 rounded-lg shadow-lg z-50">
+                  <div className="px-2 py-1.5 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
+                    <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={showAllColumns}>Show all</button>
+                    <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={resetColumns}>Reset</button>
+                    <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={hideAllColumns}>Hide all</button>
+                  </div>
+                  <div className="max-h-48 overflow-auto py-1">
                     {columnDefs.map(col => (
-                      visibleColumns.includes(col.key) ? (
-                        <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'}`}>
-                          <div className="inline-flex items-center gap-2">
-                            <span>{col.label}</span>
-                            {col.key === 'trend' && (
-                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover for charts</span>
-                            )}
-                          </div>
-                        </TableHead>
-                      ) : null
+                      <label key={col.key} className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none">
+                        <Checkbox
+                          checked={visibleColumns.includes(col.key)}
+                          onCheckedChange={() => toggleColumn(col.key)}
+                        />
+                        <span>{col.label}</span>
+                        {visibleColumns.includes(col.key) ? (
+                          <svg className="w-3 h-3 text-green-500 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3 h-3 text-gray-400 ml-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94" />
+                            <path d="M1 1l22 22" />
+                          </svg>
+                        )}
+                      </label>
                     ))}
-                  </TableRow>
-                </UITableHeader>
-                <TableBody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
+                  </div>
+                  {visibleColumns.length !== allKeys.length && (
+                    <div className="px-2 py-1.5 text-[10px] text-center text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60">
+                      Showing {visibleColumns.length} of {allKeys.length} columns
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="hidden sm:flex items-center gap-2 ml-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400">Sort by</span>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="h-8 w-44 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">Relevance</SelectItem>
+                  <SelectItem value="nameAsc">Name: A → Z</SelectItem>
+                  <SelectItem value="priceLow">Price: Low → High</SelectItem>
+                  <SelectItem value="authorityHigh">Authority: High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </header>
+        
+        {/* Column Headers Row */}
+        <div className="overflow-x-auto">
+          <Table className="dark:text-gray-300">
+            <UITableHeader>
+              <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+                {columnDefs.map(col => (
+                  visibleColumns.includes(col.key) ? (
+                    <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
+                      <div className="inline-flex items-center gap-2">
+                        <span>{col.label}</span>
+                        {col.key === 'trend' && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover</span>
+                        )}
+                      </div>
+                    </TableHead>
+                  ) : null
+                ))}
+              </TableRow>
+            </UITableHeader>
+          </Table>
+        </div>
+      </div>
+      
+      {/* Scrollable Data Body */}
+      <div className="overflow-x-auto">
+        <Table className="dark:text-gray-300">
+          <TableBody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
               <TableRow><TableCell className="px-5 py-6" colSpan={visibleColumns.length || 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
@@ -1305,7 +1411,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 {columnDefs.map(col => (
                   visibleColumns.includes(col.key) ? (
                     <TableCell key={col.key}
-                      className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'}`}
+                      className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}
                     >
                       {renderCell(col.key, s)}
                 </TableCell>
@@ -1313,9 +1419,9 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 ))}
                     </TableRow>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+          </TableBody>
+        </Table>
+      </div>
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogContent className="max-w-7xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl bg-white dark:bg-gray-950 p-0 overflow-hidden text-[13px]">
                 <DialogHeader className="sticky top-0 z-20 px-6 py-5 border-b border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
@@ -1377,7 +1483,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                         <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Traffic Data</div>
                         <div className="space-y-2.5">
                           <div className="group flex items-center justify-between text-xs relative">
-                            <span className="text-gray-600 dark:text-gray-400">Semrush Authority</span>
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Semrush Authority</span>
                             <span className="font-semibold tabular-nums">{selectedSite.toolScores.semrushAuthority}</span>
                             <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
                               <div className="p-2 h-full">
@@ -1399,7 +1505,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                             </div>
                           </div>
                           <div className="group flex items-center justify-between text-xs relative">
-                            <span className="text-gray-600 dark:text-gray-400">Overall Traffic</span>
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Overall Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
                             <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
                               <div className="p-2 h-full">
@@ -1423,7 +1529,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                             </div>
                           </div>
                           <div className="group flex items-center justify-between text-xs relative">
-                            <span className="text-gray-600 dark:text-gray-400">Organic Traffic</span>
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Organic Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
                             <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
                               <div className="p-2 h-full">
@@ -1500,6 +1606,9 @@ export default function PublishersClient() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { openChatbot } = useAIChatbot()
+  const { getTotalItems } = useCart()
+  const hasCheckoutFab = getTotalItems() > 0
   function HeaderCheckout() {
     const { getTotalItems } = useCart()
     const count = getTotalItems()
@@ -1731,6 +1840,14 @@ export default function PublishersClient() {
             }
           }}
         />
+        {/* Floating AI Assistant Trigger (bottom-left; avoids checkout button) */}
+        <Button
+          onClick={openChatbot}
+          className={`fixed ${hasCheckoutFab ? 'bottom-20' : 'bottom-5'} right-5 z-50 h-10 px-3 rounded-full shadow-lg bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500 inline-flex items-center gap-2`}
+        >
+          <Bot className="w-4 h-4" />
+          <span className="text-xs font-medium">AI Assistant</span>
+        </Button>
       </div>
     </CartProvider>
   )
