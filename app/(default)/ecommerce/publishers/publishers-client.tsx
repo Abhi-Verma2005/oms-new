@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import ModalBasic from "@/components/modal-basic"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
@@ -1496,6 +1497,9 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 }
 
 export default function PublishersClient() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   function HeaderCheckout() {
     const { getTotalItems } = useCart()
     const count = getTotalItems()
@@ -1519,8 +1523,60 @@ export default function PublishersClient() {
     )
   }
 
-  const [filters, setFilters] = useState<Filters>(defaultFilters)
-  const [searchQuery, setSearchQuery] = useState("")
+  const parseFiltersFromParams = React.useCallback((sp: URLSearchParams): Filters => {
+    const getNum = (k: string) => {
+      const v = sp.get(k)
+      if (v === null || v === "") return undefined
+      const n = Number(v)
+      return isNaN(n) ? undefined : n
+    }
+    const getStr = (k: string) => sp.get(k) || ""
+    const getOptStr = (k: string): string | undefined => {
+      const v = sp.get(k)
+      return v && v !== "" ? v : undefined
+    }
+    const getBool = (k: string) => {
+      const v = sp.get(k)
+      if (v === null) return undefined
+      return v === "1" || v === "true"
+    }
+    const parsed: Filters = {
+      niche: getStr('niche'),
+      language: getStr('language'),
+      country: getStr('country'),
+      tool: getOptStr('tool') as any,
+      daMin: getNum('daMin'),
+      daMax: getNum('daMax'),
+      paMin: getNum('paMin'),
+      paMax: getNum('paMax'),
+      drMin: getNum('drMin'),
+      drMax: getNum('drMax'),
+      spamMin: getNum('spamMin'),
+      spamMax: getNum('spamMax'),
+      semrushOverallTrafficMin: getNum('semrushOverallTrafficMin'),
+      semrushOrganicTrafficMin: getNum('semrushOrganicTrafficMin'),
+      priceMin: getNum('priceMin'),
+      priceMax: getNum('priceMax'),
+      tatDaysMax: getNum('tatDaysMax'),
+      tatDaysMin: getNum('tatDaysMin'),
+      backlinkNature: getOptStr('backlinkNature') as any,
+      backlinksAllowedMin: getNum('backlinksAllowedMin'),
+      linkPlacement: getOptStr('linkPlacement') as any,
+      permanence: getOptStr('permanence') as any,
+      sampleUrl: getStr('sampleUrl') || undefined,
+      remarkIncludes: getStr('remarkIncludes') || undefined,
+      lastPublishedAfter: getStr('lastPublishedAfter') || undefined,
+      outboundLinkLimitMax: getNum('outboundLinkLimitMax'),
+      guidelinesUrlIncludes: getStr('guidelinesUrlIncludes') || undefined,
+      disclaimerIncludes: getStr('disclaimerIncludes') || undefined,
+      availability: getBool('availability'),
+      trend: getOptStr('trend') as any,
+    }
+    return { ...defaultFilters, ...parsed }
+  }, [])
+
+  const [filters, setFilters] = useState<Filters>(() => parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || "")))
+  const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || "")
   const [sites, setSites] = useState<Site[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1555,6 +1611,29 @@ export default function PublishersClient() {
     const apiFilters = convertFiltersToAPI(filters, searchQuery)
     debouncedFetch(apiFilters, 500)
   }, [filters, searchQuery, debouncedFetch])
+
+  // Keep URL params in sync with filters and search query
+  useEffect(() => {
+    const sp = new URLSearchParams()
+    const setIf = (k: string, v: unknown) => {
+      if (v === undefined || v === null) return
+      if (typeof v === 'string' && v.trim() === '') return
+      sp.set(k, String(v))
+    }
+    setIf('q', searchQuery)
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v === undefined || v === null) return
+      if (typeof v === 'string' && v.trim() === '') return
+      if (typeof v === 'boolean') {
+        if (v) sp.set(k, '1')
+        return
+      }
+      setIf(k, v as any)
+    })
+    const qs = sp.toString()
+    const url = qs ? `${pathname}?${qs}` : pathname
+    router.replace(url, { scroll: false })
+  }, [filters, searchQuery, pathname, router])
 
   const results = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -1619,7 +1698,7 @@ export default function PublishersClient() {
           <div className="flex items-center gap-2">
             <Input className="h-8 text-xs w-56" placeholder="Search by website or URL" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             <Button variant="outline" className="h-8 text-xs px-3" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
-            <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => setFilters(defaultFilters)}>Reset</Button>
+            <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname, { scroll: false }) }}>Reset</Button>
             <HeaderCheckout />
           </div>
         </div>
