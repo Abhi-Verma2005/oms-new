@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, Suspense } from "react"
 import { CalendarProvider } from './calendar-context'
 import CalendarNavigation from './calendar-navigation'
 import CalendarTable, { Event } from './calendar-table'
 import CalendarTitle from './title'
+import CalendarSkeleton from './calendar-skeleton'
 
 export default function CalendarClient() {
   const [orders, setOrders] = useState<any[]>([])
@@ -65,13 +66,7 @@ export default function CalendarClient() {
   const allEvents = getOrderEvents()
 
   if (loading) {
-    return (
-      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500 dark:text-gray-400">Loading calendar...</div>
-        </div>
-      </div>
-    )
+    return <CalendarSkeleton />
   }
 
   if (error) {

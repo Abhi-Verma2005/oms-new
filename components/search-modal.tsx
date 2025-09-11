@@ -70,17 +70,14 @@ export default function SearchModal({
   const userRoles = (session?.user as any)?.roles || []
   const isAdmin = (session?.user as any)?.isAdmin || false
 
-  // Load recent searches and pages from localStorage
+  // Load recent searches and pages from localStorage (mount only)
   useEffect(() => {
-    const savedSearches = localStorage.getItem('recent-searches')
-    const savedPages = localStorage.getItem('recent-pages')
-    
-    if (savedSearches) {
-      setRecentSearches(JSON.parse(savedSearches))
-    }
-    if (savedPages) {
-      setRecentPages(JSON.parse(savedPages))
-    }
+    try {
+      const savedSearches = localStorage.getItem('recent-searches')
+      const savedPages = localStorage.getItem('recent-pages')
+      if (savedSearches) setRecentSearches(JSON.parse(savedSearches))
+      if (savedPages) setRecentPages(JSON.parse(savedPages))
+    } catch {}
   }, [])
 
   // Focus input when modal opens

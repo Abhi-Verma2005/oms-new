@@ -5,7 +5,7 @@ import OrdersTableItem from './orders-table-item'
 
 export interface Order {
   id: number
-  image: any
+  image?: any
   order: string
   date: string
   customer: string

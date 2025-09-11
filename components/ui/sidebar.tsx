@@ -194,13 +194,7 @@ export default function Sidebar({
                       </a>
                       <div className="lg:hidden lg:sidebar-expanded:block 2xl:block">
                         <ul className={`pl-8 mt-1 ${!open && 'hidden'}`}>
-                          <li className="mb-1 last:mb-0">
-                            <SidebarLink href="/ecommerce/customers">
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Customers
-                              </span>
-                            </SidebarLink>
-                          </li>
+                          
                           <li className="mb-1 last:mb-0">
                             <SidebarLink href="/orders">
                               <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
@@ -215,20 +209,8 @@ export default function Sidebar({
                               </span>
                             </SidebarLink>
                           </li>
-                          <li className="mb-1 last:mb-0">
-                            <SidebarLink href="/ecommerce/product">
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Single Product
-                              </span>
-                            </SidebarLink>
-                          </li>
-                          <li className="mb-1 last:mb-0">
-                            <SidebarLink href="/cart">
-                              <span className="text-sm font-medium lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">
-                                Cart
-                              </span>
-                            </SidebarLink>
-                          </li>
+                          
+                          
                         </ul>
                       </div>
                     </>

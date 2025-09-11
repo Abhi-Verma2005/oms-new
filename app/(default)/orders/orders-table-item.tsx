@@ -31,9 +31,6 @@ export default function OrdersTableItem({ order, onCheckboxChange, isSelected }:
       </td>
       <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="w-8 h-8 flex-shrink-0 mr-3 sm:mr-4">
-            <img className="rounded-full" src={order.image} width="32" height="32" alt={order.order} />
-          </div>
           <div className="font-medium text-sky-600">{order.order}</div>
         </div>
       </td>

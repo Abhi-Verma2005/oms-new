@@ -758,7 +758,7 @@ export function NotificationsManagement() {
               {/* Preview Header */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Notification Dropdown Preview</h3>
-                <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-black/5 dark:border-white/10 p-4">
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
                       {previewNotification.type.icon ? (
@@ -788,7 +788,7 @@ export function NotificationsManagement() {
               {/* Full Notification Preview */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Full Notification Page Preview</h3>
-                <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-black/5 dark:border-white/10 p-6">
                   <div className="flex items-start space-x-4">
                     {/* Icon */}
                     <div className="flex-shrink-0">

@@ -122,8 +122,8 @@ export default function NotificationsPanel() {
       <footer>
         <div className="flex flex-col px-6 py-5 border-t border-gray-200 dark:border-gray-700/60">
           <div className="flex self-end">
-            <button className="btn dark:bg-gray-800 border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 text-gray-800 dark:text-gray-300">Cancel</button>
-            <button className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white ml-3">Save Changes</button>
+            <button className="btn bg-white dark:bg-gray-800 border border-violet-200 dark:border-violet-700 text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-gray-900">Cancel</button>
+            <button className="btn ml-3 border border-violet-200 dark:border-violet-700 bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 dark:bg-violet-500/10 dark:hover:bg-violet-500/20 dark:text-violet-300">Save Changes</button>
           </div>
         </div>
       </footer>

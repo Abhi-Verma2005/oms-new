@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Slider } from "@/components/ui/slider"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card"
+import LineChart01 from "@/components/charts/line-chart-01"
 import { Table, TableBody, TableCell, TableHead, TableHeader as UITableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -308,20 +309,54 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     availability: <CheckCircle className="w-3.5 h-3.5 text-violet-600" />,
   }
 
-  const pebble = (label: string, key: keyof Filters) => (
-    <Button
-      type="button"
-      size="sm"
-      variant={filters[key] ? 'default' : 'outline'}
-      className={`rounded-full px-3.5 flex items-center gap-2`}
-      onClick={() => open(key)}
-      disabled={loading}
-    >
-      {pebbleIconMap[key]}
-      <span>{label}</span>
-      {filters[key] ? <span className="ml-0.5 opacity-70">•</span> : null}
-    </Button>
-  )
+  const tooltipByKey: Partial<Record<keyof Filters, string>> = {
+    niche: 'Filter by website topic (e.g., Technology, Health, Finance) ',
+    language: 'Filter by primary language of the website',
+    country: 'Filter by website country for geo‑targeted content',
+    daMin: 'Minimum Moz Domain Authority',
+    paMin: 'Minimum Moz Page Authority',
+    drMin: 'Minimum Ahrefs Domain Rating',
+    spamMax: 'Maximum Spam Score (lower is better)',
+    tool: 'Choose SEO tool for metrics (Semrush or Ahrefs)',
+    semrushOverallTrafficMin: 'Minimum estimated monthly overall traffic (Semrush)',
+    semrushOrganicTrafficMin: 'Minimum estimated monthly organic traffic (Semrush)',
+    trend: 'Traffic trend: increasing, stable, or decreasing',
+    priceMin: 'Price range filter for publishing',
+    tatDaysMax: 'Maximum turnaround time in days',
+    backlinkNature: 'Backlink attribute: do‑follow, no‑follow, or sponsored',
+    linkPlacement: 'Placement type: in‑content, author bio, or footer',
+    permanence: 'How long the link remains (lifetime or 12 months)',
+  }
+
+  const pebble = (label: string, key: keyof Filters) => {
+    const hasValue = filters[key] !== undefined && filters[key] !== "" && filters[key] !== null
+    return (
+      <div className="relative group inline-block">
+        <button
+          type="button"
+          onClick={() => open(key)}
+          disabled={loading}
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-all duration-200 hover:scale-105 ${
+            hasValue 
+              ? "bg-violet-600 text-white border-violet-600 shadow-md" 
+              : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
+          } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        >
+          {pebbleIconMap[key]}
+          <span>{label}</span>
+          {hasValue ? <span className="ml-0.5 opacity-70">•</span> : null}
+        </button>
+        {/* Tooltip */}
+        {tooltipByKey[key] && (
+          <div className="pointer-events-none absolute left-0 -top-9 ml-1 whitespace-nowrap px-3 py-1.5 text-xs rounded-md bg-gray-900 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-[120]">
+            <div className="font-medium mb-0.5">{label}</div>
+            <div className="text-gray-300">{tooltipByKey[key]}</div>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   // Grouped filter pebbles (compact layout like OMS filter-page)
   type FilterPebble = {
@@ -385,18 +420,28 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       case 'country':
         return (
           <div className="p-4 space-y-2">
-            <Input placeholder="Search countries" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} />
             <Select value={filters.country || undefined} onValueChange={(v) => setFilters(f => ({ ...f, country: v === '__all__' ? '' : v }))}>
               <SelectTrigger>
-                <SelectValue placeholder="All countries" />
+                <SelectValue placeholder="Select country" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="p-0 max-h-72 overflow-hidden">
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 p-2 border-b border-gray-200 dark:border-gray-700">
+                  <Input
+                    className="h-8 text-xs"
+                    placeholder="Search countries"
+                    value={countrySearch}
+                    onChange={(e) => setCountrySearch(e.target.value)}
+                  />
+                </div>
                 <SelectGroup>
-                  <SelectLabel>Countries</SelectLabel>
                   <SelectItem value="__all__">All countries</SelectItem>
-                  {["United States","United Kingdom","Canada","India","Germany","France","Spain","Australia","Netherlands","Brazil"].filter(c => c.toLowerCase().includes(countrySearch.toLowerCase())).map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
+                  {[
+                    "United States","United Kingdom","Canada","India","Germany","France","Spain","Australia","Netherlands","Brazil","Italy","Japan","China","Singapore","United Arab Emirates","Mexico","South Africa","New Zealand","Ireland","Sweden"
+                  ]
+                    .filter(c => c.toLowerCase().includes(countrySearch.toLowerCase()))
+                    .map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -486,7 +531,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
             <Slider
               min={0}
               max={10000000}
-              value={[lo, lo]}
+              value={[lo]}
               onValueChange={(vals: number[]) => {
                 if (loading) return
                 setFilters(f => ({ ...f, semrushOverallTrafficMin: vals[0] as number }))
@@ -506,7 +551,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
             <Slider
               min={0}
               max={10000000}
-              value={[lo, lo]}
+              value={[lo]}
               onValueChange={(vals: number[]) => {
                 if (loading) return
                 setFilters(f => ({ ...f, semrushOrganicTrafficMin: vals[0] as number }))
@@ -636,25 +681,30 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     add('tatDaysMax', `TAT ≤ ${filters.tatDaysMax}`, filters.tatDaysMax)
     add('backlinksAllowedMin', `Backlinks ≥ ${filters.backlinksAllowedMin}`, filters.backlinksAllowedMin)
     add('outboundLinkLimitMax', `Outbound ≤ ${filters.outboundLinkLimitMax}`, filters.outboundLinkLimitMax)
+    add('tool', `Tool: ${filters.tool}`, filters.tool)
+    add('trend', `Trend: ${filters.trend}`, filters.trend)
+    add('backlinkNature', `Backlink: ${filters.backlinkNature}`, filters.backlinkNature)
+    add('linkPlacement', `Placement: ${filters.linkPlacement}`, filters.linkPlacement)
+    add('permanence', `Permanence: ${filters.permanence}`, filters.permanence)
     add('availability', `Available only`, filters.availability)
     return chips
   }, [filters])
 
   return (
-    <Card className="mb-6 bg-white">
-      <UICardHeader className="pb-2">
-        <UICardTitle className="text-lg">Filters</UICardTitle>
+    <Card className="mb-4 bg-white dark:bg-gray-800">
+      <UICardHeader className="pb-1">
+        <UICardTitle className="text-base">Filters</UICardTitle>
       </UICardHeader>
-      <CardContent className="pt-2">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <FilterIcon className="w-5 h-5 text-violet-600" />
-          <h2 className="text-base font-medium">Refine Results</h2>
+      <CardContent className="pt-1">
+      <div className="flex items-center justify-between mb-3.5">
+        <div className="flex items-center gap-2">
+          <FilterIcon className="w-4 h-4 text-violet-600" />
+          <h2 className="text-sm font-medium">Refine Results</h2>
         </div>
         <div className="flex items-center gap-2">
           {/* Apply saved view */}
           <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
-            <SelectTrigger className="h-10 w-56">
+            <SelectTrigger className="h-8 w-48 text-xs">
               <SelectValue placeholder={views.length ? 'Apply saved view' : 'No saved views'} />
             </SelectTrigger>
             <SelectContent>
@@ -668,28 +718,28 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
             </SelectContent>
           </Select>
           {/* Save as view */}
-          <Input className="h-10 text-sm w-56" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
-          <Button className="h-10 inline-flex items-center gap-2" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
-            <CheckCircle className="w-4 h-4" />
+          <Input className="h-8 text-xs w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
+          <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-3" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
+            <CheckCircle className="w-3 h-3" />
             Save
           </Button>
-          <Button variant="outline" className="h-10 inline-flex items-center gap-2" onClick={() => setFilters(defaultFilters)} disabled={loading}>
-            <RefreshCw className="w-4 h-4" />
+          <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-3" onClick={() => setFilters(defaultFilters)} disabled={loading}>
+            <RefreshCw className="w-3 h-3" />
             Refresh
           </Button>
-          <Button className="h-10" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+          <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
         </div>
       </div>
 
       {/* Grouped filter pebbles */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {Object.entries(groupedPebbles).map(([category, pebbles]) => (
           <div key={category} className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
               {categoryIcons[category as keyof typeof categoryIcons]}
               <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
             </div>
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex flex-wrap gap-2">
               {pebbles.map(p => (
                 <span key={p.key}>{pebble(p.label, p.key)}</span>
               ))}
@@ -699,9 +749,9 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       </div>
 
       {activeChips.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {activeChips.map(chip => (
-            <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600">
+            <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600 hover:bg-violet-700 transition-all duration-200 hover:scale-105">
               <span>{chip.label}</span>
               <span onClick={(e) => { e.stopPropagation(); clearKey(chip.key) }} aria-label="Remove" className="opacity-70 hover:opacity-100">✕</span>
             </button>
@@ -721,22 +771,25 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
   )
 }
 
-function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
-  const { addItem, isItemInCart } = useCart()
+function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void }) {
+  const { addItem, removeItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(2)
-  const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-2', 2: 'py-3', 3: 'py-4', 4: 'py-5' }
+  const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-2.5', 2: 'py-3.5', 3: 'py-4.5', 4: 'py-5.5' }
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
 
   // Column visibility controller (modeled after OMS filter-page)
   type ColumnKey =
-    | 'website'
+    | 'name'
     | 'niche'
     | 'countryLang'
     | 'authority'
     | 'spam'
     | 'price'
+    | 'trend'
+    | 'cart'
+    | 'website'
     | 'traffic'
     | 'organicTraffic'
     | 'authorityScore'
@@ -750,15 +803,21 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
     | 'tatDays'
     | 'linkPlacement'
     | 'permanence'
-    | 'cart'
     | 'order'
+  
+  // Default visible columns matching OMS data page (8 columns)
+  const defaultVisibleColumns: ColumnKey[] = ['name', 'niche', 'countryLang', 'authority', 'spam', 'price', 'trend', 'cart']
+  
   const columnDefs: { key: ColumnKey; label: string }[] = [
-    { key: 'website', label: 'Website' },
+    { key: 'name', label: 'Website' },
     { key: 'niche', label: 'Niche' },
     { key: 'countryLang', label: 'Country/Lang' },
     { key: 'authority', label: 'Authority' },
     { key: 'spam', label: 'Spam' },
     { key: 'price', label: 'Price' },
+    { key: 'trend', label: 'Trend' },
+    { key: 'cart', label: 'Cart' },
+    { key: 'website', label: 'Website' },
     { key: 'traffic', label: 'Traffic' },
     { key: 'organicTraffic', label: 'Organic' },
     { key: 'authorityScore', label: 'Authority Score' },
@@ -772,41 +831,39 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
     { key: 'tatDays', label: 'TAT (days)' },
     { key: 'linkPlacement', label: 'Placement' },
     { key: 'permanence', label: 'Permanence' },
-    { key: 'cart', label: 'Cart' },
     { key: 'order', label: 'Order' },
   ]
   const allKeys = useMemo(() => columnDefs.map(c => c.key), [])
-  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(allKeys)
+  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(defaultVisibleColumns)
   const [columnsOpen, setColumnsOpen] = useState(false)
   const toggleColumn = (key: ColumnKey) => setVisibleColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
   const showAllColumns = () => setVisibleColumns(allKeys)
   const hideAllColumns = () => setVisibleColumns([])
+  const resetColumns = () => setVisibleColumns(defaultVisibleColumns)
   const rightAligned = useMemo(() => new Set<ColumnKey>([
-    'spam','price','traffic','organicTraffic','authorityScore','outboundLimit','backlinksAllowed','wordLimit','tatDays'
+    'price','traffic','organicTraffic','authorityScore','outboundLimit','backlinksAllowed','wordLimit','tatDays'
   ]), [])
+  const centerAligned = useMemo(() => new Set<ColumnKey>(['spam']), [])
 
-  if (loading) return <Card className="p-6 bg-white">Loading…</Card>
+  if (loading) return <Card className="p-6 bg-white dark:bg-gray-800">Loading…</Card>
   return (
-          <Card className="bg-white">
-      <header className="px-5 py-4">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
-      </header>
-      <div className="flex items-center justify-between px-5 pt-2 pb-3">
-        <div className="text-sm text-gray-500 dark:text-gray-400"></div>
-        <div className="flex items-center gap-2">
+          <Card className="bg-white dark:bg-gray-800">
+      <header className="px-4 py-1.5 flex items-center justify-between">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
+        <div className="flex items-center gap-1.5">
           <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs inline-flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
               <span>Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
-              <svg className={`w-3.5 h-3.5 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+              <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                 <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
               </svg>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-56 bg-white dark:bg-gray-900">
+          <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10">
             <div className="space-y-1">
               {[1,2,3,4].map((lvl) => (
-                <button key={lvl} className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${rowLevel===lvl ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'}`} onClick={() => setRowLevel(lvl as 1|2|3|4)}>
+                <button key={lvl} className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${rowLevel===lvl ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'}`} onClick={() => setRowLevel(lvl as 1|2|3|4)}>
                   {lvl===1?'Short':lvl===2?'Medium':lvl===3?'Tall':'Extra Tall'}
                 </button>
               ))}
@@ -817,28 +874,29 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
             <Button
               variant="outline"
               size="sm"
-              className="h-8 text-xs inline-flex items-center gap-2"
+              className="h-7 text-xs inline-flex items-center gap-1.5 px-2"
               onClick={() => setColumnsOpen(o => !o)}
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <rect x="3" y="4" width="5" height="16" rx="1" />
                 <rect x="10" y="4" width="5" height="16" rx="1" />
                 <rect x="17" y="4" width="4" height="16" rx="1" />
               </svg>
               <span>Columns</span>
-              <svg className={`w-3.5 h-3.5 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+              <svg className={`w-3 h-3 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                 <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
               </svg>
             </Button>
             {columnsOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 rounded-lg shadow-lg z-10">
-                <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
-                  <button className="text-[11px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={showAllColumns}>Show all</button>
-                  <button className="text-[11px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={hideAllColumns}>Hide all</button>
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10 rounded-lg shadow-lg z-50">
+                <div className="px-2 py-1.5 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
+                  <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={showAllColumns}>Show all</button>
+                  <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={resetColumns}>Reset</button>
+                  <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={hideAllColumns}>Hide all</button>
                 </div>
-                <div className="max-h-64 overflow-auto py-1">
+                <div className="max-h-48 overflow-auto py-1">
                   {columnDefs.map(col => (
-                    <label key={col.key} className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none">
+                    <label key={col.key} className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none">
                       <Checkbox
                         checked={visibleColumns.includes(col.key)}
                         onCheckedChange={() => toggleColumn(col.key)}
@@ -859,22 +917,36 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                   ))}
                 </div>
                 {visibleColumns.length !== allKeys.length && (
-                  <div className="px-3 py-2 text-[11px] text-center text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60">
+                  <div className="px-2 py-1.5 text-[10px] text-center text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700/60">
                     Showing {visibleColumns.length} of {allKeys.length} columns
                   </div>
                 )}
               </div>
             )}
           </div>
+          <div className="hidden sm:flex items-center gap-2 ml-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Sort by</span>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+              <SelectTrigger className="h-8 w-44 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="relevance">Relevance</SelectItem>
+                <SelectItem value="nameAsc">Name: A → Z</SelectItem>
+                <SelectItem value="priceLow">Price: Low → High</SelectItem>
+                <SelectItem value="authorityHigh">Authority: High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
+      </header>
             <div className="overflow-x-auto">
               <Table className="dark:text-gray-300">
                 <UITableHeader>
-                  <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-t border-b border-gray-100 dark:border-gray-700/60">
+                  <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
                     {columnDefs.map(col => (
                       visibleColumns.includes(col.key) ? (
-                        <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : 'text-left'}`}>{col.label}</TableHead>
+                        <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'}`}>{col.label}</TableHead>
                       ) : null
                     ))}
                   </TableRow>
@@ -883,7 +955,21 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
             {sites.length === 0 ? (
               <TableRow><TableCell className="px-5 py-6" colSpan={visibleColumns.length || 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
-              <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-900/10`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
+              <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
+                {visibleColumns.includes('name') && (
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  <div className="font-medium"><a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a></div>
+                  {rowLevel >= 2 && (
+                    <div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>
+                  )}
+                  {rowLevel >= 3 && (
+                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Category:</span> {s.category}</div>
+                  )}
+                  {rowLevel >= 4 && (
+                    <div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>
+                  )}
+                </TableCell>
+                )}
                 {visibleColumns.includes('website') && (
                 <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
                   <div className="font-medium"><a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a></div>
@@ -934,8 +1020,8 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                 </TableCell>
                 )}
                 {visibleColumns.includes('spam') && (
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has('spam') ? 'text-right' : ''}`}>
-                  <div className="inline-flex items-center gap-2">
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  <div className="inline-flex items-center gap-2 justify-center w-full">
                     <span className="tabular-nums">{s.spamScore}%</span>
                     {(() => {
                       const risk = s.spamScore <= 3 ? 'Low' : s.spamScore <= 6 ? 'Medium' : 'High'
@@ -1048,15 +1134,24 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
                   {s.publishing.permanence ?? '-'}
                 </TableCell>
                 )}
+                {visibleColumns.includes('trend') && (
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
+                  <div className="inline-flex items-center gap-1.5 text-sm">
+                    <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="capitalize">{s.toolScores.trafficTrend || 'stable'}</span>
+                  </div>
+                </TableCell>
+                )}
                 {visibleColumns.includes('cart') && (
                 <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]}`}>
-                  <Button
-                    size="sm"
-                    variant={isItemInCart(s.id) ? 'default' : 'outline'}
-                    onClick={(e) => { e.stopPropagation(); addItem(s) }}
-                  >
-                    {isItemInCart(s.id) ? 'In Cart' : 'Add to Cart'}
-                  </Button>
+                  {isItemInCart(s.id) ? (
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
+                      <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); addItem(s) }}>Add to Cart</Button>
+                  )}
                 </TableCell>
                 )}
                 {visibleColumns.includes('order') && (
@@ -1070,60 +1165,176 @@ function ResultsTable({ sites, loading }: { sites: Site[]; loading: boolean }) {
               </Table>
             </div>
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center justify-between">
-                    <span>Site Details</span>
-                    {selectedSite && <span className="text-sm text-gray-500">{selectedSite.name}</span>}
+              <DialogContent className="max-w-7xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl bg-white dark:bg-gray-950 p-0 overflow-hidden text-[13px]">
+                <DialogHeader className="sticky top-0 z-20 px-6 py-5 border-b border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                  <DialogTitle className="flex items-start justify-between gap-4">
+                    {selectedSite ? (
+                      <div className="min-w-0">
+                        <div className="text-lg sm:text-xl font-semibold tracking-tight truncate">{selectedSite.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{selectedSite.url}</div>
+                      </div>
+                    ) : (
+                      <span>Site Details</span>
+                    )}
                   </DialogTitle>
                 </DialogHeader>
                 {selectedSite && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="text-gray-500">Website</div>
-                        <div className="font-medium"><a href={selectedSite.url} className="text-violet-600 hover:text-violet-700 underline" target="_blank" rel="noreferrer">{selectedSite.url}</a></div>
+                  <div className="flex flex-col max-h-[80vh]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 py-6 overflow-y-auto">
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
+                        <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Basic Information</div>
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">URL</span>
+                            <span className="font-medium truncate ml-3"><a href={selectedSite.url} className="text-violet-600 hover:text-violet-700 underline" target="_blank" rel="noreferrer">{selectedSite.url}</a></span>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Niche</div>
-                        <div className="font-medium">{selectedSite.niche}</div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Niche</span>
+                            <span className="font-medium ml-3">{selectedSite.niche}</span>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Country / Language</div>
-                        <div className="font-medium">{selectedSite.country} • {selectedSite.language}</div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Category</span>
+                            <span className="font-medium ml-3">{selectedSite.category}</span>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Authority (DA/PA/DR)</div>
-                        <div className="font-medium">{selectedSite.da}/{selectedSite.pa}/{selectedSite.dr}</div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Language</span>
+                            <span className="font-medium ml-3">{selectedSite.language}</span>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Spam Score</div>
-                        <div className="font-medium">{selectedSite.spamScore}%</div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Country</span>
+                            <span className="font-medium ml-3">{selectedSite.country}</span>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Traffic (overall/organic)</div>
-                        <div className="font-medium">{(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M / {(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Price</div>
-                        <div className="font-medium">${selectedSite.publishing.price.toLocaleString()} ({selectedSite.publishing.priceWithContent ? `w/ content $${selectedSite.publishing.priceWithContent}` : 'base'})</div>
+                    </div>
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
+                        <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Authority Metrics</div>
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Domain Authority</span><span className="font-semibold tabular-nums">{selectedSite.da}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Page Authority</span><span className="font-semibold tabular-nums">{selectedSite.pa}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Domain Rating</span><span className="font-semibold tabular-nums">{selectedSite.dr}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Spam Score</span><span className="font-semibold tabular-nums">{selectedSite.spamScore}%</span></div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Backlinks Allowed / Nature</div>
-                        <div className="font-medium">{selectedSite.publishing.backlinksAllowed} • {selectedSite.publishing.backlinkNature}</div>
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
+                        <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Traffic Data</div>
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Semrush Authority</span>
+                            <span className="font-semibold tabular-nums relative group">
+                              {selectedSite.toolScores.semrushAuthority}
+                              <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="p-2 h-full">
+                                  <LineChart01
+                                    width={300}
+                                    height={120}
+                                    data={{
+                                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                                      datasets: [
+                                        {
+                                          data: Array.from({ length: 12 }, () => Math.max(1, selectedSite.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
+                                          borderColor: '#7c3aed',
+                                          fill: true,
+                                        },
+                                      ],
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Overall Traffic</span>
+                            <span className="font-semibold tabular-nums relative group">
+                              {(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M
+                              <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="p-2 h-full">
+                                  <LineChart01
+                                    width={300}
+                                    height={120}
+                                    data={{
+                                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                                      datasets: [
+                                        {
+                                          data: Array.from({ length: 12 }, () =>
+                                            Math.max(1000, (selectedSite.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
+                                          ),
+                                          borderColor: '#7c3aed',
+                                          fill: true,
+                                        },
+                                      ],
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">Organic Traffic</span>
+                            <span className="font-semibold tabular-nums relative group">
+                              {(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M
+                              <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="p-2 h-full">
+                                  <LineChart01
+                                    width={300}
+                                    height={120}
+                                    data={{
+                                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                                      datasets: [
+                                        {
+                                          data: Array.from({ length: 12 }, () =>
+                                            Math.max(1000, (selectedSite.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
+                                          ),
+                                          borderColor: '#22c55e',
+                                          fill: true,
+                                        },
+                                      ],
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Traffic Trend</span><span className="font-semibold capitalize">{selectedSite.toolScores.trafficTrend}</span></div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-gray-500">TAT / Placement / Permanence</div>
-                        <div className="font-medium">{selectedSite.publishing.tatDays}d • {selectedSite.publishing.linkPlacement ?? '-'} • {selectedSite.publishing.permanence ?? '-'}</div>
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
+                        <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Publishing Details</div>
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Price</span><span className="font-semibold tabular-nums">${selectedSite.publishing.price.toLocaleString()}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Price with Content</span><span className="font-semibold tabular-nums">${selectedSite.publishing.priceWithContent}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Word Limit</span><span className="font-semibold tabular-nums">{selectedSite.publishing.wordLimit}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">TAT Days</span><span className="font-semibold tabular-nums">{selectedSite.publishing.tatDays}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Backlink Nature</span><span className="font-semibold">{selectedSite.publishing.backlinkNature}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Link Placement</span><span className="font-semibold">{selectedSite.publishing.linkPlacement}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Permanence</span><span className="font-semibold">{selectedSite.publishing.permanence}</span></div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Availability</div>
-                        <div className="font-medium">{selectedSite.additional.availability ? 'Available' : 'Unavailable'}</div>
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
+                        <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Quality Metrics</div>
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Sample URL</span><span className="font-semibold">{selectedSite.quality?.sampleUrl ? <a className="text-violet-600 hover:text-violet-700 underline" href={selectedSite.quality.sampleUrl} target="_blank" rel="noreferrer">View</a> : '-'}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Last Published</span><span className="font-semibold tabular-nums">{selectedSite.quality?.lastPublished}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Outbound Link Limit</span><span className="font-semibold tabular-nums">{selectedSite.quality?.outboundLinkLimit}</span></div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-gray-500">Sample URL</div>
-                        <div className="font-medium">{selectedSite.quality?.sampleUrl ? <a className="text-violet-600 hover:text-violet-700 underline" href={selectedSite.quality.sampleUrl} target="_blank" rel="noreferrer">View</a> : '-'}</div>
+                      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
+                        <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Additional Info</div>
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Disclaimer</span><span className="font-semibold">{selectedSite.additional.disclaimer || '-'}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Availability</span><span className="font-semibold">{selectedSite.additional.availability ? 'Available' : 'Unavailable'}</span></div>
+                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Remark</span><span className="font-semibold">{selectedSite.quality?.remark || '-'}</span></div>
+                        </div>
                       </div>
+                    </div>
+                    <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                      {isItemInCart(selectedSite.id) ? (
+                        <>
+                          <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => { /* keep as visual state */ }}>{'In Cart'}</Button>
+                          <Button variant="outline" onClick={() => removeItem(selectedSite.id)}>Remove from Cart</Button>
+                        </>
+                      ) : (
+                        <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => addItem(selectedSite)}>Add to Cart</Button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1139,11 +1350,21 @@ export default function PublishersClient() {
     const count = getTotalItems()
     if (count <= 0) return null
     return (
-      <Button asChild className="h-10">
-        <a href="/checkout">
-          Checkout ({count})
-        </a>
-      </Button>
+      <>
+        {/* Inline checkout button (subtle purple) */}
+        <Button asChild className="h-8 text-xs px-3 bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500">
+          <a href="/checkout">Checkout ({count})</a>
+        </Button>
+        {/* Floating persistent checkout button for long lists */}
+        <Button
+          asChild
+          className="fixed bottom-5 right-5 z-50 h-10 px-4 rounded-full shadow-lg bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500"
+        >
+          <a href="/checkout" aria-label={`Checkout (${count})`}>
+            Checkout ({count})
+          </a>
+        </Button>
+      </>
     )
   }
 
@@ -1152,6 +1373,7 @@ export default function PublishersClient() {
   const [sites, setSites] = useState<Site[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastPostedQueryRef = useRef<string>("")
 
@@ -1189,6 +1411,24 @@ export default function PublishersClient() {
     return sites.filter(s => s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
   }, [sites, searchQuery])
 
+  const displayedSites = useMemo(() => {
+    const arr = [...results]
+    switch (sortBy) {
+      case 'nameAsc':
+        arr.sort((a, b) => a.name.localeCompare(b.name))
+        break
+      case 'priceLow':
+        arr.sort((a, b) => (a.publishing.price || 0) - (b.publishing.price || 0))
+        break
+      case 'authorityHigh':
+        arr.sort((a, b) => (b.da + b.pa + b.dr) - (a.da + a.pa + a.dr))
+        break
+      default:
+        break
+    }
+    return arr
+  }, [results, sortBy])
+
   // Save interest only if, after a short delay, results remain zero for a meaningful query
   useEffect(() => {
     const q = searchQuery.trim()
@@ -1222,13 +1462,13 @@ export default function PublishersClient() {
 
   return (
     <CartProvider>
-      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
-        <div className="sm:flex sm:justify-between sm:items-center mb-6">
-          <h1 className="text-2xl md:text-3xl text-foreground font-bold">Publishers</h1>
-          <div className="flex items-center gap-2.5">
-            <Input className="h-10 text-sm w-60" placeholder="Search by website or URL" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            <Button variant="outline" className="h-10" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
-            <Button className="h-10" variant="secondary" onClick={() => setFilters(defaultFilters)}>Reset</Button>
+      <div className="px-4 sm:px-6 lg:px-8 py-6 w-full max-w-[96rem] mx-auto">
+        <div className="sm:flex sm:justify-between sm:items-center mb-4">
+          <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
+          <div className="flex items-center gap-2">
+            <Input className="h-8 text-xs w-56" placeholder="Search by website or URL" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Button variant="outline" className="h-8 text-xs px-3" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
+            <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => setFilters(defaultFilters)}>Reset</Button>
             <HeaderCheckout />
           </div>
         </div>
@@ -1237,7 +1477,7 @@ export default function PublishersClient() {
 
         {error && <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300">{error}</div>}
 
-        <ResultsTable sites={results} loading={loading} />
+        <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} />
       </div>
     </CartProvider>
   )

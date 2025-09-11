@@ -391,7 +391,7 @@ export function NotificationTypesManagement() {
               {/* Type Preview */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Notification Type Details</h3>
-                <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-black/5 dark:border-white/10 p-4">
                   <div className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
                       {previewType.icon ? (
@@ -426,7 +426,7 @@ export function NotificationTypesManagement() {
               {/* Usage Example */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Usage Example</h3>
-                <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-lg border border-black/5 dark:border-white/10 p-4">
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
                       {previewType.icon ? (

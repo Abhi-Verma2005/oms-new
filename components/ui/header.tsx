@@ -63,13 +63,13 @@ export default function Header({
           {/* Header: Right side */}
           <div className="flex items-center space-x-3 relative z-30">
             {/* Quick link to Publishers */}
-            <Link href="/publishers" className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10">
+            <Link href="/publishers" className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10">
               Publishers
             </Link>
             {/* AI Chatbot Button */}
             <button
               onClick={() => setChatbotOpen(!chatbotOpen)}
-              className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
+              className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
             >
               <Bot className="h-4 w-4 mr-2" />
               AI Assistant

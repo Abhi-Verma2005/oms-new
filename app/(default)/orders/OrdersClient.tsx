@@ -3,7 +3,7 @@
 import React, { Suspense } from "react"
 import OrdersTable, { type Order as UiOrder } from "./orders-table"
 import OrdersSkeleton from "./orders-skeleton"
-import Image01 from '@/public/images/icon-01.svg'
+// Removed image import to avoid broken image on Orders page
 import { SelectedItemsProvider } from '@/app/selected-items-context'
 
 function OrdersList() {
@@ -24,7 +24,7 @@ function OrdersList() {
 
   const orders: UiOrder[] = (data?.orders ?? []).map((o: any, idx: number) => ({
     id: idx,
-    image: Image01,
+    image: undefined,
     order: `#${o.id.substring(0, 6)}`,
     date: new Date(o.createdAt).toLocaleDateString('en-US', { 
       month: '2-digit', 

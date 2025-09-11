@@ -8,7 +8,7 @@ export const AdminCard = React.forwardRef<HTMLDivElement, React.HTMLAttributes<H
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-border/40 bg-white dark:bg-gray-800/60 text-card-foreground shadow-sm backdrop-blur-sm',
+        'rounded-xl border border-black/5 dark:border-white/10 bg-white dark:bg-gray-800/60 text-card-foreground shadow-sm backdrop-blur-sm',
         className
       )}
       {...props}
@@ -19,7 +19,7 @@ AdminCard.displayName = 'AdminCard'
 
 export const AdminCardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6 border-b border-border/40', className)} {...props} />
+    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6 border-b border-black/5 dark:border-white/10', className)} {...props} />
   )
 )
 AdminCardHeader.displayName = 'AdminCardHeader'

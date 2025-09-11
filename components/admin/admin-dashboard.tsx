@@ -505,7 +505,7 @@ export function AdminDashboard() {
             {stats?.recentActivity && stats.recentActivity.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {stats.recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                  <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border border-black/5 dark:border-white/10 bg-gray-50 dark:bg-gray-700/50">
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-600">
                         {activity.action.includes('created') && <CheckCircle className="h-3 w-3 text-green-600" />}
