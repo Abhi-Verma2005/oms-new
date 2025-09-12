@@ -92,6 +92,113 @@ export interface APIFilters {
   limit?: number
 }
 
+// Convert API filters to query string
+function buildFilterQuery(filters: APIFilters): string {
+  const conditions: string[] = [];
+  
+  if (filters.domainAuthority?.min !== undefined) {
+    conditions.push(`"domainAuthority" >= ${filters.domainAuthority.min}`);
+  }
+  if (filters.domainAuthority?.max !== undefined) {
+    conditions.push(`"domainAuthority" <= ${filters.domainAuthority.max}`);
+  }
+  
+  if (filters.pageAuthority?.min !== undefined) {
+    conditions.push(`"pageAuthority" >= ${filters.pageAuthority.min}`);
+  }
+  if (filters.pageAuthority?.max !== undefined) {
+    conditions.push(`"pageAuthority" <= ${filters.pageAuthority.max}`);
+  }
+  
+  if (filters.domainRating?.min !== undefined) {
+    conditions.push(`"domainRating" >= ${filters.domainRating.min}`);
+  }
+  if (filters.domainRating?.max !== undefined) {
+    conditions.push(`"domainRating" <= ${filters.domainRating.max}`);
+  }
+  
+  if (filters.spamScore?.min !== undefined) {
+    conditions.push(`"spamScore" >= ${filters.spamScore.min}`);
+  }
+  if (filters.spamScore?.max !== undefined) {
+    conditions.push(`"spamScore" <= ${filters.spamScore.max}`);
+  }
+  
+  if (filters.costPrice?.min !== undefined) {
+    conditions.push(`"costPrice" >= ${filters.costPrice.min}`);
+  }
+  if (filters.costPrice?.max !== undefined) {
+    conditions.push(`"costPrice" <= ${filters.costPrice.max}`);
+  }
+  
+  if (filters.sellingPrice?.min !== undefined) {
+    conditions.push(`"sellingPrice" >= ${filters.sellingPrice.min}`);
+  }
+  if (filters.sellingPrice?.max !== undefined) {
+    conditions.push(`"sellingPrice" <= ${filters.sellingPrice.max}`);
+  }
+  
+  if (filters.semrushTraffic?.min !== undefined) {
+    conditions.push(`"semrushTraffic" >= ${filters.semrushTraffic.min}`);
+  }
+  if (filters.semrushTraffic?.max !== undefined) {
+    conditions.push(`"semrushTraffic" <= ${filters.semrushTraffic.max}`);
+  }
+  
+  if (filters.semrushOrganicTraffic?.min !== undefined) {
+    conditions.push(`"semrushOrganicTraffic" >= ${filters.semrushOrganicTraffic.min}`);
+  }
+  if (filters.semrushOrganicTraffic?.max !== undefined) {
+    conditions.push(`"semrushOrganicTraffic" <= ${filters.semrushOrganicTraffic.max}`);
+  }
+  
+  if (filters.availability !== undefined) {
+    conditions.push(`"availability" = ${filters.availability}`);
+  }
+  
+  if (filters.niche) {
+    conditions.push(`"niche" = "${filters.niche}"`);
+  }
+  
+  if (filters.language) {
+    conditions.push(`"language" = "${filters.language}"`);
+  }
+  
+  if (filters.webCountry) {
+    conditions.push(`"webCountry" = "${filters.webCountry}"`);
+  }
+  
+  if (filters.contentCategories) {
+    conditions.push(`"contentCategories" = "${filters.contentCategories}"`);
+  }
+  
+  if (filters.priceCategory) {
+    conditions.push(`"priceCategory" = "${filters.priceCategory}"`);
+  }
+  
+  if (filters.linkAttribute) {
+    conditions.push(`"linkAttribute" = "${filters.linkAttribute}"`);
+  }
+  
+  if (filters.websiteStatus) {
+    conditions.push(`"websiteStatus" = "${filters.websiteStatus}"`);
+  }
+  
+  if (filters.turnAroundTime) {
+    conditions.push(`"turnAroundTime" = "${filters.turnAroundTime}"`);
+  }
+  
+  if (filters.websiteRemark) {
+    conditions.push(`"websiteRemark" LIKE "%${filters.websiteRemark}%"`);
+  }
+  
+  if (filters.website) {
+    conditions.push(`"website" LIKE "%${filters.website}%"`);
+  }
+  
+  return conditions.join(" AND ");
+}
+
 interface APIResponse {
   json: APISite
 }
@@ -303,37 +410,25 @@ function getFallbackSampleData(filters: APIFilters = {}): APISite[] {
 
 export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<APISite[]> {
   try {
-    const requestPayload: Record<string, unknown> = {
-      limit: filters.limit || 100,
-    }
-
-    const passthroughKeys: (keyof APIFilters)[] = [
-      'domainAuthority',
-      'pageAuthority',
-      'domainRating',
-      'spamScore',
-      'costPrice',
-      'sellingPrice',
-      'semrushTraffic',
-      'semrushOrganicTraffic',
-      'niche',
-      'contentCategories',
-      'priceCategory',
-      'linkAttribute',
-      'availability',
-      'websiteStatus',
-      'language',
-      'webCountry',
-      'turnAroundTime',
-      'websiteRemark',
-      'website',
-    ]
-
-    for (const key of passthroughKeys) {
-      const value = (filters as any)[key]
-      if (value !== undefined && value !== '' && value !== null) {
-        ;(requestPayload as any)[key] = value
+    // Build filter query string
+    const filterQuery = buildFilterQuery(filters);
+    
+    // For the first request (no filters), don't send any body
+    // Only send body when filters are applied
+    let requestBody: string | undefined;
+    
+    if (filterQuery) {
+      // Build request payload with filters string format
+      const requestPayload: Record<string, unknown> = {
+        filters: filterQuery,
       }
+      
+      // Add limit if specified
+      if (filters.limit) {
+        requestPayload.limit = filters.limit;
+      }
+      
+      requestBody = JSON.stringify(requestPayload);
     }
 
     const response = await fetch(API_BASE_URL, {
@@ -342,7 +437,7 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<A
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify(requestPayload),
+      body: requestBody, // This will be undefined for the first request (no filters)
     })
 
     if (!response.ok) {

@@ -8,6 +8,13 @@ const nextConfig = {
       { protocol: 'https', hostname: 'pbs.twimg.com' },
     ],
   },
+  // Disable turbopack for production builds to avoid runtime issues
+  experimental: {
+    turbo: {
+      // Only use turbopack in development
+      enabled: false,
+    },
+  },
 }
 
 module.exports = nextConfig
