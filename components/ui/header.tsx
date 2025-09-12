@@ -10,7 +10,7 @@ import ThemeToggle from '@/components/theme-toggle'
 import UserMenu from '@/components/user-menu'
 import { AIChatbot } from '@/components/ai-chatbot'
 import Link from 'next/link'
-import { Bot, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 
 export default function Header({
   variant = 'default',
@@ -21,6 +21,23 @@ export default function Header({
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
+  const [credits, setCredits] = useState<number | null>(null)
+  const [showCreditHint, setShowCreditHint] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const res = await fetch('/api/credits', { cache: 'no-store' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (active) setCredits(typeof data.credits === 'number' ? data.credits : null)
+      } catch {}
+    }
+    load()
+    const id = setInterval(load, 30000)
+    return () => { active = false; clearInterval(id) }
+  }, [])
 
   // Keyboard shortcut for search (Cmd/Ctrl + K)
   useEffect(() => {
@@ -66,14 +83,27 @@ export default function Header({
             <Link href="/publishers" className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10">
               Publishers
             </Link>
-            {/* AI Chatbot Button */}
-            <button
-              onClick={() => setChatbotOpen(!chatbotOpen)}
-              className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
-            >
-              <Bot className="h-4 w-4 mr-2" />
-              AI Assistant
-            </button>
+            {/* Credits Display */}
+            <div className="relative">
+              <button
+                onMouseEnter={() => setShowCreditHint(true)}
+                onMouseLeave={() => setShowCreditHint(false)}
+                className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
+                title="Daily credits"
+              >
+                Credits: {credits ?? '—'}
+              </button>
+              {showCreditHint && (
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl">
+                  <div className="font-semibold mb-1">How credits work</div>
+                  <ul className="list-disc pl-4 space-y-1">
+                    <li>50 credits added daily.</li>
+                    <li>Revealing a website costs 1 credit.</li>
+                    <li>Credits reset every day.</li>
+                  </ul>
+                </div>
+              )}
+            </div>
             <div className="relative group">
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ml-3 ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
@@ -103,7 +133,7 @@ export default function Header({
         </div>
       </div>
       
-      {/* AI Chatbot */}
+      {/* AI Chatbot (kept for pages that explicitly open it) */}
       <AIChatbot isOpen={chatbotOpen} onToggle={() => setChatbotOpen(!chatbotOpen)} />
     </header>
   )

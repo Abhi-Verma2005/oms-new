@@ -26,8 +26,7 @@ model Account {
   updatedAt         DateTime @updatedAt @map("updated_at")
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
+
 }
 
 model Session {
@@ -53,6 +52,9 @@ model User {
   mfaSecret      String?         @map("mfa_secret")
   backupCodes    String[]        @map("backup_codes")
   password       String?
+  // Credits: resets daily to 50; tracked per user
+  dailyCredits   Int             @default(50) @map("daily_credits")
+  lastCreditReset DateTime?      @map("last_credit_reset")
   accounts       Account[]
   authenticators Authenticator[]
   orders         Order[]

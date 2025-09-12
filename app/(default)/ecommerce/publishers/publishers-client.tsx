@@ -1026,7 +1026,8 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         return (
           <div className="font-medium">
             <div className="overflow-hidden text-ellipsis whitespace-nowrap" title={s.name}>
-              <a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a>
+              {/* Mask the domain with stars; reveal on hover click */}
+              <MaskedWebsite site={s} />
             </div>
             {(() => {
               const stripped = s.url.replace(/^https?:\/\//, "")
@@ -1216,7 +1217,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'website':
         return (
           <div className="font-medium">
-            <a href={s.url} target="_blank" rel="noreferrer" className="text-violet-600 hover:text-violet-700 underline" onClick={(e) => e.stopPropagation()}>{s.name}</a>
+            <MaskedWebsite site={s} />
             {rowLevel >= 2 && (<div className="text-xs text-gray-500">{s.url.replace(/^https?:\/\//, "")}</div>)}
             {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Category:</span> {s.category}</div>)}
             {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Language:</span> {s.language}</div>)}
@@ -1744,6 +1745,7 @@ export default function PublishersClient() {
   const [filters, setFilters] = useState<Filters>(() => parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || "")))
   const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || "")
   const [sites, setSites] = useState<Site[]>([])
+  const [revealed, setRevealed] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
@@ -1779,6 +1781,18 @@ export default function PublishersClient() {
   }, [])
 
   useEffect(() => { fetchData() }, [])
+  async function revealWebsite(id: string) {
+    try {
+      const res = await fetch('/api/publishers/reveal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed')
+      if (data?.website) {
+        setRevealed(prev => ({ ...prev, [id]: data.website }))
+      }
+    } catch (e) {
+      // no-op visual for now
+    }
+  }
 
   useEffect(() => {
     const apiFilters = convertFiltersToAPI(filters, searchQuery)
@@ -1860,10 +1874,10 @@ export default function PublishersClient() {
   }, [filters, searchQuery, pathname, router])
 
   const results = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    if (!q) return sites
-    return sites.filter(s => s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q))
-  }, [sites, searchQuery])
+    // When there's a search query, rely on API filtering instead of frontend filtering
+    // The API should return only the matching websites
+    return sites
+  }, [sites])
 
   const displayedSites = useMemo(() => {
     const arr = [...results]
@@ -1942,7 +1956,14 @@ export default function PublishersClient() {
                             className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 truncate"
                             title={sug}
                             onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => { setSearchQuery(sug); setSuggestionsOpen(false); inputRef.current?.blur() }}
+                            onClick={() => { 
+                              setSearchQuery(sug); 
+                              setSuggestionsOpen(false); 
+                              inputRef.current?.blur();
+                              // Trigger API filtering to show only this specific website
+                              const apiFilters = convertFiltersToAPI(filters, sug);
+                              fetchData(apiFilters);
+                            }}
                           >
                             {sug}
                           </button>
@@ -1957,7 +1978,7 @@ export default function PublishersClient() {
             </div>
             <Button variant="outline" className="h-8 text-xs px-3" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
             <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname, { scroll: false }) }}>Reset</Button>
-            <HeaderCheckout />
+            {hasCheckoutFab && <HeaderCheckout />}
           </div>
         </div>
 
@@ -1991,14 +2012,77 @@ export default function PublishersClient() {
         />
         {/* Floating AI Assistant Trigger (bottom-left; avoids checkout button) */}
         <Button
-          onClick={openChatbot}
-          className={`fixed ${hasCheckoutFab ? 'bottom-20' : 'bottom-5'} right-5 z-50 h-10 px-3 rounded-full shadow-lg bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500 inline-flex items-center gap-2`}
+          onClick={() => openChatbot()}
+          className="fixed bottom-5 left-5 z-40 h-10 px-3 rounded-full shadow-lg border border-violet-300 bg-white/90 backdrop-blur text-violet-700 hover:bg-violet-50 dark:bg-gray-900/80 dark:text-violet-300 dark:border-violet-600"
         >
-          <Bot className="w-4 h-4" />
-          <span className="text-xs font-medium">AI Assistant</span>
+          AI Assistant
         </Button>
       </div>
     </CartProvider>
+  )
+}
+function MaskedWebsite({ site }: { site: Site }) {
+  const [hovered, setHovered] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [revealed, setRevealed] = useState<string | null>(null)
+
+  useEffect(() => {
+    // noop
+  }, [])
+
+  async function onReveal(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (revealed || loading) return
+    try {
+      setLoading(true)
+      const res = await fetch('/api/publishers/reveal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: site.id }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed')
+      const website: string = data.website
+      setRevealed(website)
+    } catch (err) {
+      // optionally show toast
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Cap masked length to avoid overflow
+  const maxStars = 14
+  const masked = '★'.repeat(maxStars)
+  const display = revealed ? revealed : masked
+  return (
+    <div
+      className="group relative inline-flex items-center gap-2 max-w-full"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {revealed ? (
+        <a
+          href={`https://${revealed}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-violet-600 hover:text-violet-700 underline truncate max-w-[11rem]"
+          onClick={(e) => e.stopPropagation()}
+          title={revealed}
+        >
+          {revealed}
+        </a>
+      ) : (
+        <span className="text-gray-300 dark:text-gray-200/80 tracking-wide truncate max-w-[11rem] select-none" title="Hidden website">
+          {display}
+        </span>
+      )}
+      {!revealed && (
+        <button
+          onClick={onReveal}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] px-2 py-0.5 rounded-lg border border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-300 dark:hover:bg-violet-500/10 disabled:opacity-50"
+          disabled={loading}
+        >
+          {loading ? 'Revealing…' : 'Show website'}
+        </button>
+      )}
+    </div>
   )
 }
 

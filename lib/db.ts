@@ -171,7 +171,7 @@ function createPrismaClient() {
           url: process.env.DATABASE_URL,
         },
       },
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      log: [],
     });
   } catch (error) {
     console.error('❌ Failed to create PrismaClient instance:', error);
