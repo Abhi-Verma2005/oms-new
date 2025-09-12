@@ -1135,7 +1135,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="capitalize">{s.toolScores.trafficTrend || 'stable'}</span>
             {/* Hover panel with mini charts */}
-            <div className="pointer-events-none absolute right-0 bottom-full mb-2 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity p-3 z-[5000] max-h-64 overflow-auto">
+            <div className="pointer-events-none absolute left-0 top-full mt-2 -translate-x-full w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity p-3 z-[5000] max-h-64 overflow-auto">
               <div className="flex flex-col gap-2">
                 <div>
                   <div className="text-[11px] text-gray-500 mb-0.5">Overall Traffic</div>
@@ -1711,6 +1711,13 @@ export default function PublishersClient() {
   const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastPostedQueryRef = useRef<string>("")
+  // Suggestions state for website/url recommendations
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const suggestionsAbortRef = useRef<AbortController | null>(null)
+  const suggestionsRef = useRef<HTMLDivElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   const fetchData = async (apiFilters: APIFilters = {}, skipLoading = false) => {
     if (loading && !skipLoading) return
@@ -1739,6 +1746,57 @@ export default function PublishersClient() {
     const apiFilters = convertFiltersToAPI(filters, searchQuery)
     debouncedFetch(apiFilters, 500)
   }, [filters, searchQuery, debouncedFetch])
+
+  // Fetch search suggestions from external API (debounced)
+  const fetchSuggestions = useCallback(async (q: string) => {
+    const query = q.trim()
+    if (!query || query.length < 2) {
+      setSuggestions([])
+      return
+    }
+    try {
+      setSuggestionsLoading(true)
+      if (suggestionsAbortRef.current) suggestionsAbortRef.current.abort()
+      const controller = new AbortController()
+      suggestionsAbortRef.current = controller
+      const res = await fetch(`https://agents.outreachdeal.com/webhook/website-suggestion?query=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+        cache: 'no-store',
+      })
+      let data: any = null
+      try { data = await res.json() } catch { data = null }
+      let list: string[] = []
+      if (Array.isArray(data)) list = data as string[]
+      else if (data && Array.isArray(data.websites)) list = data.websites as string[]
+      else if (data && Array.isArray(data.suggestions)) list = data.suggestions as string[]
+      else if (data && Array.isArray(data.results)) list = data.results as string[]
+      setSuggestions(list.filter(Boolean))
+    } catch {
+      setSuggestions([])
+    } finally {
+      setSuggestionsLoading(false)
+    }
+  }, [])
+
+  // Debounce suggestions on input change
+  useEffect(() => {
+    const q = searchQuery
+    const tid = setTimeout(() => { fetchSuggestions(q) }, 300)
+    return () => clearTimeout(tid)
+  }, [searchQuery, fetchSuggestions])
+
+  // Close suggestions on outside click / escape
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const el = suggestionsRef.current
+      if (!el) return
+      if (el && !el.contains(e.target as Node)) setSuggestionsOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSuggestionsOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [])
 
   // Keep URL params in sync with filters and search query
   useEffect(() => {
@@ -1824,7 +1882,41 @@ export default function PublishersClient() {
         <div className="sm:flex sm:justify-between sm:items-center mb-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
           <div className="flex items-center gap-2">
-            <Input className="h-8 text-xs w-56" placeholder="Search by website or URL" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <div className="relative" ref={suggestionsRef}>
+              <Input
+                ref={inputRef as any}
+                className="h-8 text-xs w-56"
+                placeholder="Search by website or URL"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setSuggestionsOpen(true) }}
+                onFocus={() => setSuggestionsOpen(true)}
+                onBlur={() => { /* keep open handled by outside click; avoid immediate close */ }}
+              />
+              {suggestionsOpen && (
+                <div className="absolute left-0 top-full mt-1 w-[18rem] max-h-60 overflow-auto rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg z-50 text-xs">
+                  {suggestionsLoading ? (
+                    <div className="px-3 py-2 text-gray-500">Searching…</div>
+                  ) : suggestions.length > 0 ? (
+                    <ul>
+                      {suggestions.slice(0, 8).map((sug, idx) => (
+                        <li key={`${sug}-${idx}`}>
+                          <button
+                            className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 truncate"
+                            title={sug}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => { setSearchQuery(sug); setSuggestionsOpen(false); inputRef.current?.blur() }}
+                          >
+                            {sug}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="px-3 py-2 text-gray-500">No suggestions</div>
+                  )}
+                </div>
+              )}
+            </div>
             <Button variant="outline" className="h-8 text-xs px-3" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
             <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname, { scroll: false }) }}>Reset</Button>
             <HeaderCheckout />
