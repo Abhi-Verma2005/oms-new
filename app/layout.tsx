@@ -5,6 +5,7 @@ import Theme from './theme-provider'
 import AppProvider from './app-provider'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { CartProvider } from '@/contexts/cart-context'
+import { WishlistProvider } from '@/contexts/wishlist-context'
 import { NotificationProvider } from '@/contexts/notification-context'
 import { NotificationToastContainer } from '@/components/notification-toast'
 import { AIChatbotProvider } from '@/components/ai-chatbot-provider'
@@ -32,12 +33,14 @@ export default function RootLayout({
           <AuthProvider>
             <AppProvider>
               <CartProvider>
-                <NotificationProvider>
-                  <AIChatbotProvider>
-                    {children}
-                    <NotificationToastContainer />
-                  </AIChatbotProvider>
-                </NotificationProvider>
+                <WishlistProvider>
+                  <NotificationProvider>
+                    <AIChatbotProvider>
+                      {children}
+                      <NotificationToastContainer />
+                    </AIChatbotProvider>
+                  </NotificationProvider>
+                </WishlistProvider>
               </CartProvider>
             </AppProvider>
           </AuthProvider>

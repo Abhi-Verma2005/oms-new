@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters", "relationJoins"]
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -64,6 +64,7 @@ model User {
   onboardingProfile OnboardingProfile?
   searchInterests SearchInterest[]
   feedbacks      Feedback[]
+  wishlists      Wishlist[]
 
   @@map("users")
 }
@@ -232,6 +233,7 @@ enum ActivityCategory {
   ORDER
   PAYMENT
   CART
+  WISHLIST
   PROFILE
   ADMIN
   API
@@ -491,6 +493,37 @@ model Feedback {
   @@index([userId, createdAt])
   @@index([rating])
   @@map("feedback")
+}
+
+// Wishlist feature
+model Wishlist {
+  id        String        @id @default(cuid())
+  userId    String        @map("user_id")
+  name      String        @default("Default")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+
+  @@unique([userId, name])
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id          String   @id @default(cuid())
+  wishlistId  String   @map("wishlist_id")
+  siteId      String   @map("site_id")
+  siteName    String   @map("site_name")
+  siteUrl     String?  @map("site_url")
+  priceCents  Int?     @map("price_cents")
+  currency    String   @default("USD")
+  addedAt     DateTime @default(now()) @map("added_at")
+  notes       String?
+  wishlist    Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, siteId])
+  @@index([siteId, addedAt])
+  @@map("wishlist_items")
 }
 
 model AIChatbotConfig {

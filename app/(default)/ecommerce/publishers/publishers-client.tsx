@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { fetchSitesWithFilters, transformAPISiteToSite, type APIFilters, type Site, fetchCategoryRecommendations, type CategoryRecommendation } from "@/lib/sample-sites"
 import { CartProvider, useCart } from "@/contexts/cart-context"
+import { useWishlist } from "@/contexts/wishlist-context"
 import { useAIChatbot } from "@/components/ai-chatbot-provider"
 import { Flag } from "@/components/ui/flag"
 import { AhrefsIcon, SemrushIcon, MozIcon } from "@/components/ui/brand-icons"
@@ -893,8 +894,8 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       <ModalBasic title={activeKey ? `Filter: ${String(activeKey)}` : 'Filter'} isOpen={modalOpen} setIsOpen={setModalOpen}>
         {renderModalBody()}
         <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</Button>
-          <Button onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
+          <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</Button>
+          <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
         </div>
       </ModalBasic>
       </CardContent>
@@ -1199,14 +1200,17 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'cart':
         return (
           <>
-            {isItemInCart(s.id) ? (
-              <div className="flex items-center gap-2">
-                <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
-                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
-              </div>
-            ) : (
-              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); addItem(s) }}>Add to Cart</Button>
-            )}
+            <div className="flex flex-col items-center gap-2">
+              {isItemInCart(s.id) ? (
+                <div className="flex items-center gap-2">
+                  <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
+                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); addItem(s) }}>Add to Cart</Button>
+              )}
+              <WishlistInlineButton site={s} />
+            </div>
           </>
         )
       case 'website':
@@ -1618,6 +1622,40 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               </DialogContent>
             </Dialog>
           </Card>
+  )
+}
+
+function WishlistInlineButton({ site }: { site: Site }) {
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+  const inList = isInWishlist(site.id)
+  return (
+    <div className="flex items-center gap-1.5">
+      {inList ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-violet-600 hover:text-violet-700"
+          onClick={(e) => { e.stopPropagation(); removeFromWishlist(site.id) }}
+        >
+          <svg className="w-3.5 h-3.5 mr-1 fill-current" viewBox="0 0 24 24" aria-hidden>
+            <path d="M12.1 21.35l-1.1-.99C5.14 15.24 2 12.39 2 8.9 2 6.36 4.02 4.5 6.5 4.5c1.54 0 3.04.73 3.96 1.87C11.38 5.23 12.88 4.5 14.42 4.5 16.9 4.5 18.92 6.36 18.92 8.9c0 3.49-3.14 6.34-8.9 11.46l-.92.99z" />
+          </svg>
+          Wishlisted
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-gray-500 hover:text-violet-700"
+          onClick={(e) => { e.stopPropagation(); addToWishlist(site) }}
+        >
+          <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          Add to wishlist
+        </Button>
+      )}
+    </div>
   )
 }
 
