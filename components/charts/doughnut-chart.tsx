@@ -95,7 +95,7 @@ export default function DoughnutChart({
               li.style.margin = '1.5px'
               // Button element
               const button = document.createElement('button')
-              button.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'shadow-sm', 'rounded-full', 'px-2', 'py-1.5')
+              button.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'shadow-sm', 'rounded-full', 'px-2', 'py-1.5', 'flex', 'items-center','cursor-pointer','hover:shadow-md', 'transition', 'duration-150', 'ease-in-out')
               button.style.opacity = item.hidden ? '.3' : ''
               button.style.fontSize = '14px'
               button.onclick = () => {

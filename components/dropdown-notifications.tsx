@@ -72,7 +72,7 @@ export default function DropdownNotifications({ align }: {
       {({ open }) => (
         <>
           <MenuButton
-            className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${
+            className={`w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${
               open && 'bg-gray-200 dark:bg-gray-800'
             }`}
           >

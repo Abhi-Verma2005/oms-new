@@ -109,7 +109,7 @@ export default function DomainRatingChart() {
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">Domain Rating Growth</h2>
       </header>
       {/* Chart built with Chart.js 3 */}
-      <div className="grow">
+      <div className="grow overflow-auto">
         <LineChart01 data={chartData} width={595} height={200} />
       </div>
     </div>
