@@ -40,7 +40,7 @@ export default function Dashboard() {
 
         {/* Right: Actions */}
         <div className="grid grid-flow-col sm:auto-cols-max justify-start sm:justify-end gap-2">
-          <Datepicker />
+          <Datepicker className="cursor-pointer" />
         </div>
 
       </div>

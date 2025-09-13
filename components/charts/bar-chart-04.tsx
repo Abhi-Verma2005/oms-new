@@ -1,54 +1,68 @@
-'use client'
+"use client";
 
-import { useRef, useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
+import { useRef, useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 
-import { chartColors } from '@/components/charts/chartjs-config'
+import { chartColors } from "@/components/charts/chartjs-config";
 import {
-  Chart, BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend,
-} from 'chart.js'
-import type { ChartData } from 'chart.js'
+  Chart,
+  BarController,
+  BarElement,
+  LinearScale,
+  CategoryScale,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import type { ChartData } from "chart.js";
 
 // Import utilities
-import { formatThousands } from '@/components/utils/utils'
+import { formatThousands } from "@/components/utils/utils";
 
-Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend)
+Chart.register(
+  BarController,
+  BarElement,
+  LinearScale,
+  CategoryScale,
+  Tooltip,
+  Legend
+);
 
 interface BarChart04Props {
-  data: ChartData
-  width: number
-  height: number
+  data: ChartData;
+  width: number;
+  height: number;
 }
 
-export default function BarChart04({
-  data,
-  width,
-  height
-}: BarChart04Props) {
-
-  const [chart, setChart] = useState<Chart | null>(null)
-  const [mounted, setMounted] = useState(false)
-  const canvas = useRef<HTMLCanvasElement>(null)
-  const legend = useRef<HTMLUListElement>(null)
-  const { theme } = useTheme()
-  const darkMode = theme === 'dark'
-  const { textColor, gridColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors  
+export default function BarChart04({ data, width, height }: BarChart04Props) {
+  const [chart, setChart] = useState<Chart | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const legend = useRef<HTMLUListElement>(null);
+  const { theme } = useTheme();
+  const darkMode = theme === "dark";
+  const {
+    textColor,
+    gridColor,
+    tooltipBodyColor,
+    tooltipBgColor,
+    tooltipBorderColor,
+  } = chartColors;
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
-  useEffect(() => {    
-    if (!mounted) return
-    
-    const ctx = canvas.current
-    if (!ctx) return
-    
+  useEffect(() => {
+    if (!mounted) return;
+
+    const ctx = canvas.current;
+    if (!ctx) return;
+
     const newChart = new Chart(ctx, {
-      type: 'bar',
+      type: "bar",
       data: data,
       options: {
-        indexAxis: 'y',
+        indexAxis: "y",
         layout: {
           padding: {
             top: 12,
@@ -59,7 +73,7 @@ export default function BarChart04({
         },
         scales: {
           y: {
-            type: 'category',
+            type: "category",
             border: {
               display: false,
             },
@@ -68,17 +82,17 @@ export default function BarChart04({
             },
             ticks: {
               color: darkMode ? textColor.dark : textColor.light,
-            },              
+            },
           },
           // Left x-axis for Traffic Growth %
           x: {
-            position: 'bottom',
+            position: "bottom",
             border: {
               display: false,
             },
             ticks: {
               maxTicksLimit: 3,
-              align: 'end',
+              align: "end",
               callback: (value) => formatThousands(+value),
               color: darkMode ? textColor.dark : textColor.light,
             },
@@ -88,13 +102,13 @@ export default function BarChart04({
           },
           // Right x-axis for Keywords (hundreds)
           x1: {
-            position: 'top',
+            position: "top",
             border: {
               display: false,
             },
             ticks: {
               maxTicksLimit: 3,
-              align: 'start',
+              align: "start",
               callback: (value) => `${formatThousands(+value)}`,
               color: darkMode ? textColor.dark : textColor.light,
             },
@@ -109,17 +123,23 @@ export default function BarChart04({
           },
           tooltip: {
             callbacks: {
-              title: () => '', // Disable tooltip title
+              title: () => "", // Disable tooltip title
               label: (context) => formatThousands(context.parsed.x),
             },
-            bodyColor: darkMode ? tooltipBodyColor.dark : tooltipBodyColor.light,
-            backgroundColor: darkMode ? tooltipBgColor.dark : tooltipBgColor.light,
-            borderColor: darkMode ? tooltipBorderColor.dark : tooltipBorderColor.light,              
+            bodyColor: darkMode
+              ? tooltipBodyColor.dark
+              : tooltipBodyColor.light,
+            backgroundColor: darkMode
+              ? tooltipBgColor.dark
+              : tooltipBgColor.light,
+            borderColor: darkMode
+              ? tooltipBorderColor.dark
+              : tooltipBorderColor.light,
           },
         },
         interaction: {
           intersect: false,
-          mode: 'nearest',
+          mode: "nearest",
         },
         animation: {
           duration: 500,
@@ -127,80 +147,91 @@ export default function BarChart04({
         maintainAspectRatio: false,
         resizeDelay: 200,
       },
-      plugins: [{
-        id: 'htmlLegend',
-        afterUpdate(c, args, options) {
-          const ul = legend.current
-          if (!ul) return
-          // Remove old legend items
-          while (ul.firstChild) {
-            ul.firstChild.remove()
-          }
-          // Reuse the built-in legendItems generator
-          const items = c.options.plugins?.legend?.labels?.generateLabels?.(c)
-          items?.forEach((item) => {
-            const li = document.createElement('li')
-            // Button element
-            const button = document.createElement('button')
-            button.style.display = 'inline-flex'
-            button.style.alignItems = 'center'
-            button.style.opacity = item.hidden ? '.3' : ''
-            button.onclick = () => {
-              c.setDatasetVisibility(item.datasetIndex!, !c.isDatasetVisible(item.datasetIndex!))
-              c.update()
+      plugins: [
+        {
+          id: "htmlLegend",
+          afterUpdate(c, args, options) {
+            const ul = legend.current;
+            if (!ul) return;
+            // Remove old legend items
+            while (ul.firstChild) {
+              ul.firstChild.remove();
             }
-            // Color box
-            const box = document.createElement('span')
-            box.style.display = 'block'
-            box.style.width = '12px'
-            box.style.height = '12px'
-            box.style.borderRadius = 'calc(infinity * 1px)'
-            box.style.marginRight = '8px'
-            box.style.borderWidth = '3px'
-            box.style.borderColor = item.fillStyle as string
-            box.style.pointerEvents = 'none'
-            // Label
-            const label = document.createElement('span')
-            label.classList.add('text-gray-500', 'dark:text-gray-400')
-            label.style.fontSize = '14px'
-            label.style.lineHeight = 'calc(1.25 / 0.875)'
-            const labelText = document.createTextNode(item.text)
-            label.appendChild(labelText)
-            li.appendChild(button)
-            button.appendChild(box)
-            button.appendChild(label)
-            ul.appendChild(li)
-          })
+            // Reuse the built-in legendItems generator
+            const items =
+              c.options.plugins?.legend?.labels?.generateLabels?.(c);
+            items?.forEach((item) => {
+              const li = document.createElement("li");
+              // Button element
+              const button = document.createElement("button");
+              button.style.display = "inline-flex";
+              button.style.alignItems = "center";
+              button.classList.add('cursor-pointer',);
+              button.style.opacity = item.hidden ? ".3" : "";
+              button.onclick = () => {
+                c.setDatasetVisibility(
+                  item.datasetIndex!,
+                  !c.isDatasetVisible(item.datasetIndex!)
+                );
+                c.update();
+              };
+              // Color box
+              const box = document.createElement("span");
+              box.style.display = "block";
+              box.style.width = "12px";
+              box.style.height = "12px";
+              box.style.borderRadius = "calc(infinity * 1px)";
+              box.style.marginRight = "8px";
+              box.style.borderWidth = "3px";
+              box.style.borderColor = item.fillStyle as string;
+              box.style.pointerEvents = "none";
+              // Label
+              const label = document.createElement("span");
+              label.classList.add("text-gray-500", "dark:text-gray-400");
+              label.style.fontSize = "14px";
+              label.style.lineHeight = "calc(1.25 / 0.875)";
+              const labelText = document.createTextNode(item.text);
+              label.appendChild(labelText);
+              li.appendChild(button);
+              button.appendChild(box);
+              button.appendChild(label);
+              ul.appendChild(li);
+            });
+          },
         },
-      }],
-    })
-    setChart(newChart)
-    return () => newChart.destroy()
-  }, [mounted])
+      ],
+    });
+    setChart(newChart);
+    return () => newChart.destroy();
+  }, [mounted]);
 
   useEffect(() => {
-    if (!chart) return
+    if (!chart) return;
 
     if (darkMode) {
-      chart.options.scales!.x!.ticks!.color = textColor.dark
-      chart.options.scales!.x!.grid!.color = gridColor.dark
-      chart.options.scales!.y!.ticks!.color = textColor.dark
-      chart.options.plugins!.tooltip!.bodyColor = tooltipBodyColor.dark
-      chart.options.plugins!.tooltip!.backgroundColor = tooltipBgColor.dark
-      chart.options.plugins!.tooltip!.borderColor = tooltipBorderColor.dark
+      chart.options.scales!.x!.ticks!.color = textColor.dark;
+      chart.options.scales!.x!.grid!.color = gridColor.dark;
+      chart.options.scales!.y!.ticks!.color = textColor.dark;
+      chart.options.plugins!.tooltip!.bodyColor = tooltipBodyColor.dark;
+      chart.options.plugins!.tooltip!.backgroundColor = tooltipBgColor.dark;
+      chart.options.plugins!.tooltip!.borderColor = tooltipBorderColor.dark;
     } else {
-      chart.options.scales!.x!.ticks!.color = textColor.light
-      chart.options.scales!.x!.grid!.color = gridColor.light
-      chart.options.scales!.y!.ticks!.color = textColor.light
-      chart.options.plugins!.tooltip!.bodyColor = tooltipBodyColor.light
-      chart.options.plugins!.tooltip!.backgroundColor = tooltipBgColor.light
-      chart.options.plugins!.tooltip!.borderColor = tooltipBorderColor.light
+      chart.options.scales!.x!.ticks!.color = textColor.light;
+      chart.options.scales!.x!.grid!.color = gridColor.light;
+      chart.options.scales!.y!.ticks!.color = textColor.light;
+      chart.options.plugins!.tooltip!.bodyColor = tooltipBodyColor.light;
+      chart.options.plugins!.tooltip!.backgroundColor = tooltipBgColor.light;
+      chart.options.plugins!.tooltip!.borderColor = tooltipBorderColor.light;
     }
-    chart.update('none')
-  }, [theme])   
+    chart.update("none");
+  }, [theme]);
 
   if (!mounted) {
-    return <div className="flex items-center justify-center h-full">Loading chart...</div>
+    return (
+      <div className="flex items-center justify-center h-full">
+        Loading chart...
+      </div>
+    );
   }
 
   return (
@@ -210,7 +241,7 @@ export default function BarChart04({
       </div>
       <div className="grow">
         <canvas ref={canvas} width={width} height={height}></canvas>
-      </div>  
+      </div>
     </>
-  )
+  );
 }
