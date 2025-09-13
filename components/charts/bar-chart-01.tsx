@@ -122,6 +122,7 @@ export default function BarChart01({
             const li = document.createElement('li')
             // Button element
             const button = document.createElement('button')
+            button.classList.add('cursor-pointer',)
             button.style.display = 'inline-flex'
             button.style.alignItems = 'center'
             button.style.opacity = item.hidden ? '.3' : ''
@@ -132,8 +133,8 @@ export default function BarChart01({
             // Color box
             const box = document.createElement('span')
             box.style.display = 'inline-block'
-            box.style.width = '4px'
-            box.style.height = '4px'
+            box.style.width = '8px'
+            box.style.height = '8px'
             box.style.borderRadius = '1px'
             box.style.marginRight = '1px'
             box.style.backgroundColor = item.fillStyle as string
@@ -144,14 +145,14 @@ export default function BarChart01({
             labelContainer.style.alignItems = 'center'
             const value = document.createElement('span')
             value.classList.add('text-gray-800', 'dark:text-gray-100')
-            value.style.fontSize = '8px'
+            value.style.fontSize = '12px'
             value.style.lineHeight = '1'
             value.style.fontWeight = '600'
-            value.style.marginRight = '1px'
+            value.style.marginRight = '4px'
             value.style.pointerEvents = 'none'
             const label = document.createElement('span')
             label.classList.add('text-gray-500', 'dark:text-gray-400')
-            label.style.fontSize = '14px'
+            label.style.fontSize = '12px'
             label.style.lineHeight = '1'
             // @ts-ignore
             const theValue: number = c.data.datasets[item.datasetIndex!].data.reduce((a, b) => a + b, 0)
@@ -201,7 +202,7 @@ export default function BarChart01({
   return (
     <div className="grow flex flex-col">
       <div className="flex-shrink-0 px-0.5 py-0.5">
-        <ul ref={legend} className="flex flex-wrap gap-x-0 gap-y-0"></ul>
+        <ul ref={legend} className="flex flex-wrap gap-x-4 gap-y-0 pl-4"></ul>
       </div>
       <div className="flex-1" style={{ height: `${height * 0.8}px` }}>
         <canvas ref={canvas} width={width} height={height}></canvas>
