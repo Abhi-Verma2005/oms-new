@@ -20,7 +20,7 @@ export default function SerpFeaturesCard() {
               <li className="relative px-2 py-1">
                 <div className="absolute inset-0 bg-violet-100 dark:bg-violet-500/20 rounded-r" aria-hidden="true" style={{ width: '90%' }}></div>
                 <div className="relative flex justify-between space-x-2">
-                  <div>🤖 AI Overview</div>
+                  <div>AI Overview</div>
                   <div className="font-medium">6</div>
                 </div>
               </li>
@@ -28,7 +28,7 @@ export default function SerpFeaturesCard() {
               <li className="relative px-2 py-1">
                 <div className="absolute inset-0 bg-sky-100 dark:bg-sky-500/20 rounded-r" aria-hidden="true" style={{ width: '85%' }}></div>
                 <div className="relative flex justify-between space-x-2">
-                  <div>📝 Featured Snippets</div>
+                  <div>Featured Snippets</div>
                   <div className="font-medium">7</div>
                 </div>
               </li>
@@ -36,7 +36,7 @@ export default function SerpFeaturesCard() {
               <li className="relative px-2 py-1">
                 <div className="absolute inset-0 bg-emerald-100 dark:bg-emerald-500/20 rounded-r" aria-hidden="true" style={{ width: '80%' }}></div>
                 <div className="relative flex justify-between space-x-2">
-                  <div>🔗 Regular Rankings</div>
+                  <div>Regular Rankings</div>
                   <div className="font-medium">25</div>
                 </div>
               </li>
@@ -44,7 +44,7 @@ export default function SerpFeaturesCard() {
               <li className="relative px-2 py-1">
                 <div className="absolute inset-0 bg-amber-100 dark:bg-amber-500/20 rounded-r" aria-hidden="true" style={{ width: '70%' }}></div>
                 <div className="relative flex justify-between space-x-2">
-                  <div>📊 Knowledge Panel</div>
+                  <div>Knowledge Panel</div>
                   <div className="font-medium">3</div>
                 </div>
               </li>
@@ -52,7 +52,7 @@ export default function SerpFeaturesCard() {
               <li className="relative px-2 py-1">
                 <div className="absolute inset-0 bg-red-100 dark:bg-red-500/20 rounded-r" aria-hidden="true" style={{ width: '60%' }}></div>
                 <div className="relative flex justify-between space-x-2">
-                  <div>🎯 Local Pack</div>
+                  <div>Local Pack</div>
                   <div className="font-medium">2</div>
                 </div>
               </li>
@@ -60,7 +60,7 @@ export default function SerpFeaturesCard() {
               <li className="relative px-2 py-1">
                 <div className="absolute inset-0 bg-gray-100 dark:bg-gray-500/20 rounded-r" aria-hidden="true" style={{ width: '50%' }}></div>
                 <div className="relative flex justify-between space-x-2">
-                  <div>📱 Mobile Snippets</div>
+                  <div>Mobile Snippets</div>
                   <div className="font-medium">4</div>
                 </div>
               </li>

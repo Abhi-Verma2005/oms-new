@@ -129,6 +129,7 @@ export default function BarChart03({
             const button = document.createElement('button')
             button.style.display = 'inline-flex'
             button.style.alignItems = 'center'
+            button.classList.add('cursor-pointer',)
             button.style.opacity = item.hidden ? '.3' : ''
             button.onclick = () => {
               c.setDatasetVisibility(item.datasetIndex!, !c.isDatasetVisible(item.datasetIndex!))

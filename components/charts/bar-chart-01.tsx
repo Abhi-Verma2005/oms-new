@@ -151,7 +151,7 @@ export default function BarChart01({
             value.style.pointerEvents = 'none'
             const label = document.createElement('span')
             label.classList.add('text-gray-500', 'dark:text-gray-400')
-            label.style.fontSize = '6px'
+            label.style.fontSize = '14px'
             label.style.lineHeight = '1'
             // @ts-ignore
             const theValue: number = c.data.datasets[item.datasetIndex!].data.reduce((a, b) => a + b, 0)
@@ -201,7 +201,7 @@ export default function BarChart01({
   return (
     <div className="grow flex flex-col">
       <div className="flex-shrink-0 px-0.5 py-0.5">
-        <ul ref={legend} className="flex flex-wrap gap-x-0 gap-y-0 text-xs"></ul>
+        <ul ref={legend} className="flex flex-wrap gap-x-0 gap-y-0"></ul>
       </div>
       <div className="flex-1" style={{ height: `${height * 0.8}px` }}>
         <canvas ref={canvas} width={width} height={height}></canvas>
