@@ -36,7 +36,7 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
 
   return (
     <Menu as="div" className="relative inline-flex">
-      <MenuButton className="inline-flex justify-center items-center group">
+      <MenuButton className="inline-flex justify-center items-center group cursor-pointer">
         <Image 
           className="w-8 h-8 rounded-full" 
           src={user.image || UserAvatar} 
@@ -92,7 +92,7 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
           )}
           <MenuItem as="li">
             <button 
-              className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
+              className="font-medium text-sm flex items-center py-1 px-3 cursor-pointer text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
               onClick={() => signOut({ callbackUrl: '/' })}
             >
               Sign Out
