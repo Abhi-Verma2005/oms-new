@@ -189,11 +189,11 @@ function buildFilterQuery(filters: APIFilters): string {
   }
   
   if (filters.websiteRemark) {
-    conditions.push(`"websiteRemark" LIKE "%${filters.websiteRemark}%"`);
+    conditions.push(`"websiteRemark" LIKE '%${filters.websiteRemark}%'`);
   }
   
   if (filters.website) {
-    conditions.push(`"website" LIKE "%${filters.website}%"`);
+    conditions.push(`"website" LIKE '%${filters.website}%'`);
   }
   
   return conditions.join(" AND ");
