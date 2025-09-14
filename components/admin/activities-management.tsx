@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useAdminFilters } from '@/hooks/use-admin-filters';
+import { AdminFilterPanel } from '@/components/admin/admin-filter-panel';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { 
   Table, 
   TableBody, 
@@ -13,19 +14,26 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { 
-  Search, 
   Activity,
   User,
-  Calendar,
-  Clock
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface ActivityLog {
   id: string;
   action: string;
   user: string;
   userId: string;
+  userTags: Array<{
+    id: string;
+    name: string;
+    color: string;
+    description?: string;
+  }>;
   resource: string;
   resourceId: string | null;
   details: string | null;
@@ -36,37 +44,55 @@ interface ActivityLog {
 }
 
 export function ActivitiesManagement() {
-  const [activities, setActivities] = useState<ActivityLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const {
+    data: activities,
+    loading,
+    pagination,
+    filters,
+    updateFilters,
+    toggleTag
+  } = useAdminFilters('/api/admin/activities');
 
-  const fetchActivities = async () => {
-    try {
-      const response = await fetch('/api/admin/activities');
-      if (response.ok) {
-        const data = await response.json();
-        setActivities(data);
-      } else {
-        toast.error('Failed to fetch activities');
-      }
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-      toast.error('Failed to fetch activities');
-    } finally {
-      setLoading(false);
+  const filterConfig = {
+    search: {
+      placeholder: "Search activities, users, or descriptions...",
+      enabled: true
+    },
+    category: {
+      label: "All Categories",
+      options: [
+        { value: 'AUTHENTICATION', label: 'Authentication' },
+        { value: 'NAVIGATION', label: 'Navigation' },
+        { value: 'ORDER', label: 'Order' },
+        { value: 'PAYMENT', label: 'Payment' },
+        { value: 'CART', label: 'Cart' },
+        { value: 'WISHLIST', label: 'Wishlist' },
+        { value: 'PROFILE', label: 'Profile' },
+        { value: 'ADMIN', label: 'Admin' },
+        { value: 'API', label: 'API' },
+        { value: 'ERROR', label: 'Error' },
+        { value: 'OTHER', label: 'Other' }
+      ],
+      enabled: true
+    },
+    tags: {
+      enabled: true
+    },
+    userRoles: {
+      enabled: true
+    },
+    dateRange: {
+      enabled: true
+    },
+    sorting: {
+      enabled: true,
+      options: [
+        { value: 'createdAt', label: 'Date' },
+        { value: 'activity', label: 'Activity' },
+        { value: 'category', label: 'Category' }
+      ]
     }
   };
-
-  useEffect(() => {
-    fetchActivities();
-  }, []);
-
-  const filteredActivities = activities.filter(activity =>
-    (activity.action && activity.action.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (activity.user && activity.user.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (activity.resource && activity.resource.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (activity.details && activity.details.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
 
   if (loading) {
     return (
@@ -105,25 +131,21 @@ export function ActivitiesManagement() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search activities..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
+      {/* Filters */}
+      <AdminFilterPanel
+        filters={filters}
+        updateFilters={updateFilters}
+        toggleTag={toggleTag}
+        config={filterConfig}
+        title="Filters"
+      />
 
       {/* Activities Table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Activity className="h-5 w-5 mr-2" />
-            Activity Log ({filteredActivities.length})
+            Activity Log ({pagination?.total || 0})
           </CardTitle>
           <CardDescription>
             Recent user activities and system events
@@ -136,14 +158,15 @@ export function ActivitiesManagement() {
                 <TableRow>
                   <TableHead>Action</TableHead>
                   <TableHead>User</TableHead>
-                  <TableHead>Resource</TableHead>
+                  <TableHead>User Tags</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Details</TableHead>
                   <TableHead>IP Address</TableHead>
                   <TableHead>Timestamp</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredActivities.map((activity) => (
+                {activities.map((activity: ActivityLog) => (
                   <TableRow key={activity.id}>
                     <TableCell>
                       <div className="flex items-center space-x-2">
@@ -155,6 +178,28 @@ export function ActivitiesManagement() {
                       <div className="flex items-center space-x-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span>{activity.user}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {activity.userTags && activity.userTags.length > 0 ? (
+                          activity.userTags.map((tag) => (
+                            <Badge
+                              key={tag.id}
+                              variant="outline"
+                              className="text-xs"
+                              style={{
+                                backgroundColor: `${tag.color}20`,
+                                borderColor: tag.color,
+                                color: tag.color
+                              }}
+                            >
+                              {tag.name}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No tags</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -181,6 +226,56 @@ export function ActivitiesManagement() {
               </TableBody>
             </Table>
           </div>
+          
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between px-2 py-4">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <span>
+                  Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                  {pagination.total} results
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateFilters({ page: 1 })}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateFilters({ page: Math.max(1, pagination.page - 1) })}
+                  disabled={pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateFilters({ page: Math.min(pagination.totalPages, pagination.page + 1) })}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateFilters({ page: pagination.totalPages })}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

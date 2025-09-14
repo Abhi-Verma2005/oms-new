@@ -32,9 +32,8 @@ import {
   Bot
 } from "lucide-react"
 import { fetchSitesWithFilters, transformAPISiteToSite, type APIFilters, type Site, fetchCategoryRecommendations, type CategoryRecommendation } from "@/lib/sample-sites"
-import { CartProvider, useCart } from "@/contexts/cart-context"
+import { useCart } from "@/contexts/cart-context"
 import { useWishlist } from "@/contexts/wishlist-context"
-import { useAIChatbot } from "@/components/ai-chatbot-provider"
 import { Flag } from "@/components/ui/flag"
 import { AhrefsIcon, SemrushIcon, MozIcon } from "@/components/ui/brand-icons"
 
@@ -101,122 +100,6 @@ function convertFiltersToAPI(f: Filters, searchQuery: string): APIFilters {
   return api
 }
 
-function FloatingFiltersDock({
-  filters,
-  onClearKey,
-  onOpenKey,
-}: {
-  filters: Filters
-  onClearKey: (key: keyof Filters) => void
-  onOpenKey: (key: keyof Filters) => void
-}) {
-  const [hidden, setHidden] = React.useState<boolean>(false)
-  React.useEffect(() => {
-    try {
-      const v = localStorage.getItem('filtersDockHidden')
-      if (v) setHidden(v === '1')
-    } catch {}
-  }, [])
-  const setHiddenPersist = (v: boolean) => {
-    setHidden(v)
-    try { localStorage.setItem('filtersDockHidden', v ? '1' : '0') } catch {}
-  }
-
-  const chips = React.useMemo(() => {
-    const out: { key: keyof Filters; label: string }[] = []
-    const add = (key: keyof Filters, label?: string, value?: unknown) => {
-      if (value !== undefined && value !== '' && value !== null) out.push({ key, label: label || String(value) })
-    }
-    add('niche', `Niche: ${filters.niche}`, filters.niche)
-    add('language', `Lang: ${filters.language}`, filters.language)
-    add('country', `Country: ${filters.country}`, filters.country)
-    add('daMin', `DA ≥ ${filters.daMin}`, filters.daMin)
-    add('daMax', `DA ≤ ${filters.daMax}`, filters.daMax)
-    add('paMin', `PA ≥ ${filters.paMin}`, filters.paMin)
-    add('paMax', `PA ≤ ${filters.paMax}`, filters.paMax)
-    add('drMin', `DR ≥ ${filters.drMin}`, filters.drMin)
-    add('drMax', `DR ≤ ${filters.drMax}`, filters.drMax)
-    add('spamMax', `Spam ≤ ${filters.spamMax}`, filters.spamMax)
-    add('spamMin', `Spam ≥ ${filters.spamMin}`, filters.spamMin)
-    add('semrushOverallTrafficMin', `Traffic ≥ ${filters.semrushOverallTrafficMin}`, filters.semrushOverallTrafficMin)
-    add('semrushOrganicTrafficMin', `Organic ≥ ${filters.semrushOrganicTrafficMin}`, filters.semrushOrganicTrafficMin)
-    add('priceMin', `$ ≥ ${filters.priceMin}`, filters.priceMin)
-    add('priceMax', `$ ≤ ${filters.priceMax}`, filters.priceMax)
-    add('tatDaysMin', `TAT ≥ ${filters.tatDaysMin}`, filters.tatDaysMin)
-    add('tatDaysMax', `TAT ≤ ${filters.tatDaysMax}`, filters.tatDaysMax)
-    add('backlinksAllowedMin', `Backlinks ≥ ${filters.backlinksAllowedMin}`, filters.backlinksAllowedMin)
-    add('outboundLinkLimitMax', `Outbound ≤ ${filters.outboundLinkLimitMax}`, filters.outboundLinkLimitMax)
-    add('tool', `Tool: ${filters.tool}`, filters.tool)
-    add('trend', `Trend: ${filters.trend}`, filters.trend)
-    add('backlinkNature', `Backlink: ${filters.backlinkNature}`, filters.backlinkNature)
-    add('linkPlacement', `Placement: ${filters.linkPlacement}`, filters.linkPlacement)
-    add('permanence', `Permanence: ${filters.permanence}`, filters.permanence)
-    add('availability', `Available only`, filters.availability)
-    return out
-  }, [filters])
-
-  const count = chips.length
-  if (!count && hidden) return null
-
-  return (
-    <div className="fixed left-1/2 -translate-x-1/2 bottom-5 z-[60]">
-      {hidden ? (
-        <button
-          className="inline-flex items-center gap-2 px-3 h-9 rounded-full bg-violet-100 text-violet-700 shadow-md border border-violet-200 hover:bg-violet-200 transition-colors"
-          onClick={() => setHiddenPersist(false)}
-          aria-label="Show filters dock"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M3 4h18" /><path d="M5 8h14" /><path d="M7 12h10" /><path d="M9 16h6" />
-          </svg>
-          <span className="text-xs font-medium">Filters ({count})</span>
-        </button>
-      ) : (
-        <div className="max-w-[92vw] md:max-w-4xl bg-white/95 dark:bg-white/10 text-violet-800 dark:text-violet-100 rounded-2xl shadow-xl border border-violet-100 dark:border-white/15 backdrop-blur supports-[backdrop-filter]:backdrop-blur px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-2 text-xs font-medium pl-1">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <polygon points="22 3 2 3 10 12 10 19 14 21 14 12 22 3" />
-              </svg>
-              <span>Active Filters</span>
-              <span className="opacity-60">({count})</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                className="px-2 h-7 rounded-full text-[11px] bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-100 dark:bg-white/10 dark:text-violet-100 dark:hover:bg-white/15 dark:border-white/15 transition-colors"
-                onClick={() => setHiddenPersist(true)}
-                aria-label="Hide filters dock"
-              >
-                Hide
-              </button>
-            </div>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 max-h-24 overflow-y-auto pr-1">
-            {chips.length === 0 ? (
-              <span className="text-[11px] opacity-60">No filters applied</span>
-            ) : chips.map(chip => (
-              <span key={chip.key as string} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] bg-violet-100 text-violet-800 border border-violet-200 hover:bg-violet-200/80 dark:bg-violet-800/60 dark:text-violet-100 dark:border-violet-700 shadow-sm transition-colors">
-                <button
-                  className="font-medium hover:underline"
-                  onClick={() => onOpenKey(chip.key)}
-                >
-                  {chip.label}
-                </button>
-                <button
-                  className="ml-0.5 opacity-50 hover:opacity-100"
-                  aria-label="Remove"
-                  onClick={() => onClearKey(chip.key)}
-                >
-                  ✕
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
 
 function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilters: React.Dispatch<React.SetStateAction<Filters>>; loading: boolean }) {
   // Saved views (localStorage)
@@ -906,7 +789,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void }) {
   const { addItem, removeItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
-  const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-2.5', 2: 'py-3.5', 3: 'py-4.5', 4: 'py-5.5' }
+  const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-1.5', 2: 'py-2.5', 3: 'py-3.5', 4: 'py-4.5' }
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
@@ -995,28 +878,28 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
   // Consistent width per column to align headers and data - optimized for no horizontal scroll
   const columnWidthClasses: Record<ColumnKey, string> = useMemo(() => ({
-    name: 'min-w-[12rem] w-[13rem] max-w-[15rem]',
-    niche: 'min-w-[8rem] w-[9rem] max-w-[11rem]',
-    countryLang: 'min-w-[10rem] w-[11rem] max-w-[13rem]',
-    authority: 'min-w-[8rem] w-[9rem] max-w-[11rem]',
+    name: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    niche: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    countryLang: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    authority: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
     spam: 'min-w-[5rem] w-[6rem] max-w-[7rem]',
-    price: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    price: 'min-w-[5rem] w-[6rem] max-w-[7rem]',
     trend: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
     cart: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    website: 'min-w-[12rem] w-[13rem] max-w-[16rem]',
-    traffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    organicTraffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    authorityScore: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    availability: 'min-w-[7.5rem] w-[8.5rem] max-w-[9.5rem]',
-    sampleUrl: 'min-w-[7.5rem] w-[8.5rem] max-w-[10rem]',
-    lastPublished: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
-    outboundLimit: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
-    backlinkNature: 'min-w-[9rem] w-[10.5rem] max-w-[12rem]',
-    backlinksAllowed: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
-    wordLimit: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    tatDays: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    linkPlacement: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
-    permanence: 'min-w-[8rem] w-[9rem] max-w-[10.5rem]',
+    website: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    traffic: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    organicTraffic: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    authorityScore: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    availability: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    sampleUrl: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    lastPublished: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    outboundLimit: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    backlinkNature: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    backlinksAllowed: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    wordLimit: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    tatDays: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    linkPlacement: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    permanence: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
     order: 'min-w-[4rem] w-[5rem] max-w-[6rem]'
   }), [])
 
@@ -1057,11 +940,47 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         return (
           <div className="max-w-full">
             <div className="flex flex-wrap gap-1 max-w-full">
-              {s.niche.split(',').map(n => n.trim()).filter(Boolean).map((n, idx) => (
-                <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                  <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={n}>{n}</span>
-                </span>
-              ))}
+              {(() => {
+                const niches = s.niche.split(',').map(n => n.trim()).filter(Boolean)
+                if (rowLevel === 1) {
+                  // Short: Show only first niche + dots if more exist
+                  return (
+                    <>
+                      <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={niches[0]}>{niches[0]}</span>
+                      </span>
+                      {niches.length > 1 && (
+                        <span className="px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                          ...
+                        </span>
+                      )}
+                    </>
+                  )
+                } else if (rowLevel === 2) {
+                  // Medium: Show up to 2 niches + dots if more exist
+                  return (
+                    <>
+                      {niches.slice(0, 2).map((n, idx) => (
+                        <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
+                          <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={n}>{n}</span>
+                        </span>
+                      ))}
+                      {niches.length > 2 && (
+                        <span className="px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                          ...
+                        </span>
+                      )}
+                    </>
+                  )
+                } else {
+                  // Tall and Extra Tall: Show all niches
+                  return niches.map((n, idx) => (
+                    <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
+                      <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={n}>{n}</span>
+                    </span>
+                  ))
+                }
+              })()}
             </div>
             {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Type:</span> {s.category}</div>)}
           </div>
@@ -1069,21 +988,30 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'countryLang':
         return (
           <div className="text-sm">
-            <div className="flex items-center gap-1.5">
-              <Flag country={s.country} withBg className="shrink-0" />
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap" title={s.country}>{s.country}</span>
-              <span className="opacity-60">•</span>
-              <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap" title={s.language}>{s.language}</span>
-            </div>
-            {rowLevel >= 3 && (
-              <div className="text-[11px] text-gray-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap" title={s.country}>
-                <span className="text-gray-400">Country:</span> {s.country}
+            {rowLevel === 1 ? (
+              // Short: Just language with country flag, full info on hover
+              <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
+                <Flag country={s.country} withBg className="shrink-0" />
+                <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap">{s.language}</span>
               </div>
-            )}
-            {rowLevel >= 4 && (
-              <div className="text-[11px] text-gray-500 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" title={s.language}>
-                <span className="text-gray-400">Language:</span> {s.language}
-              </div>
+            ) : (
+              // Medium and above: Show with additional details
+              <>
+                <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
+                  <Flag country={s.country} withBg className="shrink-0" />
+                  <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap">{s.language}</span>
+                </div>
+                {rowLevel >= 3 && (
+                  <div className="text-[11px] text-gray-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap" title={s.country}>
+                    <span className="text-gray-400">Country:</span> {s.country}
+                  </div>
+                )}
+                {rowLevel >= 4 && (
+                  <div className="text-[11px] text-gray-500 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" title={s.language}>
+                    <span className="text-gray-400">Language:</span> {s.language}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )
@@ -1091,16 +1019,18 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         return (
           <div>
             <div className="tabular-nums">{s.da}/{s.pa}/{s.dr}</div>
-            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
-                <MozIcon className="w-3 h-3" />
-                DA/PA
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
-                <AhrefsIcon className="w-3 h-3" />
-                DR
-              </span>
-            </div>
+            {rowLevel >= 2 && (
+              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                  <MozIcon className="w-3 h-3" />
+                  DA/PA
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                  <AhrefsIcon className="w-3 h-3" />
+                  DR
+                </span>
+              </div>
+            )}
           </div>
         )
       case 'spam':
@@ -1201,16 +1131,18 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'cart':
         return (
           <>
-            <div className="flex flex-col items-center gap-2">
+            <div className={`flex ${rowLevel === 1 ? 'flex-col items-center gap-1' : 'flex-col items-center gap-2'}`}>
               {isItemInCart(s.id) ? (
                 <div className="flex items-center gap-2">
                   <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
-                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
+                  {rowLevel >= 2 && (
+                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
+                  )}
                 </div>
               ) : (
                 <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); addItem(s) }}>Add to Cart</Button>
               )}
-              <WishlistInlineButton site={s} />
+              {rowLevel >= 2 && <WishlistInlineButton site={s} />}
             </div>
           </>
         )
@@ -1664,7 +1596,6 @@ export default function PublishersClient() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { openChatbot } = useAIChatbot()
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
   function HeaderCheckout() {
@@ -1676,15 +1607,6 @@ export default function PublishersClient() {
         {/* Inline checkout button (subtle purple) */}
         <Button asChild className="h-8 text-xs px-3 bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500">
           <a href="/checkout">Checkout ({count})</a>
-        </Button>
-        {/* Floating persistent checkout button for long lists */}
-        <Button
-          asChild
-          className="fixed bottom-5 right-5 z-50 h-10 px-4 rounded-full shadow-lg bg-violet-600 text-white hover:bg-violet-500 dark:bg-violet-600 dark:hover:bg-violet-500"
-        >
-          <a href="/checkout" aria-label={`Checkout (${count})`}>
-            Checkout ({count})
-          </a>
         </Button>
       </>
     )
@@ -1929,8 +1851,7 @@ export default function PublishersClient() {
   }, [searchQuery, results.length, loading, filters])
 
   return (
-    <CartProvider>
-      <div className="px-4 sm:px-6 lg:px-8 py-6 w-full max-w-[96rem] mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 w-full max-w-[96rem] mx-auto">
         <div className="sm:flex sm:justify-between sm:items-center mb-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
           <div className="flex items-center gap-2">
@@ -1988,37 +1909,7 @@ export default function PublishersClient() {
 
         <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} />
 
-        {/* Floating Filters Dock */}
-        <FloatingFiltersDock
-          filters={filters}
-          onClearKey={(k) => {
-            setFilters(f => {
-              const current = (f as any)[k]
-              let reset: any = ""
-              if (typeof current === 'boolean') reset = undefined
-              else if (typeof current === 'number') reset = undefined
-              else reset = ""
-              return { ...f, [k]: reset }
-            })
-          }}
-          onOpenKey={(k) => {
-            const el = document.getElementById(`filter-pebble-${String(k)}`)
-            if (el) {
-              el.click()
-              // If the original filters header scrolled off, scroll into view softly
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }
-          }}
-        />
-        {/* Floating AI Assistant Trigger (bottom-left; avoids checkout button) */}
-        <Button
-          onClick={() => openChatbot()}
-          className="fixed bottom-5 left-5 z-40 h-10 px-3 rounded-full shadow-lg border border-violet-300 bg-white/90 backdrop-blur text-violet-700 hover:bg-violet-50 dark:bg-gray-900/80 dark:text-violet-300 dark:border-violet-600"
-        >
-          AI Assistant
-        </Button>
       </div>
-    </CartProvider>
   )
 }
 function MaskedWebsite({ site }: { site: Site }) {

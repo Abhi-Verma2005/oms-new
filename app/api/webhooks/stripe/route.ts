@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { prisma } from '@/lib/db'
+import { ActivityLogger } from '@/lib/activity-logger'
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
@@ -112,6 +113,38 @@ export async function POST(request: NextRequest) {
           })
 
           console.log('Order created successfully after payment:', order.id)
+          
+          // Log payment and order creation activities
+          try {
+            await ActivityLogger.log({
+              userId,
+              activity: 'PAYMENT_SUCCESS',
+              category: 'PAYMENT',
+              description: `Payment successful for $${(paymentIntent.amount / 100).toFixed(2)} ${paymentIntent.currency.toUpperCase()}`,
+              metadata: {
+                paymentIntentId: paymentIntent.id,
+                amount: paymentIntent.amount,
+                currency: paymentIntent.currency,
+                orderId: order.id
+              }
+            } as any)
+            
+            await ActivityLogger.log({
+              userId,
+              activity: 'ORDER_CREATED',
+              category: 'ORDER',
+              description: `Order created with ${parsedItems.length} items`,
+              metadata: {
+                orderId: order.id,
+                totalAmount: paymentIntent.amount,
+                currency: paymentIntent.currency,
+                itemCount: parsedItems.length,
+                items: parsedItems.map(item => ({ id: item.id, name: item.name }))
+              }
+            } as any)
+          } catch (logError) {
+            console.error('Error logging activities:', logError)
+          }
         } catch (dbError) {
           console.error('Error handling order in database:', dbError)
         }
@@ -176,6 +209,25 @@ export async function POST(request: NextRequest) {
             })
 
             console.log('Failed order created:', failedOrder.id)
+            
+            // Log failed payment activity
+            try {
+              await ActivityLogger.log({
+                userId: paymentIntent.metadata.userId,
+                activity: 'PAYMENT_FAILED',
+                category: 'PAYMENT',
+                description: `Payment failed for $${(paymentIntent.amount / 100).toFixed(2)} ${paymentIntent.currency.toUpperCase()}`,
+                metadata: {
+                  paymentIntentId: paymentIntent.id,
+                  amount: paymentIntent.amount,
+                  currency: paymentIntent.currency,
+                  orderId: failedOrder.id,
+                  error: paymentIntent.last_payment_error?.message || 'Unknown error'
+                }
+              } as any)
+            } catch (logError) {
+              console.error('Error logging failed payment activity:', logError)
+            }
           } catch (dbError) {
             console.error('Error handling failed payment:', dbError)
           }

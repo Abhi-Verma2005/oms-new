@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppProvider } from '@/app/app-provider'
 import { useSelectedLayoutSegments } from 'next/navigation'
+import { useWindowWidth } from '@/components/utils/use-window-width'
 import SidebarLinkGroup from '@/components/ui/sidebar-link-group'
 import SidebarLink from '@/components/ui/sidebar-link'
 import Logo from '@/components/ui/logo'
@@ -11,6 +12,15 @@ export function Sidebar() {
   const sidebar = useRef<HTMLDivElement>(null)
   const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded } = useAppProvider()
   const segments = useSelectedLayoutSegments()
+  const breakpoint = useWindowWidth()
+  const [isClient, setIsClient] = useState(false)
+  
+  // Fix hydration by ensuring expandOnly is only true on client
+  const expandOnly = isClient && !sidebarExpanded && breakpoint && (breakpoint >= 1024 && breakpoint < 1536)
+  
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     const clickHandler = ({ target }: { target: EventTarget | null }): void => {
@@ -47,19 +57,44 @@ export function Sidebar() {
           sidebarOpen ? 'translate-x-0' : '-translate-x-64'
         } rounded-r-2xl shadow-xs`}
       >
-        <div className="flex justify-between mb-10 pr-3 sm:px-2">
-          <button
-            className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-controls="sidebar"
-            aria-expanded={sidebarOpen}
-          >
-            <span className="sr-only">Close sidebar</span>
-            <svg className="w-6 h-6 fill-current transition-transform duration-150 will-change-transform group-active:scale-90" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10.7 18.7l1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4L4 12z" />
-            </svg>
-          </button>
-          <Logo href="/admin" />
+        <div className="mb-10 pr-3 sm:px-2">
+          {/* Logo */}
+          <div className="flex justify-center lg:justify-start mb-4">
+            <Logo href="/admin" />
+          </div>
+          
+          {/* Toggle button - works for both mobile and desktop */}
+          <div className="flex justify-center lg:justify-start">
+            <button
+              className="inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
+              onClick={() => {
+                // On mobile, toggle sidebar open/close
+                if (breakpoint && breakpoint < 1024) {
+                  setSidebarOpen(!sidebarOpen)
+                } else {
+                  // On desktop, toggle sidebar expanded/collapsed
+                  setSidebarExpanded(!sidebarExpanded)
+                }
+              }}
+              aria-controls="sidebar"
+              aria-expanded={breakpoint && breakpoint < 1024 ? sidebarOpen : sidebarExpanded}
+              title={breakpoint && breakpoint < 1024 ? (sidebarOpen ? 'Close sidebar' : 'Open sidebar') : (sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar')}
+            >
+              <span className="sr-only">
+                {breakpoint && breakpoint < 1024 ? (sidebarOpen ? 'Close sidebar' : 'Open sidebar') : (sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar')}
+              </span>
+              {/* Mobile: X icon, Desktop: Arrow icon */}
+              {breakpoint && breakpoint < 1024 ? (
+                <svg className="w-6 h-6 fill-current transition-transform duration-150 will-change-transform group-active:scale-90" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10.7 18.7l1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4L4 12z" />
+                </svg>
+              ) : (
+                <svg className={`shrink-0 fill-current text-gray-400 dark:text-gray-500 ${sidebarExpanded ? 'rotate-180' : ''} transition-transform duration-200 ease-out`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                  <path d="M15 16a1 1 0 0 1-1-1V1a1 1 0 1 1 2 0v14a1 1 0 0 1-1 1ZM8.586 7H1a1 1 0 1 0 0 2h7.586l-2.793 2.793a1 1 0 1 0 1.414 1.414l4.5-4.5A.997.997 0 0 0 12 8.01M11.924 7.617a.997.997 0 0 0-.217-.324l-4.5-4.5a1 1 0 0 0-1.414 1.414L8.586 7M12 7.99a.996.996 0 0 0-.076-.373Z" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="space-y-8">
@@ -84,57 +119,112 @@ export function Sidebar() {
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('users') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/users">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Users</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('users') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Users</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('roles') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/roles">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Roles</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('roles') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Roles</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('permissions') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/permissions">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Permissions</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('permissions') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Permissions</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('user-roles') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/user-roles">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">User Roles</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('user-roles') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">User Roles</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('activities') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/activities">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">User Activities</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('activities') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">User Activities</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('notification-types') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/notification-types">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Notification Types</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('notification-types') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M15 17h5l-5 5v-5zM4 19h6v2H4a2 2 0 01-2-2V5a2 2 0 012-2h6v2H4v14zM14 4h2a2 2 0 012 2v4h-2V6h-2v2h-2V6a2 2 0 012-2z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Notification Types</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('notifications') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/notifications">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Notifications</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('notifications') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M15 17h5l-5 5v-5zM4 19h6v2H4a2 2 0 01-2-2V5a2 2 0 012-2h6v2H4v14zM14 4h2a2 2 0 012 2v4h-2V6h-2v2h-2V6a2 2 0 012-2z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Notifications</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('wishlists') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/wishlists">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Wishlists</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('wishlists') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Wishlists</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('feedback') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/feedback">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Feedback</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('feedback') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Feedback</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('changelog') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/changelog">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Changelog</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('changelog') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Changelog</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('search-interests') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
                 <SidebarLink href="/admin/search-interests">
-                  <span className="text-sm font-medium ml-0 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Search Interests</span>
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('search-interests') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Search Interests</span>
+                  </div>
                 </SidebarLink>
               </li>
               <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('ai-chatbot') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
@@ -149,26 +239,49 @@ export function Sidebar() {
               </li>
             </ul>
           </div>
-        </div>
-
-        <div className="pt-3 hidden lg:inline-flex 2xl:hidden justify-end mt-auto">
-          <div className="w-12 pl-4 pr-3 py-2 group relative">
-            <button
-              className="inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-200 bg-transparent hover:bg-gray-100/70 dark:hover:bg-gray-700/60 shadow-xs transition-all duration-150 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800"
-              onClick={() => setSidebarExpanded(!sidebarExpanded)}
-              aria-pressed={sidebarExpanded}
-              aria-label={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-              title={sidebarExpanded ? 'Collapse' : 'Expand'}
-            >
-              <svg className="shrink-0 fill-current text-gray-400 dark:text-gray-500 sidebar-expanded:rotate-180 transition-transform duration-200 ease-out" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-                <path d="M15 16a1 1 0 0 1-1-1V1a1 1 0 1 1 2 0v14a1 1 0 0 1-1 1ZM8.586 7H1a1 1 0 1 0 0 2h7.586l-2.793 2.793a1 1 0 1 0 1.414 1.414l4.5-4.5A.997.997 0 0 0 12 8.01M11.924 7.617a.997.997 0 0 0-.217-.324l-4.5-4.5a1 1 0 0 0-1.414 1.414L8.586 7M12 7.99a.996.996 0 0 0-.076-.373Z" />
-              </svg>
-            </button>
-            <div className="pointer-events-none absolute -top-8 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 rounded bg-gray-900/90 text-white dark:bg-gray-700/90">
-              {sidebarExpanded ? 'Collapse' : 'Expand'}
-            </div>
+          
+          <div>
+            <h3 className="text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">
+              <span className="hidden lg:block lg:sidebar-expanded:hidden 2xl:hidden text-center w-6" aria-hidden="true">
+                •••
+              </span>
+              <span className="lg:hidden lg:sidebar-expanded:block 2xl:block">Tag System</span>
+            </h3>
+            <ul className="mt-3">
+              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('tags') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
+                <SidebarLink href="/admin/tags">
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('tags') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Tags</span>
+                  </div>
+                </SidebarLink>
+              </li>
+              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('orders') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
+                <SidebarLink href="/admin/orders">
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('orders') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M7 4V2C7 1.45 7.45 1 8 1H16C16.55 1 17 1.45 17 2V4H20C20.55 4 21 4.45 21 5S20.55 6 20 6H19V19C19 20.1 18.1 21 17 21H7C5.9 21 5 20.1 5 19V6H4C3.45 6 3 5.55 3 5S3.45 4 4 4H7ZM9 3V4H15V3H9ZM7 6V19H17V6H7ZM9 8H15V10H9V8ZM9 12H15V14H9V12Z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Orders</span>
+                  </div>
+                </SidebarLink>
+              </li>
+              <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${segments.includes('bonus') && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}>
+                <SidebarLink href="/admin/bonus">
+                  <div className="flex items-center">
+                    <svg className={`shrink-0 fill-current ${segments.includes('bonus') ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">Bonus System</span>
+                  </div>
+                </SidebarLink>
+              </li>
+            </ul>
           </div>
         </div>
+
       </div>
     </div>
   )

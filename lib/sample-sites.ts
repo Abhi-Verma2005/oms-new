@@ -90,7 +90,7 @@ export interface APIFilters {
   websiteRemark?: string
   website?: string
   limit?: number
-}
+}  
 
 // Convert API filters to query string
 function buildFilterQuery(filters: APIFilters): string {

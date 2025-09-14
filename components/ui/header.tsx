@@ -9,8 +9,10 @@ import DropdownHelp from '@/components/dropdown-help'
 import ThemeToggle from '@/components/theme-toggle'
 import UserMenu from '@/components/user-menu'
 import { AIChatbot } from '@/components/ai-chatbot'
+import { useCart } from '@/contexts/cart-context'
+import CartModal from '@/components/cart-modal'
 import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { Search, ShoppingCart } from 'lucide-react'
 
 export default function Header({
   variant = 'default',
@@ -19,6 +21,7 @@ export default function Header({
 }) {
 
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
+  const { getTotalItems, toggleCart } = useCart()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
   const [credits, setCredits] = useState<number | null>(null)
@@ -120,6 +123,25 @@ export default function Header({
               </div>
               
               <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
+            </div>
+            
+            {/* Cart Button */}
+            <div className="relative">
+              <button
+                onClick={toggleCart}
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ml-3 relative"
+                title="Shopping Cart"
+              >
+                <span className="sr-only">Shopping Cart</span>
+                <ShoppingCart className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
+                {getTotalItems() > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-violet-600 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                    {getTotalItems()}
+                  </span>
+                )}
+              </button>
+              {/* Cart Modal positioned relative to this button */}
+              <CartModal />
             </div>
             <Notifications align="right" />
             <DropdownHelp align="right" />

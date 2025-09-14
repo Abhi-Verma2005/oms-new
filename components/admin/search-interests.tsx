@@ -90,22 +90,22 @@ export function SearchInterestsAdmin({ userId }: { userId?: string }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white">
-          <UICardHeader className="pb-2"><UICardTitle className="text-sm font-medium">Total Interests</UICardTitle></UICardHeader>
-          <CardContent className="pt-0"><div className="text-2xl font-semibold">{summary?.totals.total ?? '—'}</div></CardContent>
+        <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+          <UICardHeader className="pb-2"><UICardTitle className="text-sm font-medium text-gray-800 dark:text-gray-100">Total Interests</UICardTitle></UICardHeader>
+          <CardContent className="pt-0"><div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{summary?.totals.total ?? '—'}</div></CardContent>
         </Card>
-        <Card className="bg-white">
-          <UICardHeader className="pb-2"><UICardTitle className="text-sm font-medium">Pending (Notified=false)</UICardTitle></UICardHeader>
-          <CardContent className="pt-0"><div className="text-2xl font-semibold">{summary?.totals.pending ?? '—'}</div></CardContent>
+        <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+          <UICardHeader className="pb-2"><UICardTitle className="text-sm font-medium text-gray-800 dark:text-gray-100">Pending (Notified=false)</UICardTitle></UICardHeader>
+          <CardContent className="pt-0"><div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{summary?.totals.pending ?? '—'}</div></CardContent>
         </Card>
-        <Card className="bg-white">
-          <UICardHeader className="pb-2"><UICardTitle className="text-sm font-medium">Notified</UICardTitle></UICardHeader>
-          <CardContent className="pt-0"><div className="text-2xl font-semibold">{summary?.totals.notified ?? '—'}</div></CardContent>
+        <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+          <UICardHeader className="pb-2"><UICardTitle className="text-sm font-medium text-gray-800 dark:text-gray-100">Notified</UICardTitle></UICardHeader>
+          <CardContent className="pt-0"><div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{summary?.totals.notified ?? '—'}</div></CardContent>
         </Card>
       </div>
 
-      <Card className="bg-white">
-        <UICardHeader className="pb-2"><UICardTitle className="text-base">Top Queries</UICardTitle></UICardHeader>
+      <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <UICardHeader className="pb-2"><UICardTitle className="text-base text-gray-800 dark:text-gray-100">Top Queries</UICardTitle></UICardHeader>
         <CardContent className="pt-0">
           {summary?.topQueries && summary.topQueries.length > 0 ? (
             <div className="h-[300px]">
@@ -125,18 +125,18 @@ export function SearchInterestsAdmin({ userId }: { userId?: string }) {
               />
             </div>
           ) : (
-            <div className="text-sm text-gray-500">No data</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">No data</div>
           )}
         </CardContent>
       </Card>
 
-      <Card className="bg-white">
-        <UICardHeader className="pb-2"><UICardTitle className="text-base">Search Interests</UICardTitle></UICardHeader>
+      <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <UICardHeader className="pb-2"><UICardTitle className="text-base text-gray-800 dark:text-gray-100">Search Interests</UICardTitle></UICardHeader>
         <CardContent className="pt-2 space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <Input className="w-64" placeholder="Filter query..." value={q} onChange={(e) => setQ(e.target.value)} />
+            <Input className="w-64 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100" placeholder="Filter query..." value={q} onChange={(e) => setQ(e.target.value)} />
             <Select value={notified} onValueChange={(v: 'all'|'true'|'false') => setNotified(v)}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className="w-40 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
                 <SelectItem value="false">Pending</SelectItem>
@@ -176,7 +176,7 @@ export function SearchInterestsAdmin({ userId }: { userId?: string }) {
               </UITableHeader>
               <TableBody>
                 {items.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="py-6 text-gray-500">No interests found</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={5} className="py-6 text-gray-500 dark:text-gray-400">No interests found</TableCell></TableRow>
                 ) : items.map(it => (
                   <TableRow key={it.id}>
                     <TableCell>
@@ -186,15 +186,15 @@ export function SearchInterestsAdmin({ userId }: { userId?: string }) {
                         onChange={(e) => setSelected(prev => ({ ...prev, [it.id]: e.target.checked }))}
                       />
                     </TableCell>
-                    {!userId && <TableCell>{it.userName || it.userEmail || it.userId}</TableCell>}
-                    <TableCell className="max-w-[420px]">
+                    {!userId && <TableCell className="text-gray-900 dark:text-gray-100">{it.userName || it.userEmail || it.userId}</TableCell>}
+                    <TableCell className="max-w-[420px] text-gray-900 dark:text-gray-100">
                       <div className="truncate" title={it.query}>{it.query}</div>
                     </TableCell>
-                    <TableCell>{it.notified ? 'Yes' : 'No'}</TableCell>
-                    <TableCell>{new Date(it.createdAt).toLocaleString()}</TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100">{it.notified ? 'Yes' : 'No'}</TableCell>
+                    <TableCell className="text-gray-900 dark:text-gray-100">{new Date(it.createdAt).toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                       <button
-                        className="text-red-600 hover:underline"
+                        className="text-red-600 dark:text-red-400 hover:underline"
                         onClick={async () => {
                           const ok = window.confirm('Delete this search interest?')
                           if (!ok) return
@@ -212,7 +212,7 @@ export function SearchInterestsAdmin({ userId }: { userId?: string }) {
           </div>
 
           <div className="flex items-center justify-between pt-2">
-            <div className="text-sm text-gray-500">Page {page} of {totalPages} • {total} total • {selectedIds.length} selected</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Page {page} of {totalPages} • {total} total • {selectedIds.length} selected</div>
             <div className="flex items-center gap-2">
               <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
                 <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
