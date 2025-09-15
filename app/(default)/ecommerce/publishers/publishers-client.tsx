@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import ModalBasic from "@/components/modal-basic"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card"
 import LineChart01 from "@/components/charts/line-chart-01"
 import { Table, TableBody, TableCell, TableHead, TableHeader as UITableHeader, TableRow } from "@/components/ui/table"
@@ -713,10 +713,6 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         </UICardHeader>
         <CardContent className="pt-1">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3.5 gap-3">
-        <div className="flex items-center gap-2">
-          <FilterIcon className="w-4 h-4 text-violet-600" />
-          <h2 className="text-sm font-medium">Refine Results</h2>
-        </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
           <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
@@ -1362,7 +1358,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       {/* Scrollable Data Body */}
       <div className="overflow-x-auto">
         <Table className="dark:text-gray-300 table-fixed w-full min-w-[800px]">
-          <TableBody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
+          <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
               <TableRow><TableCell className="px-5 py-6" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
@@ -1397,6 +1393,16 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                     ) : (
                       <span>Site Details</span>
                     )}
+                    <DialogClose
+                      aria-label="Close"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 transition-colors"
+                      onClick={() => setDetailsOpen(false)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </DialogClose>
                   </DialogTitle>
                 </DialogHeader>
                 {selectedSite && (
@@ -1969,14 +1975,20 @@ function MaskedWebsite({ site }: { site: Site }) {
           {revealed}
         </a>
       ) : (
-        <span className="text-gray-300 dark:text-gray-200/80 tracking-wide truncate max-w-[11rem] select-none" title="Hidden website">
+        <span
+          className="text-gray-300 dark:text-gray-200/80 tracking-wide truncate max-w-[11rem] select-none cursor-pointer leading-4 min-h-[18px] sm:leading-5 sm:min-h-[20px]"
+          title="Hidden website"
+          onClick={onReveal}
+          role="button"
+          aria-label="Reveal website"
+        >
           {display}
         </span>
       )}
       {!revealed && (
         <button
           onClick={onReveal}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] px-2 py-0.5 rounded-lg border border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-300 dark:hover:bg-violet-500/10 disabled:opacity-50"
+          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-[10px] sm:text-[11px] px-1.5 py-0.5 sm:px-2 sm:py-1 leading-4 sm:leading-5 min-h-[22px] sm:min-h-[28px] rounded-lg border border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-300 dark:hover:bg-violet-500/10 disabled:opacity-50"
           disabled={loading}
         >
           {loading ? 'Revealing…' : 'Show website'}
