@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useAppProvider } from '@/app/app-provider'
-import { useSelectedLayoutSegments } from 'next/navigation'
+import { useSelectedLayoutSegments, usePathname, useSearchParams } from 'next/navigation'
 import { useWindowWidth } from '@/components/utils/use-window-width'
 import SidebarLinkGroup from './sidebar-link-group'
 import SidebarLink from './sidebar-link'
@@ -15,8 +15,10 @@ export default function Sidebar({
 }) {
   const sidebar = useRef<HTMLDivElement>(null)
   const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded } = useAppProvider()
-  const segments = useSelectedLayoutSegments()  
+  const segments = useSelectedLayoutSegments() || [] 
+  const pathname = usePathname()
   const breakpoint = useWindowWidth();
+  const searchParams = useSearchParams()
   const [isClient, setIsClient] = useState(false)
   
   // Fix hydration by ensuring expandOnly is only true on client
@@ -25,6 +27,22 @@ export default function Sidebar({
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Auto-close sidebar on route or query change (any viewport)
+  useEffect(() => {
+    if (!isClient) return
+    if (sidebarOpen) setSidebarOpen(false)
+  }, [pathname, searchParams, isClient, sidebarOpen, setSidebarOpen])
+
+  // Also close on hash changes (client-side only)
+  useEffect(() => {
+    if (!isClient) return
+    const onHashChange = () => {
+      if (breakpoint && breakpoint < 1024) setSidebarOpen(false)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [breakpoint, isClient, setSidebarOpen])
 
   // close on click outside
   useEffect(() => {
@@ -35,7 +53,7 @@ export default function Sidebar({
     }
     document.addEventListener('click', clickHandler)
     return () => document.removeEventListener('click', clickHandler)
-  })
+  }, [sidebarOpen, setSidebarOpen])
 
   // close if the esc key is pressed
   useEffect(() => {
@@ -45,7 +63,7 @@ export default function Sidebar({
     }
     document.addEventListener('keydown', keyHandler)
     return () => document.removeEventListener('keydown', keyHandler)
-  }) 
+  }, [sidebarOpen, setSidebarOpen])
 
   return (
     <div className={`min-w-fit ${sidebarExpanded ? 'sidebar-expanded' : ''}`}>
@@ -55,6 +73,7 @@ export default function Sidebar({
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden="true"
+        onClick={() => setSidebarOpen(false)}
       ></div>    
 
       {/* Sidebar */}

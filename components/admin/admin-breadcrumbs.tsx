@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronRight, Home } from 'lucide-react';
 
 export function AdminBreadcrumbs() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   
   const pathSegments = pathname.split('/').filter(Boolean);
   

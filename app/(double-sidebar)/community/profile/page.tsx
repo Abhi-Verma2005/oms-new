@@ -6,6 +6,7 @@ export const metadata = {
 import { FlyoutProvider } from '@/app/flyout-context'
 import ProfileSidebar from './profile-sidebar'
 import ProfileBody from './profile-body'
+import { Suspense } from 'react'
 
 function ProfileContent() {
   return (
@@ -24,7 +25,9 @@ function ProfileContent() {
 export default function Profile() {
   return (
     <FlyoutProvider>
-      <ProfileContent />
+      <Suspense fallback={null}>
+        <ProfileContent />
+      </Suspense>
     </FlyoutProvider>
   )
 }

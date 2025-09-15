@@ -19,7 +19,7 @@ function ResetPasswordContent() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    const tokenParam = searchParams.get('token')
+    const tokenParam = searchParams?.get('token') ?? null
     if (tokenParam) {
       setToken(tokenParam)
       setStep('reset')

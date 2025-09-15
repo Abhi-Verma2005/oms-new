@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Sidebar from '@/components/ui/sidebar'
 import Header from '@/components/ui/header'
+import { Suspense } from 'react'
 import NotFoundImage from '@/public/images/404-illustration.svg'
 import NotFoundImageDark from '@/public/images/404-illustration-dark.svg'
 
@@ -10,13 +11,17 @@ export default function NotFound() {
     <div className="flex h-[100dvh] overflow-hidden">
 
       {/* Sidebar */}
-      <Sidebar />
+      <Suspense fallback={null}>
+        <Sidebar />
+      </Suspense>
 
       {/* Content area */}
       <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
 
         {/*  Site header */}
-        <Header />
+        <Suspense fallback={null}>
+          <Header />
+        </Suspense>
 
         <main className="grow [&>*:first-child]:scroll-mt-16">
           <div className="relative bg-white dark:bg-gray-900 h-full">

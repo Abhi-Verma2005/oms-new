@@ -22,7 +22,7 @@ export default function NavbarDropdown({
   const [isOpen, setIsOpen] = useState(false)
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const segments = useSelectedLayoutSegments()
+  const segments = useSelectedLayoutSegments() || []
   
   const isActive = href ? segments.some(segment => href.includes(segment)) : false
 

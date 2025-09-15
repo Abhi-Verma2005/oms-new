@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useAppProvider } from '@/app/app-provider'
 
 import SearchModal from '@/components/search-modal'
@@ -29,10 +30,19 @@ export default function Header({
   const [showCreditHint, setShowCreditHint] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false)
   const [isClient, setIsClient] = useState(false)
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Auto-close mobile header menu on route/query change
+  useEffect(() => {
+    if (!isClient) return
+    if (mobileMenuOpen) setMobileMenuOpen(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, searchParams])
 
   useEffect(() => {
     let active = true

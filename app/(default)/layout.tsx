@@ -1,4 +1,5 @@
 import Header from '@/components/ui/header'
+import { Suspense } from 'react'
 
 export default function DefaultLayout({
   children,
@@ -9,12 +10,16 @@ export default function DefaultLayout({
     <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900">
 
       {/* Site header */}
-      <Header />
+      <Suspense fallback={null}>
+        <Header />
+      </Suspense>
 
       {/* Content area */}
-      <main className="grow [&>*:first-child]:scroll-mt-16">
-        {children}
-      </main>        
+      <Suspense fallback={null}>
+        <main className="grow [&>*:first-child]:scroll-mt-16">
+          {children}
+        </main>
+      </Suspense>
 
     </div>
   )

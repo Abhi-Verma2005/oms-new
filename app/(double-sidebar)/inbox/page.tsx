@@ -8,6 +8,7 @@ import InboxSidebar from './inbox-sidebar'
 import InboxBody from './inbox-body'
 import mailUser01 from '@/public/images/user-40-11.jpg'
 import mailUser02 from '@/public/images/user-avatar-80.png'
+import { Suspense } from 'react'
 
 function InboxContent() {
 
@@ -59,7 +60,9 @@ function InboxContent() {
 export default function Inbox() {
   return (
     <FlyoutProvider>
-      <InboxContent />
+      <Suspense fallback={null}>
+        <InboxContent />
+      </Suspense>
     </FlyoutProvider>
   )
 }
