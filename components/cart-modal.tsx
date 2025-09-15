@@ -18,8 +18,8 @@ export default function CartModal() {
         onClick={closeCart}
       />
       
-      {/* Compact Cart Dropdown */}
-      <div className="absolute right-0 top-12 w-80 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[60]">
+      {/* Compact Cart Dropdown - ensure it doesn't overflow off-screen */}
+      <div className="absolute right-0 top-12 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[60]">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">

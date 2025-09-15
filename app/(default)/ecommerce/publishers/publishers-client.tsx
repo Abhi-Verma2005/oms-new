@@ -1410,8 +1410,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   <DialogTitle className="flex items-start justify-between gap-4">
                     {selectedSite ? (
                       <div className="min-w-0">
-                        <div className="text-lg sm:text-xl font-semibold tracking-tight truncate">{selectedSite.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{selectedSite.url}</div>
+                        <div className="text-lg sm:text-xl font-semibold tracking-tight truncate">{selectedSite.name || selectedSite.url.replace(/^https?:\/\//, '')}</div>
                       </div>
                     ) : (
                       <span>Site Details</span>

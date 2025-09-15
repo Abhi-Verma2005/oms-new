@@ -195,7 +195,7 @@ export default function Header({
           </div>
 
           {/* Header: Right side */}
-          <div className="flex items-center space-x-3 relative z-30">
+          <div className="flex items-center space-x-2 sm:space-x-3 relative z-30">
             {/* Credits Display */}
             <div className="relative">
               <button
@@ -219,7 +219,7 @@ export default function Header({
             </div>
             <div className="relative group">
               <button
-                className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ml-3 ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
+                className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
                 onClick={() => { setSearchModalOpen(true) }}
                 title="Search (⌘K)"
               >
@@ -227,8 +227,8 @@ export default function Header({
                 <Search className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
               
-              {/* Keyboard shortcut hint */}
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              {/* Keyboard shortcut hint (positioned below to avoid browser chrome clipping) */}
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-gray-700/95 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-40">
                 ⌘K
               </div>
               
@@ -239,7 +239,7 @@ export default function Header({
             <div className="relative">
               <button
                 onClick={toggleCart}
-                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ml-3 relative"
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full relative"
                 title="Shopping Cart"
               >
                 <span className="sr-only">Shopping Cart</span>
