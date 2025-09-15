@@ -789,6 +789,9 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void }) {
   const { addItem, removeItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
+  // Track the currently hovered site for the trend preview panel
+  const [trendPreviewSite, setTrendPreviewSite] = useState<Site | null>(null)
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-1.5', 2: 'py-2.5', 3: 'py-3.5', 4: 'py-4.5' }
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -1063,69 +1066,23 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'trend':
         return (
-          <div className="group relative inline-flex items-center gap-1.5 text-sm">
+          <div
+            className="inline-flex items-center gap-1.5 text-sm"
+            onMouseEnter={() => {
+              if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current)
+                hideTimeoutRef.current = null
+              }
+              setTrendPreviewSite(s)
+            }}
+            onMouseLeave={() => {
+              hideTimeoutRef.current = setTimeout(() => {
+                setTrendPreviewSite(null)
+              }, 1000)
+            }}
+          >
             <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="capitalize">{s.toolScores.trafficTrend || 'stable'}</span>
-            {/* Hover panel with mini charts */}
-            <div className="pointer-events-none absolute left-0 top-full mt-2 -translate-x-full w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity p-3 z-[5000] max-h-64 overflow-auto">
-              <div className="flex flex-col gap-2">
-                <div>
-                  <div className="text-[11px] text-gray-500 mb-0.5">Overall Traffic</div>
-                  <LineChart01
-                    width={260}
-                    height={60}
-                    data={{
-                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                      datasets: [
-                        {
-                          data: Array.from({ length: 12 }, () =>
-                            Math.max(1000, (s.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
-                          ),
-                          borderColor: '#7c3aed',
-                          fill: true,
-                        },
-                      ],
-                    }}
-                  />
-                </div>
-                <div>
-                  <div className="text-[11px] text-gray-500 mb-0.5">Organic Traffic</div>
-                  <LineChart01
-                    width={260}
-                    height={60}
-                    data={{
-                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                      datasets: [
-                        {
-                          data: Array.from({ length: 12 }, () =>
-                            Math.max(1000, (s.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
-                          ),
-                          borderColor: '#22c55e',
-                          fill: true,
-                        },
-                      ],
-                    }}
-                  />
-                </div>
-                <div>
-                  <div className="text-[11px] text-gray-500 mb-0.5">Semrush Authority</div>
-                  <LineChart01
-                    width={260}
-                    height={60}
-                    data={{
-                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                      datasets: [
-                        {
-                          data: Array.from({ length: 12 }, () => Math.max(1, s.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
-                          borderColor: '#6366f1',
-                          fill: true,
-                        },
-                      ],
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         )
       case 'cart':
@@ -1354,13 +1311,79 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           </Table>
         </div>
       </div>
+
+      {/* Fixed bottom-left trend preview panel */}
+      {trendPreviewSite && (
+        <div className="fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]">
+          <div className="text-xs font-medium mb-2 truncate" title={trendPreviewSite.url.replace(/^https?:\/\//, '')}>
+            Trend preview · {trendPreviewSite.url.replace(/^https?:\/\//, '')}
+          </div>
+          <div className="flex flex-col gap-2">
+            <div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Overall Traffic</div>
+              <LineChart01
+                width={260}
+                height={60}
+                data={{
+                  labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                  datasets: [
+                    {
+                      data: Array.from({ length: 12 }, () =>
+                        Math.max(1000, (trendPreviewSite.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
+                      ),
+                      borderColor: '#7c3aed',
+                      fill: true,
+                    },
+                  ],
+                }}
+              />
+            </div>
+            <div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Organic Traffic</div>
+              <LineChart01
+                width={260}
+                height={60}
+                data={{
+                  labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                  datasets: [
+                    {
+                      data: Array.from({ length: 12 }, () =>
+                        Math.max(1000, (trendPreviewSite.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
+                      ),
+                      borderColor: '#22c55e',
+                      fill: true,
+                    },
+                  ],
+                }}
+              />
+            </div>
+            <div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Semrush Authority</div>
+              <LineChart01
+                width={260}
+                height={60}
+                data={{
+                  labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                  datasets: [
+                    {
+                      data: Array.from({ length: 12 }, () => Math.max(1, trendPreviewSite.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
+                      borderColor: '#6366f1',
+                      fill: true,
+                    },
+                  ],
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Scrollable Data Body */}
       <div className="overflow-x-auto">
         <Table className="dark:text-gray-300 table-fixed w-full min-w-[800px]">
           <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
-              <TableRow><TableCell className="px-5 py-6" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
+              <TableRow><TableCell className="px-5 py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
               <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
@@ -1407,14 +1430,16 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 </DialogHeader>
                 {selectedSite && (
                   <div className="flex flex-col max-h-[80vh]">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 py-6 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 py-4 overflow-y-auto">
                       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
                         <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Basic Information</div>
                         <div className="space-y-2.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600 dark:text-gray-400">URL</span>
-                            <span className="font-medium truncate ml-3"><a href={selectedSite.url} className="text-violet-600 hover:text-violet-700 underline" target="_blank" rel="noreferrer">{selectedSite.url}</a></span>
-                      </div>
+                          <div className="flex items-center text-xs gap-3 min-w-0">
+                            <span className="text-gray-600 dark:text-gray-400 shrink-0">URL</span>
+                            <div className="font-medium min-w-0 truncate">
+                              <MaskedWebsite site={selectedSite} />
+                            </div>
+                          </div>
                           <div className="flex items-start justify-between text-xs">
                             <span className="text-gray-600 dark:text-gray-400 mt-0.5">Niche</span>
                             <span className="ml-3 inline-flex flex-wrap gap-1.5 max-w-[18rem] justify-end">
@@ -1451,75 +1476,44 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
                         <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Traffic Data</div>
                         <div className="space-y-2.5">
-                          <div className="group flex items-center justify-between text-xs relative">
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            onMouseEnter={() => {
+                              if (hideTimeoutRef.current) { clearTimeout(hideTimeoutRef.current); hideTimeoutRef.current = null }
+                              setTrendPreviewSite(selectedSite)
+                            }}
+                            onMouseLeave={() => {
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                            }}
+                          >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Semrush Authority</span>
                             <span className="font-semibold tabular-nums">{selectedSite.toolScores.semrushAuthority}</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
-                              <div className="p-2 h-full">
-                                <LineChart01
-                                  width={300}
-                                  height={120}
-                                  data={{
-                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                    datasets: [
-                                      {
-                                        data: Array.from({ length: 12 }, () => Math.max(1, selectedSite.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
-                                        borderColor: '#7c3aed',
-                                        fill: true,
-                                      },
-                                    ],
-                                  }}
-                                />
-                              </div>
-                            </div>
                           </div>
-                          <div className="group flex items-center justify-between text-xs relative">
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            onMouseEnter={() => {
+                              if (hideTimeoutRef.current) { clearTimeout(hideTimeoutRef.current); hideTimeoutRef.current = null }
+                              setTrendPreviewSite(selectedSite)
+                            }}
+                            onMouseLeave={() => {
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                            }}
+                          >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Overall Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
-                              <div className="p-2 h-full">
-                                <LineChart01
-                                  width={300}
-                                  height={120}
-                                  data={{
-                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                    datasets: [
-                                      {
-                                        data: Array.from({ length: 12 }, () =>
-                                          Math.max(1000, (selectedSite.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
-                                        ),
-                                        borderColor: '#7c3aed',
-                                        fill: true,
-                                      },
-                                    ],
-                                  }}
-                                />
-                              </div>
-                            </div>
                           </div>
-                          <div className="group flex items-center justify-between text-xs relative">
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            onMouseEnter={() => {
+                              if (hideTimeoutRef.current) { clearTimeout(hideTimeoutRef.current); hideTimeoutRef.current = null }
+                              setTrendPreviewSite(selectedSite)
+                            }}
+                            onMouseLeave={() => {
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                            }}
+                          >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Organic Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
-                              <div className="p-2 h-full">
-                                <LineChart01
-                                  width={300}
-                                  height={120}
-                                  data={{
-                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                    datasets: [
-                                      {
-                                        data: Array.from({ length: 12 }, () =>
-                                          Math.max(1000, (selectedSite.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
-                                        ),
-                                        borderColor: '#22c55e',
-                                        fill: true,
-                                      },
-                                    ],
-                                  }}
-                                />
-                              </div>
-                            </div>
                           </div>
                           <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Traffic Trend</span><span className="font-semibold capitalize">{selectedSite.toolScores.trafficTrend}</span></div>
                         </div>
@@ -1865,7 +1859,7 @@ export default function PublishersClient() {
   }, [searchQuery, results.length, loading, filters])
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 w-full max-w-[96rem] mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
