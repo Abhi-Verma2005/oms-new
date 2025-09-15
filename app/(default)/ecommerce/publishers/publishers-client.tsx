@@ -1230,7 +1230,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
   if (loading) return <Card className="p-6 bg-white dark:bg-gray-800">Loading…</Card>
   return (
-    <Card className="bg-white dark:bg-2gray-800">
+    <Card className="bg-white dark:bg-gray-800">
       {/* Sticky Header Container */}
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Controls Row */}
