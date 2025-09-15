@@ -44,7 +44,7 @@ export default function DomainRatingChart() {
 
   if (!mounted || loading) {
     return (
-      <div className="flex flex-col col-span-full sm:col-span-6 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+      <div className="flex flex-col col-span-full sm:col-span-6 bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Domain Rating Growth</h2>
         </header>
@@ -104,7 +104,7 @@ export default function DomainRatingChart() {
   }
 
   return (
-    <div className="flex flex-col col-span-full sm:col-span-6 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+    <div className="flex flex-col col-span-full sm:col-span-6 bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
       <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">Domain Rating Growth</h2>
       </header>
