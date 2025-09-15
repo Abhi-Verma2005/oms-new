@@ -706,20 +706,21 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
   }, [filters])
 
   return (
-    <Card className="mb-4 bg-white dark:bg-gray-800">
-      <UICardHeader className="pb-1">
-        <UICardTitle className="text-base">Filters</UICardTitle>
-      </UICardHeader>
-      <CardContent className="pt-1">
-      <div className="flex items-center justify-between mb-3.5">
+    <>
+      <Card className="mb-4 bg-white dark:bg-gray-800">
+        <UICardHeader className="pb-1">
+          <UICardTitle className="text-base">Filters</UICardTitle>
+        </UICardHeader>
+        <CardContent className="pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3.5 gap-3">
         <div className="flex items-center gap-2">
           <FilterIcon className="w-4 h-4 text-violet-600" />
           <h2 className="text-sm font-medium">Refine Results</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
           <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
-            <SelectTrigger className="h-8 w-48 text-xs">
+            <SelectTrigger className="h-8 w-full sm:w-48 text-xs">
               <SelectValue placeholder={views.length ? 'Apply saved view' : 'No saved views'} />
             </SelectTrigger>
             <SelectContent>
@@ -733,23 +734,26 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
             </SelectContent>
           </Select>
           {/* Save as view */}
-          <Input className="h-8 text-xs w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
-          <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-3" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
-            <CheckCircle className="w-3 h-3" />
-            Save
-          </Button>
-          <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-3" onClick={() => setFilters(defaultFilters)} disabled={loading}>
-            <RefreshCw className="w-3 h-3" />
-            Refresh
-          </Button>
-          <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+          <Input className="h-8 text-xs w-full sm:w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
+          <div className="flex gap-2">
+            <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-3 flex-1 sm:flex-none" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
+              <CheckCircle className="w-3 h-3" />
+              Save
+            </Button>
+            <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-3 flex-1 sm:flex-none" onClick={() => setFilters(defaultFilters)} disabled={loading}>
+              <RefreshCw className="w-3 h-3" />
+              Refresh
+            </Button>
+            <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Grouped filter pebbles */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {Object.entries(groupedPebbles).map(([category, pebbles]) => (
-          <div key={category} className="space-y-1.5">
+          <div key={category} className="space-y-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
               {categoryIcons[category as keyof typeof categoryIcons]}
               <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
@@ -773,16 +777,17 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
           ))}
         </div>
       )}
+        </CardContent>
+      </Card>
 
       <ModalBasic title={activeKey ? `Filter: ${String(activeKey)}` : 'Filter'} isOpen={modalOpen} setIsOpen={setModalOpen}>
         {renderModalBody()}
-        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</Button>
-          <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
+        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex flex-col sm:flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={loading} className="w-full sm:w-auto">Cancel</Button>
+          <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
         </div>
       </ModalBasic>
-      </CardContent>
-    </Card>
+    </>
   )
 }
 
@@ -1230,18 +1235,20 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       {/* Sticky Header Container */}
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Controls Row */}
-        <header className="px-4 py-2.5 flex items-center justify-between">
+        <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
-          <div className="flex items-center gap-1.5">
-            <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
-                <span>Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
-                <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
-                </svg>
-              </Button>
-            </PopoverTrigger>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
+                  <span className="hidden sm:inline">Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
+                  <span className="sm:hidden">{rowLevel === 1 ? 'S' : rowLevel === 2 ? 'M' : rowLevel === 3 ? 'L' : 'XL'}</span>
+                  <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+                  </svg>
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10">
               <div className="space-y-1">
                 {[1,2,3,4].map((lvl) => (
@@ -1306,10 +1313,10 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 </div>
               )}
             </div>
-            <div className="hidden sm:flex items-center gap-2 ml-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400">Sort by</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Sort by</span>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="h-8 w-44 text-xs">
+                <SelectTrigger className="h-8 w-full sm:w-44 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1325,7 +1332,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         
         {/* Column Headers Row */}
         <div className="overflow-x-auto">
-          <Table className="dark:text-gray-300 w-full">
+          <Table className="dark:text-gray-300 w-full min-w-[800px]">
             <UITableHeader>
               <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
                 {columnDefs.map(col => (
@@ -1354,7 +1361,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       
       {/* Scrollable Data Body */}
       <div className="overflow-x-auto">
-        <Table className="dark:text-gray-300 table-fixed w-full">
+        <Table className="dark:text-gray-300 table-fixed w-full min-w-[800px]">
           <TableBody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
               <TableRow><TableCell className="px-5 py-6" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
@@ -1540,14 +1547,14 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                         </div>
                       </div>
                     </div>
-                    <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                    <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
                       {isItemInCart(selectedSite.id) ? (
                         <>
-                          <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => { /* keep as visual state */ }}>{'In Cart'}</Button>
-                          <Button variant="outline" onClick={() => removeItem(selectedSite.id)}>Remove from Cart</Button>
+                          <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => { /* keep as visual state */ }}>{'In Cart'}</Button>
+                          <Button variant="outline" onClick={() => removeItem(selectedSite.id)} className="w-full sm:w-auto">Remove from Cart</Button>
                         </>
                       ) : (
-                        <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => addItem(selectedSite)}>Add to Cart</Button>
+                        <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => addItem(selectedSite)}>Add to Cart</Button>
                       )}
                     </div>
                   </div>
@@ -1852,13 +1859,13 @@ export default function PublishersClient() {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 w-full max-w-[96rem] mx-auto">
-        <div className="sm:flex sm:justify-between sm:items-center mb-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="relative" ref={suggestionsRef}>
               <Input
                 ref={inputRef as any}
-                className="h-8 text-xs w-56"
+                className="h-8 text-xs w-full sm:w-56"
                 placeholder="Search by website or URL"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setSuggestionsOpen(true) }}
@@ -1897,9 +1904,11 @@ export default function PublishersClient() {
                 </div>
               )}
             </div>
-            <Button variant="outline" className="h-8 text-xs px-3" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
-            <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname, { scroll: false }) }}>Reset</Button>
-            {hasCheckoutFab && <HeaderCheckout />}
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="h-8 text-xs px-3 flex-1 sm:flex-none" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
+              <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname, { scroll: false }) }}>Reset</Button>
+              {hasCheckoutFab && <HeaderCheckout />}
+            </div>
           </div>
         </div>
 

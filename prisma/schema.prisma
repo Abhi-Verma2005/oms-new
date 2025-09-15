@@ -26,7 +26,8 @@ model Account {
   updatedAt         DateTime @updatedAt @map("updated_at")
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model Session {
