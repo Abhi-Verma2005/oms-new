@@ -98,8 +98,8 @@ export default function SignIn() {
               </form>
               {/* Social providers */}
               <div className="mt-6 space-y-2">
-                <button onClick={() => signIn('google', { callbackUrl: '/dashboard' })} className="btn w-full bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700">Continue with Google</button>
-                <button onClick={() => signIn('discord', { callbackUrl: '/dashboard' })} className="btn w-full bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700">Continue with Discord</button>
+                <button onClick={() => signIn('google', { callbackUrl: '/dashboard' })} className="btn w-full bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 cursor-pointer">Continue with Google</button>
+                <button onClick={() => signIn('discord', { callbackUrl: '/dashboard' })} className="btn w-full bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 cursor-pointer">Continue with Discord</button>
               </div>
               {/* Footer */}
               <div className="pt-5 mt-6 border-t border-gray-100 dark:border-gray-700/60">
