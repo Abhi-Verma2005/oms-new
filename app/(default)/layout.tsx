@@ -1,4 +1,3 @@
-import Sidebar from '@/components/ui/sidebar'
 import Header from '@/components/ui/header'
 
 export default function DefaultLayout({
@@ -7,22 +6,15 @@ export default function DefaultLayout({
   children: React.ReactNode
 }) {  
   return (
-    <div className="flex h-[100dvh] overflow-hidden">
+    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900">
 
-      {/* Sidebar */}
-      <Sidebar />
+      {/* Site header */}
+      <Header />
 
       {/* Content area */}
-      <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-
-        {/*  Site header */}
-        <Header />
-
-        <main className="grow [&>*:first-child]:scroll-mt-16">
-          {children}
-        </main>        
-
-      </div>
+      <main className="grow [&>*:first-child]:scroll-mt-16">
+        {children}
+      </main>        
 
     </div>
   )
