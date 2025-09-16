@@ -3,6 +3,7 @@
 import React from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import Autoplay from "embla-carousel-autoplay"
+import { Check, Plus } from "lucide-react"
 
 function Slide({
   title,
@@ -89,34 +90,21 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
           />
         </div>
       </div>
-      {/* Mini metrics below the carousel */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-3">
-          <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">Inventory</div>
-          <div className="h-16">
-            <div className="h-full w-full rounded bg-gradient-to-tr from-violet-200/70 via-violet-400/30 to-transparent dark:from-violet-500/20 dark:via-violet-400/10 flex items-center justify-center text-sm font-semibold text-violet-700 dark:text-violet-300">
-              50k sites
-            </div>
+      {/* Empty state callout replacing metrics */}
+      <div className="mt-4">
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-5 sm:p-6 flex items-start justify-between gap-4">
+          <div>
+            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">You have no projects yet.</div>
+            <ul className="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+              <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 mt-0.5" /><span>Assign link orders to your projects.</span></li>
+              <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 mt-0.5" /><span>Each project is a separate website & has its own metrics & statistics.</span></li>
+              <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 mt-0.5" /><span>Add your project competitors and automatically analyze their backlinks.</span></li>
+            </ul>
           </div>
-        </div>
-        <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-3">
-          <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">Avg. Price</div>
-          <div className="h-16">
-            <div className="h-full w-full rounded bg-gradient-to-tr from-emerald-200/70 via-emerald-400/30 to-transparent dark:from-emerald-500/20 dark:via-emerald-400/10 flex items-center justify-center text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-              {typeof metrics?.avgPrice === 'number' ? `$${metrics.avgPrice.toLocaleString()}` : '-'}
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-3 col-span-2">
-          <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">Avg. Traffic • Authority</div>
-          <div className="h-16 grid grid-cols-2 gap-3">
-            <div className="h-full w-full rounded bg-gradient-to-tr from-blue-200/70 via-blue-400/30 to-transparent dark:from-blue-500/20 dark:via-blue-400/10 flex items-center justify-center text-sm font-semibold text-blue-700 dark:text-blue-300">
-              {metrics && metrics.avgTraffic > 0 ? `${(metrics.avgTraffic/1_000_000).toFixed(1)}M` : '–'}
-            </div>
-            <div className="h-full w-full rounded bg-gradient-to-tr from-amber-200/70 via-amber-400/30 to-transparent dark:from-amber-500/20 dark:via-amber-400/10 flex items-center justify-center text-sm font-semibold text-amber-700 dark:text-amber-300">
-              {metrics && metrics.avgAuthority > 0 ? metrics.avgAuthority : '–'}
-            </div>
-          </div>
+          <button className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 dark:border-white/10 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
+            <Plus className="h-4 w-4" />
+            <span>New project</span>
+          </button>
         </div>
       </div>
     </div>

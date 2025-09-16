@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import ReviewsCarousel from '@/components/reviews-carousel'
 
 export type FeatureItem = {
   title: string
@@ -34,7 +35,7 @@ const FEATURES: FeatureItem[] = [
 
 function FeatureCard({ title, description }: FeatureItem) {
   return (
-    <div className="rounded-xl p-4 md:p-5 border bg-white text-gray-800 shadow-sm border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-gray-100 dark:backdrop-blur-sm">
+    <div className="rounded-xl p-4 md:p-5 border bg-white text-gray-800 shadow-sm border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-gray-100 dark:backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-gray-300 hover:bg-white/90 dark:hover:border-white/20 dark:hover:bg-white/10 hover:ring-1 hover:ring-violet-300/40 dark:hover:ring-violet-500/30">
       <div className="font-semibold leading-snug text-gray-900 dark:text-gray-100">{title}</div>
       <div className="mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{description}</div>
     </div>
@@ -59,6 +60,10 @@ export default function AuthFeatures() {
 
         {/* Content grid */}
         <div className="relative z-10 h-full w-full px-8 py-10 flex flex-col">
+          {/* Reviews carousel at the top */}
+          <div className="max-w-xl mx-auto">
+            <ReviewsCarousel />
+          </div>
           <div className="grid grid-cols-2 gap-4 mt-auto">
             {FEATURES.map((f) => (
               <FeatureCard key={f.title} title={f.title} description={f.description} />

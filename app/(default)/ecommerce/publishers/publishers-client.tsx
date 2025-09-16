@@ -663,8 +663,18 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Any</SelectItem>
-                <SelectItem value="Semrush"><div className="flex items-center gap-2"><span className="inline-flex w-4 h-4 items-center justify-center"><span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#f97316' }} /></span>Semrush</div></SelectItem>
-                <SelectItem value="Ahrefs"><div className="flex items-center gap-2"><span className="inline-flex w-4 h-4 items-center justify-center"><span className="inline-block w-3 h-3 rounded-[3px]" style={{ backgroundColor: '#1e3a8a' }} /></span>Ahrefs</div></SelectItem>
+                <SelectItem value="Semrush">
+                  <div className="flex items-center gap-2">
+                    <SemrushIcon className="h-4" />
+                    Semrush
+                  </div>
+                </SelectItem>
+                <SelectItem value="Ahrefs">
+                  <div className="flex items-center gap-2">
+                    <AhrefsIcon className="h-4" />
+                    Ahrefs
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -749,19 +759,19 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 
       {/* Grouped filter pebbles */}
       <div className="space-y-3">
-        {Object.entries(groupedPebbles).map(([category, pebbles]) => (
-          <div key={category} className="space-y-2">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              {categoryIcons[category as keyof typeof categoryIcons]}
-              <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
+          {Object.entries(groupedPebbles).map(([category, pebbles]) => (
+            <div key={category} className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                {categoryIcons[category as keyof typeof categoryIcons]}
+                <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {pebbles.map(p => (
+                  <span key={p.key}>{pebble(p.label, p.key)}</span>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {pebbles.map(p => (
-                <span key={p.key}>{pebble(p.label, p.key)}</span>
-              ))}
-            </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       {activeChips.length > 0 && (
@@ -995,7 +1005,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           <div className="text-sm leading-tight">
             {rowLevel === 1 ? (
               // Short: Just language with country flag, full info on hover
-              <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}> 
+              <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
                 <Flag country={s.country} withBg className="shrink-0" />
                 <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[8rem]">{s.language}</span>
               </div>
@@ -1031,12 +1041,15 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               ]
               const toShow = rowLevel >= 4 ? rows : rowLevel >= 3 ? rows.slice(0, 2) : rows.slice(0, 1)
               return (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-0.5">
                   {toShow.map((r, idx) => (
-                    <div key={r.label} className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 text-gray-700 dark:text-gray-300"><span>{r.icon}</span> <span className="font-semibold">{r.label}</span></span>
-                      <span className={`px-2 py-0.5 rounded-full font-semibold tabular-nums ${r.cls}`}>{r.value}</span>
-                    </div>
+                    <React.Fragment key={r.label}>
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5 text-gray-700 dark:text-gray-300"><span>{r.icon}</span> <span className="font-semibold">{r.label}</span></span>
+                        <span className={`px-2 py-0.5 rounded-full font-semibold tabular-nums ${r.cls}`}>{r.value}</span>
+                      </div>
+                      {idx < toShow.length - 1 && <div className="mx-1 h-px bg-white/20 dark:bg-white/10" />}
+                    </React.Fragment>
                   ))}
                 </div>
               )
@@ -1179,7 +1192,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               }
               if (v.includes('no')) {
                 return (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 border border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700">
                     <Link2 className="w-3 h-3" /> No-follow
                   </span>
                 )
@@ -1582,7 +1595,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                               {(() => {
                                 const v = (selectedSite.publishing.backlinkNature || '').toLowerCase()
                                 if (v.includes('do')) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700">Do-follow</span>
-                                if (v.includes('no')) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 border border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700">No-follow</span>
+                                if (v.includes('no')) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700">No-follow</span>
                                 if (v.includes('sponsor')) return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">Sponsored</span>
                                 return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800/40 dark:text-gray-300 dark:border-gray-700">{selectedSite.publishing.backlinkNature || '-'}</span>
                               })()}
@@ -1638,11 +1651,11 @@ function WishlistInlineButton({ site }: { site: Site }) {
           variant="ghost"
           className="h-7 px-2 text-violet-600 hover:text-violet-700"
           onClick={(e) => { e.stopPropagation(); removeFromWishlist(site.id) }}
+          title="Remove from wishlist"
         >
-          <svg className="w-3.5 h-3.5 mr-1 fill-current" viewBox="0 0 24 24" aria-hidden>
-            <path d="M12.1 21.35l-1.1-.99C5.14 15.24 2 12.39 2 8.9 2 6.36 4.02 4.5 6.5 4.5c1.54 0 3.04.73 3.96 1.87C11.38 5.23 12.88 4.5 14.42 4.5 16.9 4.5 18.92 6.36 18.92 8.9c0 3.49-3.14 6.34-8.9 11.46l-.92.99z" />
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
           </svg>
-          Wishlisted
         </Button>
       ) : (
         <Button
@@ -1650,11 +1663,11 @@ function WishlistInlineButton({ site }: { site: Site }) {
           variant="ghost"
           className="h-7 px-2 text-gray-500 hover:text-violet-700"
           onClick={(e) => { e.stopPropagation(); addToWishlist(site) }}
+          title="Add to wishlist"
         >
-          <svg className="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
           </svg>
-          Add to wishlist
         </Button>
       )}
     </div>
@@ -1977,7 +1990,7 @@ export default function PublishersClient() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-8 items-start">
           <div className="lg:col-span-7 xl:col-span-7">
-            <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
+        <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
           </div>
           <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 items-start justify-center">
             {(() => {

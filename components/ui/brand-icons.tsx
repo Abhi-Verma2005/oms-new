@@ -1,16 +1,22 @@
 import React from "react"
 import Image from 'next/image'
-import AhrefPng from '@/public/images/ahref.png'
-import SemrushPng from '@/public/images/semrush.png'
 
 type Props = { className?: string }
 
-export function AhrefsIcon({ className = "w-4 h-4" }: Props) {
-	return <Image src={AhrefPng} alt="Ahrefs" className={className} width={16} height={16} />
+export function AhrefsIcon({ className = "h-4" }: Props) {
+	return (
+		<span className={`inline-block ${className}`} style={{ lineHeight: 0 }}>
+			<Image src="/images/logo_ahrefs.svg" alt="Ahrefs" className="h-full w-auto" width={18} height={18} />
+		</span>
+	)
 }
 
-export function SemrushIcon({ className = "w-4 h-4" }: Props) {
-	return <Image src={SemrushPng} alt="Semrush" className={className} width={16} height={16} />
+export function SemrushIcon({ className = "h-4" }: Props) {
+	return (
+		<span className={`inline-block ${className}`} style={{ lineHeight: 0 }}>
+			<Image src="/images/logo-semrush.svg" alt="Semrush" className="h-full w-auto" width={25} height={25} />
+		</span>
+	)
 }
 
 export function MozIcon({ className = "w-4 h-4" }: Props) {
