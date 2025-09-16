@@ -1315,8 +1315,8 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       {/* Fixed bottom-left trend preview panel */}
       {trendPreviewSite && (
         <div className="fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]">
-          <div className="text-xs font-medium mb-2 truncate" title={trendPreviewSite.url.replace(/^https?:\/\//, '')}>
-            Trend preview · {trendPreviewSite.url.replace(/^https?:\/\//, '')}
+          <div className="text-xs font-medium mb-2 truncate">
+            Trend preview · <MaskedWebsite site={trendPreviewSite} maxStars={10} showRevealButton={false} />
           </div>
           <div className="flex flex-col gap-2">
             <div>
@@ -1921,7 +1921,7 @@ export default function PublishersClient() {
       </div>
   )
 }
-function MaskedWebsite({ site }: { site: Site }) {
+function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site: Site; maxStars?: number; showRevealButton?: boolean }) {
   const [hovered, setHovered] = useState(false)
   const [loading, setLoading] = useState(false)
   const [revealed, setRevealed] = useState<string | null>(null)
@@ -1948,7 +1948,6 @@ function MaskedWebsite({ site }: { site: Site }) {
   }
 
   // Cap masked length to avoid overflow
-  const maxStars = 14
   const masked = '★'.repeat(maxStars)
   const display = revealed ? revealed : masked
   return (
@@ -1979,7 +1978,7 @@ function MaskedWebsite({ site }: { site: Site }) {
           {display}
         </span>
       )}
-      {!revealed && (
+      {!revealed && showRevealButton && (
         <button
           onClick={onReveal}
           className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-[10px] sm:text-[11px] px-1.5 py-0.5 sm:px-2 sm:py-1 leading-4 sm:leading-5 min-h-[22px] sm:min-h-[28px] rounded-lg border border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-300 dark:hover:bg-violet-500/10 disabled:opacity-50"
