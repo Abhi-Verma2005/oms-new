@@ -3,6 +3,7 @@
 import React from 'react'
 import { useCart } from '@/contexts/cart-context'
 import { Globe } from 'lucide-react'
+import MaskedWebsite from '@/components/masked-website'
 
 export default function CartItems() {
   const { state, removeItem } = useCart()
@@ -30,7 +31,7 @@ export default function CartItems() {
           {/* Site Details */}
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-              {item.site.name}
+              <MaskedWebsite site={item.site} maxStars={12} showRevealButton={false} />
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
               {item.site.niche}

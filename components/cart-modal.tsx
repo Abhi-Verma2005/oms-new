@@ -4,6 +4,7 @@ import React from 'react'
 import { useCart } from '@/contexts/cart-context'
 import { ShoppingCart, X, Globe } from 'lucide-react'
 import Link from 'next/link'
+import MaskedWebsite from '@/components/masked-website'
 
 export default function CartModal() {
   const { state, closeCart, getTotalPrice, removeItem } = useCart()
@@ -56,7 +57,7 @@ export default function CartModal() {
                   {/* Site Details */}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {item.site.name}
+                      <MaskedWebsite site={item.site} maxStars={8} showRevealButton={false} />
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       ${(item.site.publishing.price || 0).toFixed(2)}
