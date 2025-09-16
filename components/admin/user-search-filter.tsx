@@ -9,7 +9,8 @@ type UserSuggestion = { id: string; name: string | null; email: string | null }
 export default function UserSearchFilter() {
   const router = useRouter()
   const sp = useSearchParams()
-  const [query, setQuery] = React.useState<string>(sp.get('userName') || '')
+  const initialQuery = sp?.get('userName') || ''
+  const [query, setQuery] = React.useState<string>(initialQuery)
   const [open, setOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [results, setResults] = React.useState<UserSuggestion[]>([])
@@ -57,7 +58,7 @@ export default function UserSearchFilter() {
   }, [])
 
   const applyUser = (user: UserSuggestion) => {
-    const params = new URLSearchParams(sp.toString())
+    const params = new URLSearchParams(sp?.toString() || '')
     if (user.id) params.set('userId', user.id)
     if (user.name) params.set('userName', user.name)
     router.push(`/admin/wishlists?${params.toString()}`)

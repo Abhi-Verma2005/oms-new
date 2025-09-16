@@ -1,10 +1,17 @@
 'use client'
 
 import { useAIChatbot } from '@/components/ai-chatbot-provider'
+import { useSession } from 'next-auth/react'
 import { MessageCircle } from 'lucide-react'
 
 export function AIAssistantButton() {
   const { openChatbot } = useAIChatbot()
+  const { data: session, status } = useSession()
+
+  // Don't render the button if user is not authenticated
+  if (status === 'loading' || !session?.user) {
+    return null
+  }
 
   return (
     <button

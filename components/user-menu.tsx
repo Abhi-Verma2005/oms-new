@@ -2,6 +2,7 @@
 
 import { Suspense } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
@@ -9,6 +10,7 @@ import UserAvatar from '@/public/images/user-avatar-32.png'
 
 function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
   const { data: session, status } = useSession()
+  const { theme, setTheme } = useTheme()
 
   if (status === "loading") {
     return (
@@ -55,7 +57,7 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
       </MenuButton>
       <Transition
         as="div"
-        className={`origin-top-right z-50 absolute top-full min-w-[11rem] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 py-1.5 rounded-lg shadow-lg overflow-hidden mt-1 ${align === 'right' ? 'right-0' : 'left-0'
+        className={`origin-top-right z-50 absolute top-full min-w-[11rem] max-w-[calc(100vw-1rem)] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 py-1.5 rounded-lg shadow-lg overflow-hidden mt-1 ${align === 'right' ? 'right-0' : 'left-0'
           }`}
         enter="transition ease-out duration-200 transform"
         enterFrom="opacity-0 -translate-y-2"
@@ -90,6 +92,21 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
               </Link>
             </MenuItem>
           )}
+          <MenuItem as="li">
+            <button 
+              className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {theme === 'dark' ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                )}
+              </svg>
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+          </MenuItem>
           <MenuItem as="li">
             <button 
               className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"

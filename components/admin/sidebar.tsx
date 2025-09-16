@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useAppProvider } from '@/app/app-provider'
-import { useSelectedLayoutSegments } from 'next/navigation'
+import { useSelectedLayoutSegments, usePathname } from 'next/navigation'
 import { useWindowWidth } from '@/components/utils/use-window-width'
 import SidebarLinkGroup from '@/components/ui/sidebar-link-group'
 import SidebarLink from '@/components/ui/sidebar-link'
@@ -11,7 +11,8 @@ import Logo from '@/components/ui/logo'
 export function Sidebar() {
   const sidebar = useRef<HTMLDivElement>(null)
   const { sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded } = useAppProvider()
-  const segments = useSelectedLayoutSegments()
+  const segments = useSelectedLayoutSegments() || []
+  const pathname = usePathname()
   const breakpoint = useWindowWidth()
   const [isClient, setIsClient] = useState(false)
   
@@ -21,6 +22,13 @@ export function Sidebar() {
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Auto-close sidebar on route change (any viewport)
+  useEffect(() => {
+    if (!isClient) return
+    if (sidebarOpen) setSidebarOpen(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   useEffect(() => {
     const clickHandler = ({ target }: { target: EventTarget | null }): void => {

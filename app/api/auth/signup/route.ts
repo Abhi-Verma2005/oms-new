@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { email, password, name, role } = body || {}
+    const { email, password, name } = body || {}
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
@@ -39,13 +39,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Optionally assign default role if provided
-    if (role) {
-      const roleRec = await prisma.role.findUnique({ where: { name: role } })
-      if (roleRec) {
-        await prisma.userRole.create({ data: { userId: user.id, roleId: roleRec.id } })
-      }
-    }
+    // Note: Role assignment is now handled separately through admin interface
 
     return NextResponse.json({ success: true, userId: user.id, redirectTo: '/onboarding-01' })
   } catch (error) {

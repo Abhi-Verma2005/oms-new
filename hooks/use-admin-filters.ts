@@ -61,17 +61,18 @@ export function useAdminFilters(
     const urlFilters: Partial<FilterState> = {}
     
     // Parse URL parameters
-    if (searchParams.get('search')) urlFilters.search = searchParams.get('search')!
-    if (searchParams.get('status')) urlFilters.status = searchParams.get('status')!
-    if (searchParams.get('paymentStatus')) urlFilters.paymentStatus = searchParams.get('paymentStatus')!
-    if (searchParams.get('tagIds')) urlFilters.tagIds = searchParams.get('tagIds')!.split(',').filter(Boolean)
-    if (searchParams.get('hasRoles')) urlFilters.hasRoles = searchParams.get('hasRoles')!
-    if (searchParams.get('dateFrom')) urlFilters.dateFrom = searchParams.get('dateFrom')!
-    if (searchParams.get('dateTo')) urlFilters.dateTo = searchParams.get('dateTo')!
-    if (searchParams.get('sortBy')) urlFilters.sortBy = searchParams.get('sortBy')!
-    if (searchParams.get('sortOrder')) urlFilters.sortOrder = searchParams.get('sortOrder')!
-    if (searchParams.get('page')) urlFilters.page = parseInt(searchParams.get('page')!) || 1
-    if (searchParams.get('limit')) urlFilters.limit = parseInt(searchParams.get('limit')!) || 20
+    const sp = searchParams
+    if (sp?.get('search')) urlFilters.search = sp.get('search')!
+    if (sp?.get('status')) urlFilters.status = sp.get('status')!
+    if (sp?.get('paymentStatus')) urlFilters.paymentStatus = sp.get('paymentStatus')!
+    if (sp?.get('tagIds')) urlFilters.tagIds = sp.get('tagIds')!.split(',').filter(Boolean)
+    if (sp?.get('hasRoles')) urlFilters.hasRoles = sp.get('hasRoles')!
+    if (sp?.get('dateFrom')) urlFilters.dateFrom = sp.get('dateFrom')!
+    if (sp?.get('dateTo')) urlFilters.dateTo = sp.get('dateTo')!
+    if (sp?.get('sortBy')) urlFilters.sortBy = sp.get('sortBy')!
+    if (sp?.get('sortOrder')) urlFilters.sortOrder = sp.get('sortOrder')!
+    if (sp?.get('page')) urlFilters.page = parseInt(sp.get('page')!) || 1
+    if (sp?.get('limit')) urlFilters.limit = parseInt(sp.get('limit')!) || 20
 
     // Apply defaults
     const newFilters = {

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import ModalBasic from "@/components/modal-basic"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card"
 import LineChart01 from "@/components/charts/line-chart-01"
 import { Table, TableBody, TableCell, TableHead, TableHeader as UITableHeader, TableRow } from "@/components/ui/table"
@@ -706,20 +706,17 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
   }, [filters])
 
   return (
-    <Card className="mb-4 bg-white dark:bg-gray-800">
-      <UICardHeader className="pb-1">
-        <UICardTitle className="text-base">Filters</UICardTitle>
-      </UICardHeader>
-      <CardContent className="pt-1">
-      <div className="flex items-center justify-between mb-3.5">
-        <div className="flex items-center gap-2">
-          <FilterIcon className="w-4 h-4 text-violet-600" />
-          <h2 className="text-sm font-medium">Refine Results</h2>
-        </div>
-        <div className="flex items-center gap-2">
+    <>
+      <Card className="mb-4 bg-white dark:bg-gray-800">
+        <UICardHeader className="pb-1">
+          <UICardTitle className="text-base">Filters</UICardTitle>
+        </UICardHeader>
+        <CardContent className="pt-1">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3.5 gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
           <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
-            <SelectTrigger className="h-8 w-48 text-xs">
+            <SelectTrigger className="h-8 w-full sm:w-48 text-xs">
               <SelectValue placeholder={views.length ? 'Apply saved view' : 'No saved views'} />
             </SelectTrigger>
             <SelectContent>
@@ -733,23 +730,25 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
             </SelectContent>
           </Select>
           {/* Save as view */}
-          <Input className="h-8 text-xs w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
-          <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-3" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
-            <CheckCircle className="w-3 h-3" />
-            Save
-          </Button>
-          <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-3" onClick={() => setFilters(defaultFilters)} disabled={loading}>
-            <RefreshCw className="w-3 h-3" />
-            Refresh
-          </Button>
-          <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+          <Input className="h-8 text-xs w-full sm:w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
+          <div className="flex gap-2">
+            <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-3 flex-1 sm:flex-none" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
+              <CheckCircle className="w-3 h-3" />
+              Save
+            </Button>
+            <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-3 flex-1 sm:flex-none" onClick={() => setFilters(defaultFilters)} disabled={loading}>
+              <RefreshCw className="w-3 h-3" />
+              Refresh
+            </Button>
+            <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* Grouped filter pebbles */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {Object.entries(groupedPebbles).map(([category, pebbles]) => (
-          <div key={category} className="space-y-1.5">
+          <div key={category} className="space-y-2">
             <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
               {categoryIcons[category as keyof typeof categoryIcons]}
               <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
@@ -773,22 +772,26 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
           ))}
         </div>
       )}
+        </CardContent>
+      </Card>
 
       <ModalBasic title={activeKey ? `Filter: ${String(activeKey)}` : 'Filter'} isOpen={modalOpen} setIsOpen={setModalOpen}>
         {renderModalBody()}
-        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={loading}>Cancel</Button>
-          <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
+        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex flex-col sm:flex-row justify-end gap-2">
+          <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={loading} className="w-full sm:w-auto">Cancel</Button>
+          <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
         </div>
       </ModalBasic>
-      </CardContent>
-    </Card>
+    </>
   )
 }
 
 function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void }) {
   const { addItem, removeItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
+  // Track the currently hovered site for the trend preview panel
+  const [trendPreviewSite, setTrendPreviewSite] = useState<Site | null>(null)
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-1.5', 2: 'py-2.5', 3: 'py-3.5', 4: 'py-4.5' }
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -1063,69 +1066,23 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'trend':
         return (
-          <div className="group relative inline-flex items-center gap-1.5 text-sm">
+          <div
+            className="inline-flex items-center gap-1.5 text-sm"
+            onMouseEnter={() => {
+              if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current)
+                hideTimeoutRef.current = null
+              }
+              setTrendPreviewSite(s)
+            }}
+            onMouseLeave={() => {
+              hideTimeoutRef.current = setTimeout(() => {
+                setTrendPreviewSite(null)
+              }, 1000)
+            }}
+          >
             <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="capitalize">{s.toolScores.trafficTrend || 'stable'}</span>
-            {/* Hover panel with mini charts */}
-            <div className="pointer-events-none absolute left-0 top-full mt-2 -translate-x-full w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity p-3 z-[5000] max-h-64 overflow-auto">
-              <div className="flex flex-col gap-2">
-                <div>
-                  <div className="text-[11px] text-gray-500 mb-0.5">Overall Traffic</div>
-                  <LineChart01
-                    width={260}
-                    height={60}
-                    data={{
-                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                      datasets: [
-                        {
-                          data: Array.from({ length: 12 }, () =>
-                            Math.max(1000, (s.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
-                          ),
-                          borderColor: '#7c3aed',
-                          fill: true,
-                        },
-                      ],
-                    }}
-                  />
-                </div>
-                <div>
-                  <div className="text-[11px] text-gray-500 mb-0.5">Organic Traffic</div>
-                  <LineChart01
-                    width={260}
-                    height={60}
-                    data={{
-                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                      datasets: [
-                        {
-                          data: Array.from({ length: 12 }, () =>
-                            Math.max(1000, (s.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
-                          ),
-                          borderColor: '#22c55e',
-                          fill: true,
-                        },
-                      ],
-                    }}
-                  />
-                </div>
-                <div>
-                  <div className="text-[11px] text-gray-500 mb-0.5">Semrush Authority</div>
-                  <LineChart01
-                    width={260}
-                    height={60}
-                    data={{
-                      labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                      datasets: [
-                        {
-                          data: Array.from({ length: 12 }, () => Math.max(1, s.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
-                          borderColor: '#6366f1',
-                          fill: true,
-                        },
-                      ],
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         )
       case 'cart':
@@ -1226,22 +1183,24 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
   if (loading) return <Card className="p-6 bg-white dark:bg-gray-800">Loading…</Card>
   return (
-          <Card className="bg-white dark:bg-gray-800">
+    <Card className="bg-white dark:bg-gray-800">
       {/* Sticky Header Container */}
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Controls Row */}
-        <header className="px-4 py-2.5 flex items-center justify-between">
+        <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
-          <div className="flex items-center gap-1.5">
-            <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
-                <span>Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
-                <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
-                </svg>
-              </Button>
-            </PopoverTrigger>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
+                  <span className="hidden sm:inline">Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
+                  <span className="sm:hidden">{rowLevel === 1 ? 'S' : rowLevel === 2 ? 'M' : rowLevel === 3 ? 'L' : 'XL'}</span>
+                  <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+                  </svg>
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10">
               <div className="space-y-1">
                 {[1,2,3,4].map((lvl) => (
@@ -1252,6 +1211,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               </div>
             </PopoverContent>
             </Popover>
+            </div>
             <div className="relative" ref={columnsRef}>
               <Button
                 variant="outline"
@@ -1306,10 +1266,10 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 </div>
               )}
             </div>
-            <div className="hidden sm:flex items-center gap-2 ml-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400">Sort by</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Sort by</span>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="h-8 w-44 text-xs">
+                <SelectTrigger className="h-8 w-full sm:w-44 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1325,7 +1285,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         
         {/* Column Headers Row */}
         <div className="overflow-x-auto">
-          <Table className="dark:text-gray-300 w-full">
+          <Table className="dark:text-gray-300 w-full min-w-[800px]">
             <UITableHeader>
               <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
                 {columnDefs.map(col => (
@@ -1351,13 +1311,79 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           </Table>
         </div>
       </div>
+
+      {/* Fixed bottom-left trend preview panel */}
+      {trendPreviewSite && (
+        <div className="fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]">
+          <div className="text-xs font-medium mb-2 truncate" title={trendPreviewSite.url.replace(/^https?:\/\//, '')}>
+            Trend preview · {trendPreviewSite.url.replace(/^https?:\/\//, '')}
+          </div>
+          <div className="flex flex-col gap-2">
+            <div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Overall Traffic</div>
+              <LineChart01
+                width={260}
+                height={60}
+                data={{
+                  labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                  datasets: [
+                    {
+                      data: Array.from({ length: 12 }, () =>
+                        Math.max(1000, (trendPreviewSite.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
+                      ),
+                      borderColor: '#7c3aed',
+                      fill: true,
+                    },
+                  ],
+                }}
+              />
+            </div>
+            <div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Organic Traffic</div>
+              <LineChart01
+                width={260}
+                height={60}
+                data={{
+                  labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                  datasets: [
+                    {
+                      data: Array.from({ length: 12 }, () =>
+                        Math.max(1000, (trendPreviewSite.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
+                      ),
+                      borderColor: '#22c55e',
+                      fill: true,
+                    },
+                  ],
+                }}
+              />
+            </div>
+            <div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Semrush Authority</div>
+              <LineChart01
+                width={260}
+                height={60}
+                data={{
+                  labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+                  datasets: [
+                    {
+                      data: Array.from({ length: 12 }, () => Math.max(1, trendPreviewSite.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
+                      borderColor: '#6366f1',
+                      fill: true,
+                    },
+                  ],
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Scrollable Data Body */}
       <div className="overflow-x-auto">
-        <Table className="dark:text-gray-300 table-fixed w-full">
-          <TableBody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
+        <Table className="dark:text-gray-300 table-fixed w-full min-w-[800px]">
+          <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
-              <TableRow><TableCell className="px-5 py-6" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
+              <TableRow><TableCell className="px-5 py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
               <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
@@ -1384,24 +1410,35 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   <DialogTitle className="flex items-start justify-between gap-4">
                     {selectedSite ? (
                       <div className="min-w-0">
-                        <div className="text-lg sm:text-xl font-semibold tracking-tight truncate">{selectedSite.name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{selectedSite.url}</div>
+                        <div className="text-lg sm:text-xl font-semibold tracking-tight truncate">{selectedSite.name || selectedSite.url.replace(/^https?:\/\//, '')}</div>
                       </div>
                     ) : (
                       <span>Site Details</span>
                     )}
+                    <DialogClose
+                      aria-label="Close"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 transition-colors"
+                      onClick={() => setDetailsOpen(false)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </DialogClose>
                   </DialogTitle>
                 </DialogHeader>
                 {selectedSite && (
                   <div className="flex flex-col max-h-[80vh]">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 py-6 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-6 py-4 overflow-y-auto">
                       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
                         <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Basic Information</div>
                         <div className="space-y-2.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-600 dark:text-gray-400">URL</span>
-                            <span className="font-medium truncate ml-3"><a href={selectedSite.url} className="text-violet-600 hover:text-violet-700 underline" target="_blank" rel="noreferrer">{selectedSite.url}</a></span>
-                      </div>
+                          <div className="flex items-center text-xs gap-3 min-w-0">
+                            <span className="text-gray-600 dark:text-gray-400 shrink-0">URL</span>
+                            <div className="font-medium min-w-0 truncate">
+                              <MaskedWebsite site={selectedSite} />
+                            </div>
+                          </div>
                           <div className="flex items-start justify-between text-xs">
                             <span className="text-gray-600 dark:text-gray-400 mt-0.5">Niche</span>
                             <span className="ml-3 inline-flex flex-wrap gap-1.5 max-w-[18rem] justify-end">
@@ -1438,75 +1475,44 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
                         <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Traffic Data</div>
                         <div className="space-y-2.5">
-                          <div className="group flex items-center justify-between text-xs relative">
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            onMouseEnter={() => {
+                              if (hideTimeoutRef.current) { clearTimeout(hideTimeoutRef.current); hideTimeoutRef.current = null }
+                              setTrendPreviewSite(selectedSite)
+                            }}
+                            onMouseLeave={() => {
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                            }}
+                          >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Semrush Authority</span>
                             <span className="font-semibold tabular-nums">{selectedSite.toolScores.semrushAuthority}</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
-                              <div className="p-2 h-full">
-                                <LineChart01
-                                  width={300}
-                                  height={120}
-                                  data={{
-                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                    datasets: [
-                                      {
-                                        data: Array.from({ length: 12 }, () => Math.max(1, selectedSite.toolScores.semrushAuthority * (0.7 + Math.random() * 0.6))),
-                                        borderColor: '#7c3aed',
-                                        fill: true,
-                                      },
-                                    ],
-                                  }}
-                                />
-                              </div>
-                            </div>
                           </div>
-                          <div className="group flex items-center justify-between text-xs relative">
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            onMouseEnter={() => {
+                              if (hideTimeoutRef.current) { clearTimeout(hideTimeoutRef.current); hideTimeoutRef.current = null }
+                              setTrendPreviewSite(selectedSite)
+                            }}
+                            onMouseLeave={() => {
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                            }}
+                          >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Overall Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
-                              <div className="p-2 h-full">
-                                <LineChart01
-                                  width={300}
-                                  height={120}
-                                  data={{
-                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                    datasets: [
-                                      {
-                                        data: Array.from({ length: 12 }, () =>
-                                          Math.max(1000, (selectedSite.toolScores.semrushOverallTraffic / 12) * (0.7 + Math.random() * 0.6))
-                                        ),
-                                        borderColor: '#7c3aed',
-                                        fill: true,
-                                      },
-                                    ],
-                                  }}
-                                />
-                              </div>
-                            </div>
                           </div>
-                          <div className="group flex items-center justify-between text-xs relative">
+                          <div
+                            className="flex items-center justify-between text-xs"
+                            onMouseEnter={() => {
+                              if (hideTimeoutRef.current) { clearTimeout(hideTimeoutRef.current); hideTimeoutRef.current = null }
+                              setTrendPreviewSite(selectedSite)
+                            }}
+                            onMouseLeave={() => {
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                            }}
+                          >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Organic Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
-                            <div className="pointer-events-none absolute right-0 top-full mt-2 w-72 h-40 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity max-w-[calc(100vw-2rem)]">
-                              <div className="p-2 h-full">
-                                <LineChart01
-                                  width={300}
-                                  height={120}
-                                  data={{
-                                    labels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
-                                    datasets: [
-                                      {
-                                        data: Array.from({ length: 12 }, () =>
-                                          Math.max(1000, (selectedSite.toolScores.semrushOrganicTraffic / 12) * (0.7 + Math.random() * 0.6))
-                                        ),
-                                        borderColor: '#22c55e',
-                                        fill: true,
-                                      },
-                                    ],
-                                  }}
-                                />
-                              </div>
-                            </div>
                           </div>
                           <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Traffic Trend</span><span className="font-semibold capitalize">{selectedSite.toolScores.trafficTrend}</span></div>
                         </div>
@@ -1540,14 +1546,14 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                         </div>
                       </div>
                     </div>
-                    <div className="sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                    <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
                       {isItemInCart(selectedSite.id) ? (
                         <>
-                          <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => { /* keep as visual state */ }}>{'In Cart'}</Button>
-                          <Button variant="outline" onClick={() => removeItem(selectedSite.id)}>Remove from Cart</Button>
+                          <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => { /* keep as visual state */ }}>{'In Cart'}</Button>
+                          <Button variant="outline" onClick={() => removeItem(selectedSite.id)} className="w-full sm:w-auto">Remove from Cart</Button>
                         </>
                       ) : (
-                        <Button className="bg-violet-600 text-white hover:bg-violet-500" onClick={() => addItem(selectedSite)}>Add to Cart</Button>
+                        <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => addItem(selectedSite)}>Add to Cart</Button>
                       )}
                     </div>
                   </div>
@@ -1791,7 +1797,8 @@ export default function PublishersClient() {
       setIf(k, v as any)
     })
     const qs = sp.toString()
-    const url = qs ? `${pathname}?${qs}` : pathname
+    const safePathname = pathname || '/publishers'
+    const url: string = qs ? `${safePathname}?${qs}` : safePathname
     router.replace(url, { scroll: false })
   }, [filters, searchQuery, pathname, router])
 
@@ -1851,14 +1858,14 @@ export default function PublishersClient() {
   }, [searchQuery, results.length, loading, filters])
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 w-full max-w-[96rem] mx-auto">
-        <div className="sm:flex sm:justify-between sm:items-center mb-4">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="relative" ref={suggestionsRef}>
               <Input
                 ref={inputRef as any}
-                className="h-8 text-xs w-56"
+                className="h-8 text-xs w-full sm:w-56"
                 placeholder="Search by website or URL"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setSuggestionsOpen(true) }}
@@ -1897,9 +1904,11 @@ export default function PublishersClient() {
                 </div>
               )}
             </div>
-            <Button variant="outline" className="h-8 text-xs px-3" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
-            <Button className="h-8 text-xs px-3" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname, { scroll: false }) }}>Reset</Button>
-            {hasCheckoutFab && <HeaderCheckout />}
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="h-8 text-xs px-3 flex-1 sm:flex-none" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
+              <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname || '/publishers', { scroll: false }) }}>Reset</Button>
+              {hasCheckoutFab && <HeaderCheckout />}
+            </div>
           </div>
         </div>
 
@@ -1960,14 +1969,20 @@ function MaskedWebsite({ site }: { site: Site }) {
           {revealed}
         </a>
       ) : (
-        <span className="text-gray-300 dark:text-gray-200/80 tracking-wide truncate max-w-[11rem] select-none" title="Hidden website">
+        <span
+          className="text-gray-300 dark:text-gray-200/80 tracking-wide truncate max-w-[11rem] select-none cursor-pointer leading-4 min-h-[18px] sm:leading-5 sm:min-h-[20px]"
+          title="Hidden website"
+          onClick={onReveal}
+          role="button"
+          aria-label="Reveal website"
+        >
           {display}
         </span>
       )}
       {!revealed && (
         <button
           onClick={onReveal}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-[11px] px-2 py-0.5 rounded-lg border border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-300 dark:hover:bg-violet-500/10 disabled:opacity-50"
+          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-[10px] sm:text-[11px] px-1.5 py-0.5 sm:px-2 sm:py-1 leading-4 sm:leading-5 min-h-[22px] sm:min-h-[28px] rounded-lg border border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-violet-300 dark:hover:bg-violet-500/10 disabled:opacity-50"
           disabled={loading}
         >
           {loading ? 'Revealing…' : 'Show website'}

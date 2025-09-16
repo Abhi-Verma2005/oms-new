@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { Send, Bot, X, Minimize2 } from 'lucide-react'
+import { Send, Bot, Minimize2, Trash2 } from 'lucide-react'
 import { useAIChatbot } from './ai-chatbot-provider'
 
 interface Message {
@@ -154,14 +154,18 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                 <h3 className="font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearChat}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                {messages.length > 0 && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={clearChat}
+                    className="h-8 px-2"
+                    title="Clear chat"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    <span className="text-xs">Clear chat</span>
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

@@ -8,7 +8,6 @@ export default function SignUpForm() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
-  const [role, setRole] = useState('Designer')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +21,7 @@ export default function SignUpForm() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, role }),
+        body: JSON.stringify({ email, password, name }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Signup failed')
@@ -56,14 +55,6 @@ export default function SignUpForm() {
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="name">Full Name <span className="text-red-500">*</span></label>
           <input id="name" className="form-input w-full" type="text" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="role">Your Role <span className="text-red-500">*</span></label>
-          <select id="role" className="form-select w-full" value={role} onChange={(e) => setRole(e.target.value)}>
-            <option>Designer</option>
-            <option>Developer</option>
-            <option>Accountant</option>
-          </select>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="password">Password</label>
