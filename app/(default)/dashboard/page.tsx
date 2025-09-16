@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'EMIAC Dashboard - Case Studies Analytics',
-  description: 'Comprehensive analytics dashboard for EMIAC case studies',
+  title: 'Personal Dashboard - EMIAC Analytics',
+  description: 'Personal dashboard with activity insights and EMIAC case studies analytics',
 }
 
 import Datepicker from '@/components/datepicker'
@@ -22,6 +22,7 @@ import TopKeywordsCard from './analytics/top-keywords-card'
 import TrafficSourcesCard from './analytics/traffic-sources-card'
 import BacklinksPerformanceCard from './analytics/backlinks-performance-card'
 import SerpFeaturesCard from './analytics/serp-features-card'
+import PersonalAnalytics from './personal-analytics'
 
 export default function Dashboard() {
   return (
@@ -32,9 +33,9 @@ export default function Dashboard() {
 
         {/* Left: Title */}
         <div className="mb-4 sm:mb-0">
-          <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">EMIAC Case Studies Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Personal Dashboard</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Comprehensive analytics and performance metrics for all case studies
+            Your personal activity and usage insights
           </p>
         </div>
 
@@ -45,7 +46,34 @@ export default function Dashboard() {
 
       </div>
 
-      {/* Unified grid for perfectly even gaps and no empty space */}
+      {/* Personal Analytics Section */}
+      <div className="mb-8">
+        <PersonalAnalytics />
+      </div>
+
+      {/* EMIAC Case Studies Section */}
+      <div className="mb-8">
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">EMIAC Case Studies</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Comprehensive analytics and performance metrics for all case studies
+          </p>
+        </div>
+        <div className="grid grid-cols-12 gap-6">
+          {/* Case Study Cards */}
+          <div className="col-span-full sm:col-span-6 xl:col-span-4">
+            <CaseStudyCard01 />
+          </div>
+          <div className="col-span-full sm:col-span-6 xl:col-span-4">
+            <CaseStudyCard02 />
+          </div>
+          <div className="col-span-full sm:col-span-6 xl:col-span-4">
+            <CaseStudyCard03 />
+          </div>
+        </div>
+      </div>
+
+      {/* Other Analytics Section */}
       <div className="grid grid-cols-12 gap-6">
         {/* Row 1 */}
         <div className="col-span-full xl:col-span-8">
@@ -71,17 +99,6 @@ export default function Dashboard() {
 
         {/* Row 3 */}
         <div className="col-span-full sm:col-span-6 xl:col-span-4">
-          <CaseStudyCard01 />
-        </div>
-        <div className="col-span-full sm:col-span-6 xl:col-span-4">
-          <CaseStudyCard02 />
-        </div>
-        <div className="col-span-full sm:col-span-6 xl:col-span-4">
-          <CaseStudyCard03 />
-        </div>
-
-        {/* Row 4 */}
-        <div className="col-span-full sm:col-span-6 xl:col-span-4">
           <BacklinksPerformanceCard />
         </div>
         <div className="col-span-full sm:col-span-6 xl:col-span-4">
@@ -91,7 +108,7 @@ export default function Dashboard() {
           <KeywordRankingChart />
         </div>
 
-        {/* Row 5 */}
+        {/* Row 4 */}
         <div className="col-span-full xl:col-span-8">
           <TrafficGrowthChart />
         </div>
@@ -99,7 +116,7 @@ export default function Dashboard() {
           <IndustryComparisonChart />
         </div>
 
-        {/* Row 6 */}
+        {/* Row 5 */}
         <div className="col-span-full sm:col-span-6 xl:col-span-4">
           <SerpFeaturesChart />
         </div>
@@ -110,7 +127,7 @@ export default function Dashboard() {
           <DomainRatingChart />
         </div>
 
-        {/* Row 7 */}
+        {/* Row 6 */}
         <div className="col-span-full">
           <CaseStudyTable />
         </div>
