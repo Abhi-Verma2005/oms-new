@@ -6,7 +6,7 @@ export const metadata = {
 import Link from 'next/link'
 import SignUpForm from './SignUpForm'
 import AuthHeader from '../auth-header'
-import AuthImage from '../auth-image'
+import AuthFeatures, { AuthFeaturesMobile } from '../auth-features'
 
 export default function SignUp() {
   return (
@@ -20,22 +20,20 @@ export default function SignUp() {
 
             <AuthHeader />
 
-            <div className="max-w-sm mx-auto w-full px-4 py-8">
-              <h1 className="text-3xl text-gray-800 dark:text-gray-100 font-bold mb-6">Create your Account</h1>
+            <div className="max-w-xs mx-auto w-full px-4 py-6">
+              <h1 className="text-2xl text-gray-800 dark:text-gray-100 font-bold mb-4">Create your Account</h1>
               {/* Form */}
               <SignUpForm />
-              {/* Footer */}
-              <div className="pt-5 mt-6 border-t border-gray-100 dark:border-gray-700/60">
-                <div className="text-sm">
-                  Have an account? <Link className="font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="/signin">Sign In</Link>
-                </div>
-              </div>
+              {/* Footer removed per request */}
             </div>
 
           </div>
         </div>
 
-        <AuthImage />
+        {/* Mobile features below form */}
+        <AuthFeaturesMobile />
+
+        <AuthFeatures />
 
       </div>
 

@@ -6,9 +6,11 @@ import { signIn } from 'next-auth/react'
 
 export default function SignUpForm() {
   const router = useRouter()
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
-  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,6 +19,19 @@ export default function SignUpForm() {
     setSubmitting(true)
     setError(null)
     try {
+      if (!firstName || !lastName) {
+        throw new Error('Please enter your first and last name')
+      }
+      if (!email) {
+        throw new Error('Please enter your email')
+      }
+      if (!password) {
+        throw new Error('Please enter a password')
+      }
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match')
+      }
+      const name = `${firstName} ${lastName}`.trim()
       // First, create the user account
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -47,30 +62,53 @@ export default function SignUpForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="email">Email Address <span className="text-red-500">*</span></label>
-          <input id="email" className="form-input w-full" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <div className="space-y-3 text-[13px]">
+        {/* Name row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block font-medium mb-1" htmlFor="firstName">First Name <span className="text-red-500">*</span></label>
+            <input id="firstName" className="form-input w-full py-2" type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div>
+            <label className="block font-medium mb-1" htmlFor="lastName">Last Name <span className="text-red-500">*</span></label>
+            <input id="lastName" className="form-input w-full py-2" type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          </div>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="name">Full Name <span className="text-red-500">*</span></label>
-          <input id="name" className="form-input w-full" type="text" value={name} onChange={(e) => setName(e.target.value)} />
+          <label className="block font-medium mb-1" htmlFor="email">Email Address <span className="text-red-500">*</span></label>
+          <input id="email" className="form-input w-full py-2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="password">Password</label>
-          <input id="password" className="form-input w-full" type="password" autoComplete="on" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <label className="block font-medium mb-1" htmlFor="password">Password <span className="text-red-500">*</span></label>
+          <input id="password" className="form-input w-full py-2" type="password" autoComplete="on" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </div>
+        <div>
+          <label className="block font-medium mb-1" htmlFor="confirmPassword">Confirm Password <span className="text-red-500">*</span></label>
+          <input id="confirmPassword" className="form-input w-full py-2" type="password" autoComplete="on" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
         </div>
       </div>
-      <div className="flex items-center justify-between mt-6">
-        <div className="mr-1">
-          <label className="flex items-center">
-            <input type="checkbox" className="form-checkbox" />
-            <span className="text-sm ml-2">Email me about product news.</span>
-          </label>
-        </div>
-        <button type="submit" disabled={submitting} className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white ml-3 whitespace-nowrap">{submitting ? 'Creating...' : 'Sign Up'}</button>
+
+      <button type="submit" disabled={submitting} className="btn w-full mt-5 bg-violet-600 text-white hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600">
+        {submitting ? 'Creating...' : 'Register'}
+      </button>
+
+      <div className="mt-3 text-center text-xs text-gray-600 dark:text-gray-300">
+        By clicking <span className="font-semibold">Register</span>, you agree to our{' '}
+        <a href="#" className="underline">Terms of Service</a> and{' '}
+        <a href="#" className="underline">Privacy Policy</a>.
       </div>
-      {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700/60" />
+        <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Already have an account?</div>
+        <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700/60" />
+      </div>
+
+      <a href="/signin" className="btn w-full py-2 bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-center">
+        Sign in
+      </a>
+
+      {error && <div className="text-xs text-red-500 mt-3">{error}</div>}
     </form>
   )
 }

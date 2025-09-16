@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
 
   // If it's an admin route, check if user has admin role
   if (isAdminRoute && token && !token.isAdmin) {
-    return NextResponse.redirect(new URL('/dashboard', nextUrl))
+    return NextResponse.redirect(new URL('/publishers', nextUrl))
   }
 
   return NextResponse.next()

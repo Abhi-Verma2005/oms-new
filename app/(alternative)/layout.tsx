@@ -1,4 +1,5 @@
 import Header from '@/components/ui/header'
+import Footer from '@/components/ui/footer'
 import { Suspense } from 'react'
 
 export default function AlternativeLayout({
@@ -19,6 +20,11 @@ export default function AlternativeLayout({
         <main className="grow [&>*:first-child]:scroll-mt-16">
           {children}
         </main>
+      </Suspense>
+
+      {/* Global footer */}
+      <Suspense fallback={null}>
+        <Footer />
       </Suspense>
 
     </div>

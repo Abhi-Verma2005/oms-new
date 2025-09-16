@@ -36,6 +36,8 @@ import { useCart } from "@/contexts/cart-context"
 import { useWishlist } from "@/contexts/wishlist-context"
 import { Flag } from "@/components/ui/flag"
 import { AhrefsIcon, SemrushIcon, MozIcon } from "@/components/ui/brand-icons"
+import dynamic from "next/dynamic"
+const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-help-carousel"), { ssr: false })
 
 type Trend = "increasing" | "decreasing" | "stable"
 type BacklinkNature = "do-follow" | "no-follow" | "sponsored"
@@ -661,8 +663,8 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Any</SelectItem>
-                <SelectItem value="Semrush">Semrush</SelectItem>
-                <SelectItem value="Ahrefs">Ahrefs</SelectItem>
+                <SelectItem value="Semrush"><div className="flex items-center gap-2"><span className="inline-flex w-4 h-4 items-center justify-center"><span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: '#f97316' }} /></span>Semrush</div></SelectItem>
+                <SelectItem value="Ahrefs"><div className="flex items-center gap-2"><span className="inline-flex w-4 h-4 items-center justify-center"><span className="inline-block w-3 h-3 rounded-[3px]" style={{ backgroundColor: '#1e3a8a' }} /></span>Ahrefs</div></SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -713,7 +715,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         </UICardHeader>
         <CardContent className="pt-1">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3.5 gap-3">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
           <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
             <SelectTrigger className="h-8 w-full sm:w-48 text-xs">
@@ -731,7 +733,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
           </Select>
           {/* Save as view */}
           <Input className="h-8 text-xs w-full sm:w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-3 flex-1 sm:flex-none" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
               <CheckCircle className="w-3 h-3" />
               Save
@@ -879,31 +881,31 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     }
   }, [columnsOpen])
 
-  // Consistent width per column to align headers and data - optimized for no horizontal scroll
+  // Consistent width per column to align headers and data
   const columnWidthClasses: Record<ColumnKey, string> = useMemo(() => ({
-    name: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    niche: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    countryLang: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    authority: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    spam: 'min-w-[5rem] w-[6rem] max-w-[7rem]',
-    price: 'min-w-[5rem] w-[6rem] max-w-[7rem]',
-    trend: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    cart: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    website: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    traffic: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    organicTraffic: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    authorityScore: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    availability: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    sampleUrl: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    lastPublished: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    outboundLimit: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    backlinkNature: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    backlinksAllowed: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    wordLimit: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    tatDays: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    linkPlacement: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    permanence: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    order: 'min-w-[4rem] w-[5rem] max-w-[6rem]'
+    name: 'min-w-[9rem] w-[10rem] max-w-[11rem]',
+    niche: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
+    countryLang: 'min-w-[9rem] w-[10rem] max-w-[11rem]',
+    authority: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
+    spam: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    price: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
+    trend: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    cart: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
+    website: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
+    traffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    organicTraffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    authorityScore: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    availability: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    sampleUrl: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    lastPublished: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    outboundLimit: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    backlinkNature: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    backlinksAllowed: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    wordLimit: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    tatDays: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    linkPlacement: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    permanence: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
+    order: 'min-w-[5rem] w-[6rem] max-w-[7rem]'
   }), [])
 
   const renderCell = (key: ColumnKey, s: Site) => {
@@ -911,9 +913,9 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'name':
         return (
           <div className="font-medium">
-            <div className="overflow-hidden text-ellipsis whitespace-nowrap" title={s.name}>
+            <div className="overflow-hidden text-ellipsis whitespace-nowrap leading-tight" title={s.name}>
               {/* Mask the domain with stars; reveal on hover click */}
-              <MaskedWebsite site={s} />
+              <MaskedWebsite site={s} maxStars={rowLevel === 4 ? 18 : 14} />
             </div>
             {(() => {
               const stripped = s.url.replace(/^https?:\/\//, "")
@@ -942,7 +944,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'niche':
         return (
           <div className="max-w-full">
-            <div className="flex flex-wrap gap-1 max-w-full">
+            <div className="flex flex-wrap gap-1.5 max-w-full">
               {(() => {
                 const niches = s.niche.split(',').map(n => n.trim()).filter(Boolean)
                 if (rowLevel === 1) {
@@ -950,7 +952,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   return (
                     <>
                       <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                        <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={niches[0]}>{niches[0]}</span>
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[7.5rem]" title={niches[0]}>{niches[0]}</span>
                       </span>
                       {niches.length > 1 && (
                         <span className="px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
@@ -965,7 +967,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                     <>
                       {niches.slice(0, 2).map((n, idx) => (
                         <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                          <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={n}>{n}</span>
+                          <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[7.5rem]" title={n}>{n}</span>
                         </span>
                       ))}
                       {niches.length > 2 && (
@@ -979,7 +981,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   // Tall and Extra Tall: Show all niches
                   return niches.map((n, idx) => (
                     <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                      <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[6rem]" title={n}>{n}</span>
+                      <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[7.5rem]" title={n}>{n}</span>
                     </span>
                   ))
                 }
@@ -990,19 +992,19 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'countryLang':
         return (
-          <div className="text-sm">
+          <div className="text-sm leading-tight">
             {rowLevel === 1 ? (
               // Short: Just language with country flag, full info on hover
-              <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
+              <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}> 
                 <Flag country={s.country} withBg className="shrink-0" />
-                <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap">{s.language}</span>
+                <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[8rem]">{s.language}</span>
               </div>
             ) : (
               // Medium and above: Show with additional details
               <>
                 <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
                   <Flag country={s.country} withBg className="shrink-0" />
-                  <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap">{s.language}</span>
+                  <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[8rem]">{s.language}</span>
                 </div>
                 {rowLevel >= 3 && (
                   <div className="text-[11px] text-gray-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap" title={s.country}>
@@ -1088,7 +1090,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'cart':
         return (
           <>
-            <div className={`flex ${rowLevel === 1 ? 'flex-col items-center gap-1' : 'flex-col items-center gap-2'}`}>
+            <div className="flex flex-col items-center gap-1">
               {isItemInCart(s.id) ? (
                 <div className="flex items-center gap-2">
                   <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
@@ -1097,7 +1099,13 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   )}
                 </div>
               ) : (
-                <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); addItem(s) }}>Add to Cart</Button>
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 text-white shadow-sm hover:bg-emerald-500 focus-visible:ring-4 focus-visible:ring-emerald-400/40 active:scale-[0.98] transition-all duration-150"
+                  onClick={(e) => { e.stopPropagation(); addItem(s) }}
+                >
+                  Add to Cart
+                </Button>
               )}
               {rowLevel >= 2 && <WishlistInlineButton site={s} />}
             </div>
@@ -1114,9 +1122,9 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'traffic':
         return (
-          <div>
-            <div className="tabular-nums">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</div>
-            <div className="mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+          <div className="flex flex-col justify-center min-h-[42px]">
+            <div className="tabular-nums leading-none">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</div>
+            <div className="mt-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 whitespace-nowrap">
               <SemrushIcon className="w-3 h-3" />
               Overall
             </div>
@@ -1124,9 +1132,9 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'organicTraffic':
         return (
-          <div>
-            <div className="tabular-nums">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>
-            <div className="mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+          <div className="flex flex-col justify-center min-h-[42px]">
+            <div className="tabular-nums leading-none">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>
+            <div className="mt-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 whitespace-nowrap">
               <SemrushIcon className="w-3 h-3" />
               Organic
             </div>
@@ -1134,9 +1142,9 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'authorityScore':
         return (
-          <div className={`${rightAligned.has('authorityScore') ? 'text-right' : ''}`}>
-            <div className="tabular-nums">{s.toolScores.semrushAuthority}</div>
-            <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 ${rightAligned.has('authorityScore') ? 'ml-auto' : ''}`}>
+          <div className={`${rightAligned.has('authorityScore') ? 'text-right' : ''} flex flex-col justify-center min-h-[42px]`}>
+            <div className="tabular-nums leading-none">{s.toolScores.semrushAuthority}</div>
+            <div className={`mt-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 whitespace-nowrap ${rightAligned.has('authorityScore') ? 'ml-auto' : ''}`}>
               <SemrushIcon className="w-3 h-3" />
               Score
             </div>
@@ -1283,33 +1291,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           </div>
         </header>
         
-        {/* Column Headers Row */}
-        <div className="overflow-x-auto">
-          <Table className="dark:text-gray-300 w-full min-w-[800px]">
-            <UITableHeader>
-              <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
-                {columnDefs.map(col => (
-                  visibleColumns.includes(col.key) ? (
-                    <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
-                      <div className="inline-flex items-center gap-2">
-                        <span>{col.label}</span>
-                        {col.key === 'trend' && (
-                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover</span>
-                        )}
-                      </div>
-                    </TableHead>
-                  ) : null
-                ))}
-                {/* Cart column always visible */}
-                <TableHead className="px-5 py-3 whitespace-nowrap text-center min-w-[7rem] w-[8rem] max-w-[9rem]">
-                  <div className="inline-flex items-center gap-2">
-                    <span>Cart</span>
-                  </div>
-                </TableHead>
-              </TableRow>
-            </UITableHeader>
-          </Table>
-        </div>
+        {/* Column controls end; table rendered below */}
       </div>
 
       {/* Fixed bottom-left trend preview panel */}
@@ -1378,9 +1360,31 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         </div>
       )}
       
-      {/* Scrollable Data Body */}
+      {/* Unified scroll container for header + body to keep horizontal sync */}
       <div className="overflow-x-auto">
         <Table className="dark:text-gray-300 table-fixed w-full min-w-[800px]">
+          <UITableHeader>
+            <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+              {columnDefs.map(col => (
+                visibleColumns.includes(col.key) ? (
+                  <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
+                    <div className="inline-flex items-center gap-2">
+                      <span>{col.label}</span>
+                      {col.key === 'trend' && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover</span>
+                      )}
+                    </div>
+                  </TableHead>
+                ) : null
+              ))}
+              {/* Cart column always visible */}
+              <TableHead className="px-5 py-3 whitespace-nowrap text-center min-w-[8rem] w-[9rem] max-w-[10rem] sticky right-0 z-20 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.06)]">
+                <div className="inline-flex items-center gap-2">
+                  <span>Cart</span>
+                </div>
+              </TableHead>
+            </TableRow>
+          </UITableHeader>
           <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
               <TableRow><TableCell className="px-5 py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
@@ -1396,7 +1400,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   ) : null
                 ))}
                 {/* Cart column always visible */}
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[7rem] w-[8rem] max-w-[9rem]`}>
+                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[8rem] w-[9rem] max-w-[10rem] sticky right-0 z-10 bg-gray-50 dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.04)]`}>
                   {renderCell('cart', s)}
                 </TableCell>
                     </TableRow>
@@ -1466,10 +1470,22 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
                         <div className="text-[13px] font-semibold text-gray-900 dark:text-gray-100 mb-4">Authority Metrics</div>
                         <div className="space-y-2.5">
-                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Domain Authority</span><span className="font-semibold tabular-nums">{selectedSite.da}</span></div>
-                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Page Authority</span><span className="font-semibold tabular-nums">{selectedSite.pa}</span></div>
-                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Domain Rating</span><span className="font-semibold tabular-nums">{selectedSite.dr}</span></div>
-                          <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Spam Score</span><span className="font-semibold tabular-nums">{selectedSite.spamScore}%</span></div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><MozIcon className="w-3.5 h-3.5" /> Domain Authority</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-semibold tabular-nums ${selectedSite.da>=70 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700' : selectedSite.da>=40 ? 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700' : 'bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700'}`}>{selectedSite.da}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><MozIcon className="w-3.5 h-3.5" /> Page Authority</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-semibold tabular-nums ${selectedSite.pa>=70 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700' : selectedSite.pa>=40 ? 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700' : 'bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700'}`}>{selectedSite.pa}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><AhrefsIcon className="w-3.5 h-3.5" /> Domain Rating</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-semibold tabular-nums ${selectedSite.dr>=70 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700' : selectedSite.dr>=40 ? 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700' : 'bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700'}`}>{selectedSite.dr}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Spam Score</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-semibold tabular-nums ${selectedSite.spamScore<=3 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700' : selectedSite.spamScore<=6 ? 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700' : 'bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700'}`}>{selectedSite.spamScore}%</span>
+                          </div>
                         </div>
                       </div>
                       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-5 shadow-sm">
@@ -1912,7 +1928,25 @@ export default function PublishersClient() {
           </div>
         </div>
 
-        <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
+        <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-8 items-start">
+          <div className="lg:col-span-7 xl:col-span-7">
+            <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
+          </div>
+          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 items-start justify-center">
+            {(() => {
+              const total = displayedSites.length
+              const prices = displayedSites.map(x => x.publishing?.price ?? 0).filter(v => v > 0)
+              const traffics = displayedSites.map(x => x.toolScores?.semrushOverallTraffic ?? 0).filter(v => v > 0)
+              const authorities = displayedSites.map(x => x.toolScores?.semrushAuthority ?? 0).filter(v => v > 0)
+              const avgPrice = prices.length ? Math.round(prices.reduce((s, v) => s + v, 0) / prices.length) : 180
+              const avgTraffic = traffics.length ? Math.round(traffics.reduce((s, v) => s + v, 0) / traffics.length) : 1_200_000
+              const avgAuthority = authorities.length ? Math.round(authorities.reduce((s, v) => s + v, 0) / authorities.length) : 58
+              return (
+                <PublishersHelpCarousel metrics={{ total, avgPrice, avgTraffic, avgAuthority }} />
+              )
+            })()}
+          </div>
+        </div>
 
         {error && <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300">{error}</div>}
 

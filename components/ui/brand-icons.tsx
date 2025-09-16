@@ -1,23 +1,16 @@
 import React from "react"
+import Image from 'next/image'
+import AhrefPng from '@/public/images/ahref.png'
+import SemrushPng from '@/public/images/semrush.png'
 
 type Props = { className?: string }
 
 export function AhrefsIcon({ className = "w-4 h-4" }: Props) {
-	return (
-		<svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
-			<path d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7z" fill="#1e3a8a"/>
-			<path d="M8.8 15.5v-7h1.8v2.4h2.8V8.5h1.8v7h-1.8v-2.9h-2.8v2.9H8.8z" fill="#ffffff"/>
-		</svg>
-	)
+	return <Image src={AhrefPng} alt="Ahrefs" className={className} width={16} height={16} />
 }
 
 export function SemrushIcon({ className = "w-4 h-4" }: Props) {
-	return (
-		<svg viewBox="0 0 24 24" className={className} aria-hidden>
-			<circle cx="12" cy="12" r="10" fill="#f97316" />
-			<path d="M6 12c3-3 9-3 12 0-3 3-9 3-12 0z" fill="#fff" />
-		</svg>
-	)
+	return <Image src={SemrushPng} alt="Semrush" className={className} width={16} height={16} />
 }
 
 export function MozIcon({ className = "w-4 h-4" }: Props) {

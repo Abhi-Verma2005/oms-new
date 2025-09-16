@@ -113,7 +113,7 @@ export default function Header({
             )}
 
             {/* Logo */}
-            <Logo href="/dashboard" />
+            <Logo href="/publishers" />
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
             <nav className="hidden lg:flex items-center space-x-1 ml-6">
