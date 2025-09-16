@@ -1228,7 +1228,12 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Controls Row */}
         <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight">All Publishers <span className="text-gray-400 dark:text-gray-500 font-medium">{sites.length}</span></h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight flex items-center gap-2">
+            <span>All Publishers</span>
+            <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full text-[11px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+              {sites.length}
+            </span>
+          </h2>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="flex items-center gap-1.5">
               <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
