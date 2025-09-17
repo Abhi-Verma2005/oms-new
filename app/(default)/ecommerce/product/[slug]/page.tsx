@@ -2,16 +2,32 @@ import Link from 'next/link'
 import Markdown from 'react-markdown'
 import { ReviewsDisplay } from '@/components/reviews-display'
 import AddToCartProductButton from '@/components/ecommerce/add-to-cart-product-button'
+import { prisma } from '@/lib/db'
 
 async function getData(slug: string) {
-  const res = await fetch(`/api/products/${slug}`, { cache: 'no-store' })
-  if (!res.ok) return null
-  const { product } = await res.json()
+  const product = await prisma.product.findUnique({
+    where: { slug },
+    include: {
+      features: { orderBy: { sortOrder: 'asc' } },
+      productTags: { include: { tag: true } },
+      reviewProducts: {
+        where: { review: { isApproved: true } },
+        orderBy: { review: { displayOrder: 'asc' } },
+        include: {
+          review: {
+            include: {
+              reviewTags: { include: { tag: true } }
+            }
+          }
+        }
+      },
+    },
+  })
   return product
 }
 
-export default async function ProductDetail({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+export default async function ProductDetail({ params }: { params: { slug: string } }) {
+  const { slug } = params
   const product = await getData(slug)
   if (!product) return <div className="p-8">Not found</div>
   return (

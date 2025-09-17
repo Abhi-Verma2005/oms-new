@@ -1,9 +1,16 @@
 import Link from 'next/link'
+import { prisma } from '@/lib/db'
 
 async function getPackages() {
-  const res = await fetch(`/api/products?link=1&limit=4`, { cache: 'no-store' })
-  if (!res.ok) return []
-  const { products } = await res.json()
+  const products = await prisma.product.findMany({
+    where: { isActive: true, showOnLinkBuilding: true },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    take: 4,
+    include: {
+      features: { orderBy: { sortOrder: 'asc' } },
+      productTags: { include: { tag: true } },
+    },
+  })
   return products
 }
 
