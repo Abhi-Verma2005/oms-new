@@ -5,9 +5,13 @@ import Stripe from 'stripe'
 import { prisma } from '@/lib/db'
 import { ActivityLogger } from '@/lib/activity-logger'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function POST(request: NextRequest) {
   const body = await request.text()
-  const headersList = await headers()
+  const headersList = headers()
   const signature = headersList.get('stripe-signature')
 
   console.log('Webhook received:', {
