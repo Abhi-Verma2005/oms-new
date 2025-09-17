@@ -4,8 +4,7 @@ import { ReviewsDisplay } from '@/components/reviews-display'
 import AddToCartProductButton from '@/components/ecommerce/add-to-cart-product-button'
 
 async function getData(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
-  const res = await fetch(`${baseUrl}/api/products/${slug}`, { cache: 'no-store' })
+  const res = await fetch(`/api/products/${slug}`, { cache: 'no-store' })
   if (!res.ok) return null
   const { product } = await res.json()
   return product
