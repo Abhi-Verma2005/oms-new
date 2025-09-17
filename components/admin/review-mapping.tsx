@@ -50,6 +50,13 @@ interface SelectedProducts {
 
 export function ReviewMapping() {
   const router = useRouter()
+  const notify = (title: string, body: string, priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' = 'NORMAL') => {
+    if (typeof window === 'undefined') return
+    const now = new Date().toISOString()
+    const id = `toast_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    const detail = { id, title, body, imageUrl: undefined, typeId: 'custom', isActive: true, isGlobal: true, targetUserIds: [] as string[], priority, createdAt: now, updatedAt: now, type: { id: 'custom', name: 'custom', displayName: 'Notification' } }
+    window.dispatchEvent(new CustomEvent('preview-notification', { detail }))
+  }
   const searchParams = useSearchParams()
   
   const [reviews, setReviews] = useState<Review[]>([])
@@ -439,7 +446,7 @@ export function ReviewMapping() {
 
   const handleApplyMapping = async () => {
     if (selectedReviews.length === 0) {
-      alert('Please select at least one review')
+      notify('Selection required', 'Please select at least one review', 'HIGH')
       return
     }
 
@@ -449,7 +456,7 @@ export function ReviewMapping() {
     ].filter((id, index, arr) => arr.indexOf(id) === index) // Remove duplicates
 
     if (allSelectedProducts.length === 0) {
-      alert('Please select at least one product')
+      notify('Selection required', 'Please select at least one product', 'HIGH')
       return
     }
 
@@ -475,10 +482,10 @@ export function ReviewMapping() {
       // Refresh data
       fetchData()
       
-      alert(`Successfully mapped ${selectedReviews.length} review(s) to ${allSelectedProducts.length} product(s)`) 
+      notify('Mapping applied', `Mapped ${selectedReviews.length} review(s) to ${allSelectedProducts.length} product(s)`, 'NORMAL') 
     } catch (error) {
       console.error('Error applying mapping:', error)
-      alert('Failed to apply mapping')
+      notify('Failed to apply mapping', 'An unexpected error occurred.', 'HIGH')
     }
   }
 

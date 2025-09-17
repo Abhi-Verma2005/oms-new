@@ -253,3 +253,12 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// Optional: respond 200 to GET/HEAD for health checks to avoid 405 in Stripe UI
+export async function GET() {
+  return NextResponse.json({ ok: true, message: 'Stripe webhook endpoint. Use POST for events.' })
+}
+
+export async function HEAD() {
+  return new NextResponse(null, { status: 200 })
+}

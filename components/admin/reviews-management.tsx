@@ -66,7 +66,36 @@ export function ReviewsManagement() {
     isApproved: ''
   })
 
-  // Modal removed
+  // Add review modal state
+  const [showAddReviewModal, setShowAddReviewModal] = useState(false)
+  const [newReview, setNewReview] = useState({
+    authorName: '',
+    rating: 5,
+    bodyMarkdown: '',
+  })
+  const [submitting, setSubmitting] = useState(false)
+
+  // Local toast helper using NotificationContext preview event
+  const notify = (title: string, body: string, priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT' = 'NORMAL') => {
+    if (typeof window === 'undefined') return
+    const now = new Date().toISOString()
+    const id = `toast_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    const detail = {
+      id,
+      title,
+      body,
+      imageUrl: undefined,
+      typeId: 'custom',
+      isActive: true,
+      isGlobal: true,
+      targetUserIds: [] as string[],
+      priority,
+      createdAt: now,
+      updatedAt: now,
+      type: { id: 'custom', name: 'custom', displayName: 'Notification' },
+    }
+    window.dispatchEvent(new CustomEvent('preview-notification', { detail }))
+  }
   
   // Bulk assignment state
   const [selectedReviews, setSelectedReviews] = useState<string[]>([])
@@ -209,6 +238,55 @@ export function ReviewsManagement() {
     }
   }
 
+  const handleAddReview = async (mapAfter: boolean) => {
+    if (!newReview.authorName.trim() || !newReview.bodyMarkdown.trim()) {
+      notify('Missing information', 'Please fill in all required fields', 'HIGH')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const response = await fetch('/api/admin/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          authorName: newReview.authorName,
+          rating: newReview.rating,
+          bodyMarkdown: newReview.bodyMarkdown,
+          isApproved: true,
+          displayOrder: 0,
+          tagIds: [],
+          productIds: []
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const createdId = data?.review?.id as string | undefined
+        setShowAddReviewModal(false)
+        setNewReview({
+          authorName: '',
+          rating: 5,
+          bodyMarkdown: ''
+        })
+        notify('Review created', 'Your review has been created successfully.', 'NORMAL')
+        if (mapAfter && createdId) {
+          router.push(`/admin/reviews/mapping?sel=${encodeURIComponent(createdId)}`)
+        } else {
+          fetchReviews()
+        }
+      } else {
+        const error = await response.json()
+        notify('Failed to create review', error.error || 'Unknown error', 'HIGH')
+      }
+    } catch (error) {
+      console.error('Error creating review:', error)
+      notify('Failed to create review', 'An unexpected error occurred.', 'HIGH')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleBulkAssignment = async () => {
     if (selectedReviews.length === 0) return
 
@@ -235,9 +313,10 @@ export function ReviewsManagement() {
       
       // Refresh reviews
       fetchReviews()
+      notify('Updated', 'Reviews updated successfully.', 'NORMAL')
     } catch (error) {
       console.error('Error in bulk assignment:', error)
-      alert('Failed to update reviews')
+      notify('Failed to update reviews', 'An unexpected error occurred.', 'HIGH')
     }
   }
 
@@ -274,10 +353,10 @@ export function ReviewsManagement() {
             </Button>
             <button
               type="button"
-              onClick={() => router.push('/admin/reviews/mapping')}
+              onClick={() => setShowAddReviewModal(true)}
               className="rounded-md bg-violet-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
             >
-              Map Reviews
+              Add Review
             </button>
           </div>
         </div>
@@ -659,6 +738,100 @@ export function ReviewsManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Review Modal */}
+      {showAddReviewModal && (
+        <div className="fixed inset-0 bg-black/20 dark:bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add New Review</h2>
+              <button
+                onClick={() => setShowAddReviewModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Author Name *
+                </label>
+                <input
+                  type="text"
+                  value={newReview.authorName}
+                  onChange={(e) => setNewReview(prev => ({ ...prev, authorName: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter author name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Rating *
+                </label>
+                <div className="flex items-center space-x-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewReview(prev => ({ ...prev, rating: star }))}
+                      className={`w-8 h-8 ${
+                        star <= newReview.rating ? 'text-yellow-400' : 'text-gray-300'
+                      } hover:text-yellow-400 transition-colors`}
+                    >
+                      <svg className="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Review Content (Markdown) *
+                </label>
+                <textarea
+                  value={newReview.bodyMarkdown}
+                  onChange={(e) => setNewReview(prev => ({ ...prev, bodyMarkdown: e.target.value }))}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter review content in Markdown format"
+                />
+              </div>
+
+              {/* Mapping/assignment fields intentionally removed. */}
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowAddReviewModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleAddReview(false)}
+                disabled={submitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+              >
+                {submitting ? 'Creating...' : 'Create'}
+              </button>
+              <button
+                onClick={() => handleAddReview(true)}
+                disabled={submitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors"
+              >
+                {submitting ? 'Creating...' : 'Create & Map'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
