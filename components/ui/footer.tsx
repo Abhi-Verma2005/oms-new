@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import Logo from '@/components/ui/logo'
 import { Linkedin, Facebook, Instagram, Twitter, Phone } from 'lucide-react'
 
@@ -13,23 +12,19 @@ export default function Footer() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Logo />
-                <span className="hidden sm:block text-sm text-gray-600 dark:text-gray-400">Made with love by the Mosaic team.</span>
+                <span className="hidden sm:block text-sm text-gray-700 dark:text-gray-300">
+                  EMIAC TECHNOLOGIES | <span className="font-semibold text-gray-900 dark:text-gray-100">Top Rated Agency On Upwork</span>
+                </span>
               </div>
-              <nav className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-                <Link href="/terms" className="hover:text-gray-900 dark:hover:text-gray-200">Terms of Use</Link>
-                <Link href="/privacy" className="hover:text-gray-900 dark:hover:text-gray-200">Privacy Policy</Link>
-                <Link href="/api-docs" className="hover:text-gray-900 dark:hover:text-gray-200">API Docs</Link>
-              </nav>
+              <div className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+                © Copyright 2017–{year}
+              </div>
             </div>
             <div className="border-t border-gray-200 dark:border-gray-800" />
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500 py-3">
-              <div className="flex items-center gap-3">
-                <span>Copyright © {year} Outreach Mosaic. All rights reserved.</span>
-                <a href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors" title="Book a call (coming soon)">
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>Book a call</span>
-                </a>
-              </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              All trademarks, logos and brand names are the property of their respective owners. All company, product and service names used in this website are for identification purposes only.
+            </div>
+            <div className="flex items-center justify-end text-xs text-gray-500 dark:text-gray-500 py-3">
               <div className="flex items-center gap-4 pr-16 md:pr-24">
                 <a
                   href="https://www.linkedin.com/company/emiactech/"

@@ -491,8 +491,8 @@ export function transformAPISiteToSite(apiSite: APISite): Site {
       trafficTrend: 'stable',
     },
     publishing: {
-      price: apiSite.costPrice || 0,
-      priceWithContent: apiSite.sellingPrice || 0,
+      price: apiSite.sellingPrice || 0,
+      priceWithContent: apiSite.sellingPrice + 50 || 0,
       wordLimit: 1000,
       tatDays: parseInt(apiSite.turnAroundTime) || 0,
       backlinkNature: (apiSite.linkAttribute?.toLowerCase() || 'do-follow') as 'do-follow' | 'no-follow' | 'sponsored',

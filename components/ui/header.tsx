@@ -7,6 +7,7 @@ import { useAppProvider } from '@/app/app-provider'
 import SearchModal from '@/components/search-modal'
 import Notifications from '@/components/dropdown-notifications'
 import DropdownHelp from '@/components/dropdown-help'
+import ThemeToggle from '@/components/theme-toggle'
 import UserMenu from '@/components/user-menu'
 import { AIChatbot } from '@/components/ai-chatbot'
 import { useCart } from '@/contexts/cart-context'
@@ -267,7 +268,8 @@ export default function Header({
               <CartModal />
             </div>
             <Notifications align="right" />
-            <DropdownHelp align="right" />
+            {/* Replace unused help icon with theme toggle */}
+            <ThemeToggle />
             {/*  Divider */}
             <hr className="w-px h-6 bg-gray-200 dark:bg-gray-700/60 border-none" />
             <UserMenu align="right" />
