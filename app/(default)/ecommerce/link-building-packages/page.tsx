@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 async function getPackages() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
-  const res = await fetch(`${baseUrl}/api/products?link=1&limit=4`, { cache: 'no-store' })
+  const res = await fetch(`/api/products?link=1&limit=4`, { cache: 'no-store' })
+  if (!res.ok) return []
   const { products } = await res.json()
   return products
 }
