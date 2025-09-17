@@ -1,16 +1,14 @@
 import Link from 'next/link'
-import { prisma } from '@/lib/db'
+import { headers } from 'next/headers'
 
 async function getPackages() {
-  const products = await prisma.product.findMany({
-    where: { isActive: true, showOnLinkBuilding: true },
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    take: 4,
-    include: {
-      features: { orderBy: { sortOrder: 'asc' } },
-      productTags: { include: { tag: true } },
-    },
-  })
+  const hdrs = await headers()
+  const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || ''
+  const proto = hdrs.get('x-forwarded-proto') || 'https'
+  const origin = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
+  const res = await fetch(`${origin}/api/products?link=1&limit=4`, { cache: 'no-store' })
+  if (!res.ok) return []
+  const { products } = await res.json()
   return products
 }
 

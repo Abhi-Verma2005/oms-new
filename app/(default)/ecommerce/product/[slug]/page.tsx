@@ -2,27 +2,16 @@ import Link from 'next/link'
 import Markdown from 'react-markdown'
 import { ReviewsDisplay } from '@/components/reviews-display'
 import AddToCartProductButton from '@/components/ecommerce/add-to-cart-product-button'
-import { prisma } from '@/lib/db'
+import { headers } from 'next/headers'
 
 async function getData(slug: string) {
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      features: { orderBy: { sortOrder: 'asc' } },
-      productTags: { include: { tag: true } },
-      reviewProducts: {
-        where: { review: { isApproved: true } },
-        orderBy: { review: { displayOrder: 'asc' } },
-        include: {
-          review: {
-            include: {
-              reviewTags: { include: { tag: true } }
-            }
-          }
-        }
-      },
-    },
-  })
+  const hdrs = await headers()
+  const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || ''
+  const proto = hdrs.get('x-forwarded-proto') || 'https'
+  const origin = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
+  const res = await fetch(`${origin}/api/products/${slug}`, { cache: 'no-store' })
+  if (!res.ok) return null
+  const { product } = await res.json()
   return product
 }
 
