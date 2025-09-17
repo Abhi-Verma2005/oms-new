@@ -10,8 +10,11 @@ import AddToCartProductButton from '@/components/ecommerce/add-to-cart-product-b
 import { Suspense } from 'react'
 
 async function ProductsGrid() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
-  const res = await fetch(`${baseUrl}/api/products?shop2=1&limit=40`, { cache: 'no-store' })
+  // Use relative URL so this works in server and edge environments without relying on window or env base URLs
+  const res = await fetch(`/api/products?shop2=1&limit=40`, { cache: 'no-store' })
+  if (!res.ok) {
+    return <div className="col-span-12 text-sm text-red-500">Failed to load products</div>
+  }
   const { products } = await res.json()
   return (
     <>
