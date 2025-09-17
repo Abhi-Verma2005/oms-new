@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useCart } from '@/contexts/cart-context'
-import { ShoppingCart, X, Globe } from 'lucide-react'
+import { ShoppingCart, X, Globe, PackageOpen } from 'lucide-react'
 import Link from 'next/link'
 import MaskedWebsite from '@/components/masked-website'
 
@@ -47,26 +47,37 @@ export default function CartModal() {
             <div className="p-2 space-y-2">
               {state.items.slice(0, 3).map((item) => (
                 <div key={item.id} className="flex items-center space-x-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
-                  {/* Site Icon */}
+                  {/* Icon */}
                   <div className="flex-shrink-0">
                     <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                      <Globe className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      {item.kind === 'site' ? (
+                        <Globe className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      ) : (
+                        <PackageOpen className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                      )}
                     </div>
                   </div>
-                  
-                  {/* Site Details */}
+
+                  {/* Details */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
-                      <MaskedWebsite site={item.site} maxStars={8} showRevealButton={false} />
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      ${(item.site.publishing.price || 0).toFixed(2)}
-                    </div>
+                    {item.kind === 'site' && item.site ? (
+                      <>
+                        <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                          <MaskedWebsite site={item.site} maxStars={8} showRevealButton={false} />
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">${(item.site.publishing.price || 0).toFixed(2)}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{item.product?.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">${(item.product?.priceDollars || 0).toFixed(2)}</div>
+                      </>
+                    )}
                   </div>
-                  
+
                   {/* Remove Button */}
                   <button
-                    onClick={() => removeItem(item.site.id)}
+                    onClick={() => removeItem(item.kind === 'site' ? (item.site?.id || '') : (item.product?.id || ''))}
                     className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
                     title="Remove from cart"
                   >

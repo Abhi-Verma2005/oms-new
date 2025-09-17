@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card"
 import LineChart01 from "@/components/charts/line-chart-01"
+import DoughnutChart from "@/components/charts/doughnut-chart"
 import { Table, TableBody, TableCell, TableHead, TableHeader as UITableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -302,9 +303,10 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     language: <Languages className="w-3.5 h-3.5 text-violet-600" />,
     country: <Globe className="w-3.5 h-3.5 text-violet-600" />,
     priceMin: <DollarSign className="w-3.5 h-3.5 text-violet-600" />,
-    daMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
-    paMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
-    drMin: <Shield className="w-3.5 h-3.5 text-violet-600" />,
+    // Use brand icons where possible
+    daMin: <MozIcon className="w-3.5 h-3.5" />,
+    paMin: <MozIcon className="w-3.5 h-3.5" />,
+    drMin: <AhrefsIcon className="w-3.5 h-3.5" />,
     spamMax: <AlertTriangle className="w-3.5 h-3.5 text-violet-600" />,
     tool: (
       <span className="inline-flex items-center gap-1">
@@ -314,8 +316,9 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         <MozIcon className="w-3 h-3" />
       </span>
     ),
-    semrushOverallTrafficMin: <BarChart3 className="w-3.5 h-3.5 text-violet-600" />,
-    semrushOrganicTrafficMin: <BarChart3 className="w-3.5 h-3.5 text-violet-600" />,
+    // Semrush provides these traffic metrics
+    semrushOverallTrafficMin: <SemrushIcon className="w-3.5 h-3.5" />,
+    semrushOrganicTrafficMin: <SemrushIcon className="w-3.5 h-3.5" />,
     tatDaysMax: <Clock className="w-3.5 h-3.5 text-violet-600" />,
     trend: <TrendingUp className="w-3.5 h-3.5 text-violet-600" />,
     backlinkNature: <Link2 className="w-3.5 h-3.5 text-violet-600" />,
@@ -328,9 +331,9 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     niche: 'Filter by website topic (e.g., Technology, Health, Finance) ',
     language: 'Filter by primary language of the website',
     country: 'Filter by website country for geo‑targeted content',
-    daMin: 'Minimum Moz Domain Authority',
-    paMin: 'Minimum Moz Page Authority',
-    drMin: 'Minimum Ahrefs Domain Rating',
+    daMin: 'Minimum Domain Authority (Moz)',
+    paMin: 'Minimum Page Authority (Moz)',
+    drMin: 'Minimum Domain Rating (Ahrefs)',
     spamMax: 'Maximum Spam Score (lower is better)',
     tool: 'Choose SEO tool for metrics (Semrush or Ahrefs)',
     semrushOverallTrafficMin: 'Minimum estimated monthly overall traffic (Semrush)',
@@ -803,7 +806,10 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
   // Track the currently hovered site for the trend preview panel
   const [trendPreviewSite, setTrendPreviewSite] = useState<Site | null>(null)
+  // Track the currently hovered site for the country preview chart
+  const [countryPreviewSite, setCountryPreviewSite] = useState<Site | null>(null)
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const countryHideTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const rowPaddingByLevel: Record<1|2|3|4, string> = { 1: 'py-1.5', 2: 'py-2.5', 3: 'py-3.5', 4: 'py-4.5' }
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -940,13 +946,39 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               return null
             })()}
             {rowLevel >= 3 && (
-              <div className="text-xs text-gray-500 mt-1">
-                <span className="text-gray-400">Category:</span> {s.category}
-              </div>
-            )}
-            {rowLevel >= 4 && (
-              <div className="text-xs text-gray-500 mt-1">
-                <span className="text-gray-400">Language:</span> {s.language}
+              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                {(() => {
+                  const v = (s.publishing.backlinkNature || '').toLowerCase()
+                  if (v.includes('do')) {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700">
+                        <Link2 className="w-3 h-3" /> Do-follow
+                      </span>
+                    )
+                  }
+                  if (v.includes('no')) {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700">
+                        <Link2 className="w-3 h-3" /> No-follow
+                      </span>
+                    )
+                  }
+                  if (v.includes('sponsor')) {
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
+                        <Link2 className="w-3 h-3" /> Sponsored
+                      </span>
+                    )
+                  }
+                  return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800/40 dark:text-gray-300 dark:border-gray-700">
+                      <Link2 className="w-3 h-3" /> {s.publishing.backlinkNature || '-'}
+                    </span>
+                  )
+                })()}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                  <Link2 className="w-3 h-3" /> Outbound {s.quality?.outboundLinkLimit ?? '-'}
+                </span>
               </div>
             )}
           </div>
@@ -997,12 +1029,16 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 }
               })()}
             </div>
-            {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Type:</span> {s.category}</div>)}
+            {rowLevel >= 3 && (
+              <div className="text-xs text-gray-500 mt-1">
+                <span className="text-gray-400">Type:</span> {s.category}
+              </div>
+            )}
           </div>
         )
       case 'countryLang':
         return (
-          <div className="text-sm leading-tight">
+          <div className="text-sm leading-tight" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(s) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 400) }}>
             {rowLevel === 1 ? (
               // Short: Just language with country flag, full info on hover
               <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
@@ -1407,6 +1443,63 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Fixed top-center country preview panel */}
+      {countryPreviewSite && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => setCountryPreviewSite(countryPreviewSite)} onMouseLeave={() => setCountryPreviewSite(null)}>
+          <div className="flex items-start justify-between">
+            <div className="text-base font-semibold mb-2">Organic traffic by country</div>
+            <div className="text-[11px] text-gray-500 whitespace-nowrap ml-2">Last updated {countryPreviewSite.quality?.lastPublished || '—'}</div>
+          </div>
+          {(() => {
+            const total = countryPreviewSite.toolScores.semrushOrganicTraffic || countryPreviewSite.toolScores.semrushOverallTraffic || 0
+            const breakdown = (countryPreviewSite.toolScores.targetCountryTraffic && countryPreviewSite.toolScores.targetCountryTraffic.length > 0)
+              ? countryPreviewSite.toolScores.targetCountryTraffic
+              : [
+                  { country: countryPreviewSite.country || 'United States', percent: 58 },
+                  { country: 'United Kingdom', percent: 11 },
+                  { country: 'India', percent: 7 },
+                  { country: 'Other countries', percent: 24 },
+                ]
+            const labels = breakdown.map(b => b.country)
+            const values = breakdown.map(b => Math.round(total * (b.percent / 100)))
+            const data = {
+              labels,
+              datasets: [
+                {
+                  data: values,
+                  backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#f97316'],
+                  hoverBackgroundColor: ['#2563eb', '#059669', '#d97706', '#ea580c'],
+                  borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff'],
+                  borderWidth: 2,
+                },
+              ],
+            }
+            return (
+              <div className="flex items-center gap-4">
+                <div className="relative w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]">
+                  <DoughnutChart data={data as any} width={220} height={220} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-2xl sm:text-3xl font-extrabold tabular-nums mb-1">{total.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500 mb-2">Total Traffic</div>
+                  <ul className="space-y-1 text-sm">
+                    {breakdown.map((b, idx) => (
+                      <li key={b.country} className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: ['#3b82f6','#10b981','#f59e0b','#f97316'][idx % 4] }} />
+                          {b.country}
+                        </span>
+                        <span className="tabular-nums text-gray-700 dark:text-gray-300">{b.percent}%</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
       

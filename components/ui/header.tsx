@@ -139,6 +139,12 @@ export default function Header({
                 <NavbarDropdownItem href="/ecommerce/invoices">
                   Invoices
                 </NavbarDropdownItem>
+                <NavbarDropdownItem href="/ecommerce/shop-2">
+                  Shop 2
+                </NavbarDropdownItem>
+                <NavbarDropdownItem href="/ecommerce/link-building-packages">
+                  Link Building Packages
+                </NavbarDropdownItem>
               </NavbarDropdown>
 
               <NavbarDropdown
@@ -217,6 +223,13 @@ export default function Header({
                 </div>
               )}
             </div>
+            {/* Book a call button (compact) */}
+            <a href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer" className="hidden md:inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors" title="Book a call (coming soon)">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a1 1 0 0 1 1 .75l1 3a1 1 0 0 1-.27 1L9.91 9.09a16 16 0 0 0 5 5l1.34-1.91a1 1 0 0 1 1-.27l3 1a1 1 0 0 1 .75 1z"/>
+              </svg>
+              Book a call
+            </a>
             <div className="relative group">
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
@@ -283,6 +296,12 @@ export default function Header({
               </Link>
               <Link href="/ecommerce/invoices" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
                 Invoices
+              </Link>
+              <Link href="/ecommerce/shop-2" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+                Shop 2
+              </Link>
+              <Link href="/ecommerce/link-building-packages" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+                Link Building Packages
               </Link>
               <Link href="/inbox" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
                 Inbox

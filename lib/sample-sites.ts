@@ -503,7 +503,7 @@ export function transformAPISiteToSite(apiSite: APISite): Site {
     quality: {
       sampleUrl: apiSite.sampleURL || '',
       lastPublished: apiSite.updatedAt ? new Date(apiSite.updatedAt).toISOString().split('T')[0] : 'Unknown',
-      outboundLinkLimit: 3,
+      outboundLinkLimit: apiSite.numberOfLinks ?? undefined,
       guidelinesUrl: '',
     },
     additional: {

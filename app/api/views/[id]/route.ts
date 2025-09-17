@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+ 
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -22,8 +22,8 @@ async function writeViews(views: View[]): Promise<void> {
   await fs.writeFile(dataFile, JSON.stringify(views, null, 2), 'utf8')
 }
 
-export async function DELETE(_req: NextRequest, { params }: any) {
-  const id = params?.id
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const views = await readViews()
   const next = views.filter(v => v.id !== id)
   await writeViews(next)

@@ -23,7 +23,7 @@ interface Tag {
   createdAt: string
   _count: {
     userTags: number
-    orderTags: number
+    productTags: number
     bonusRules: number
   }
 }
@@ -183,7 +183,7 @@ export function TagsManagement() {
     return matchesSearch && matchesStatus
   })
 
-  const totalUsage = (tag: Tag) => tag._count.userTags + tag._count.orderTags + tag._count.bonusRules
+  const totalUsage = (tag: Tag) => tag._count.userTags + tag._count.productTags + tag._count.bonusRules
 
   if (loading) {
     return (
@@ -352,7 +352,7 @@ export function TagsManagement() {
                         </div>
                         <div className="flex items-center space-x-1">
                           <ShoppingCart className="w-4 h-4 text-green-500" />
-                          <span>{tag._count.orderTags}</span>
+                          <span>{tag._count.productTags}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Gift className="w-4 h-4 text-purple-500" />

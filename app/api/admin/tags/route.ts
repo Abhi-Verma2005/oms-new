@@ -16,7 +16,7 @@ export async function GET() {
         _count: {
           select: {
             userTags: true,
-            orderTags: true,
+            productTags: true,
             bonusRules: true
           }
         }
@@ -24,8 +24,11 @@ export async function GET() {
     })
 
     return NextResponse.json({ tags })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching tags:', error)
+    if (error?.code === 'P1001') {
+      return NextResponse.json({ tags: [], warning: 'Database unreachable' })
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

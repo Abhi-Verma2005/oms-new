@@ -68,6 +68,7 @@ model User {
   searchInterests SearchInterest[]
   feedbacks      Feedback[]
   wishlists      Wishlist[]
+  projects       Project[]
   
   // Tag and Bonus System Relations
   userTags       UserTag[]
@@ -576,6 +577,9 @@ model Tag {
   userTags    UserTag[]
   orderTags   OrderTag[]
   bonusRules  BonusRule[]
+  // Commerce relations
+  productTags ProductTag[]
+  reviewTags  ReviewTag[]
 
   @@map("tags")
 }
@@ -670,4 +674,150 @@ model BonusGrant {
   @@map("bonus_grants")
 }
 
+
+// Projects & Competitors
+model Project {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  name         String
+  domain       String   @unique
+  description  String?
+  defaultUrl   String?  @map("default_url")
+  defaultAnchor String? @map("default_anchor")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Optional quick metrics
+  avgTraffic   Int?     @map("avg_traffic")
+  domainRating Int?     @map("domain_rating")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competitors  ProjectCompetitor[]
+
+  @@map("projects")
+  @@index([userId, createdAt])
+}
+
+model ProjectCompetitor {
+  id           String   @id @default(cuid())
+  projectId    String   @map("project_id")
+  name         String
+  domain       String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Optional metrics snapshot
+  traffic      Int?
+  domainRating Int?
+
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, domain])
+  @@map("project_competitors")
+}
+
+
+// Commerce: Products, Reviews, and Package configuration
+model Product {
+  id                   String        @id @default(cuid())
+  slug                 String        @unique
+  header               String        // Primary heading (e.g., package name)
+  subheader            String?       // Secondary heading (e.g., pricing badge text)
+  imageUrl             String?
+  descriptionMarkdown  String?
+  // Pricing (in cents to avoid float)
+  pricePerMonthCents   Int?          @map("price_per_month_cents")
+  discountPercent      Int?          @map("discount_percent") // 0-100
+  finalPricePerMonthCents Int?       @map("final_price_per_month_cents")
+  currency             String        @default("USD")
+  badge                String?
+  // Visibility flags
+  showOnShop2          Boolean       @default(false) @map("show_on_shop2")
+  showOnLinkBuilding   Boolean       @default(false) @map("show_on_link_building")
+  isActive             Boolean       @default(true)  @map("is_active")
+  sortOrder            Int           @default(0)     @map("sort_order")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt      @map("updated_at")
+
+  // Relations
+  features             ProductFeature[]
+  productTags          ProductTag[]
+  reviewProducts       ReviewProduct[]
+
+  @@index([showOnShop2, showOnLinkBuilding, isActive, sortOrder])
+  @@map("products")
+}
+
+model ProductFeature {
+  id          String   @id @default(cuid())
+  productId   String   @map("product_id")
+  title       String   // e.g., "Guest Posts"
+  value       String?  // e.g., "4 Links"
+  icon        String?  // optional icon name
+  sortOrder   Int      @default(0) @map("sort_order")
+
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+  @@map("product_features")
+}
+
+// Many-to-many between Product and Tag
+model ProductTag {
+  id        String  @id @default(cuid())
+  productId String  @map("product_id")
+  tagId     String  @map("tag_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, tagId])
+  @@map("product_tags")
+}
+
+model Review {
+  id              String   @id @default(cuid())
+  authorName      String   @map("author_name")
+  rating          Int
+  bodyMarkdown    String   @map("body_markdown")
+  isApproved      Boolean  @default(true) @map("is_approved")
+  displayOrder    Int      @default(0)     @map("display_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt      @map("updated_at")
+
+  reviewTags      ReviewTag[]
+  reviewProducts  ReviewProduct[]
+
+  @@index([isApproved, displayOrder])
+  @@map("reviews")
+}
+
+// Many-to-many between Review and Tag
+model ReviewTag {
+  id        String  @id @default(cuid())
+  reviewId  String  @map("review_id")
+  tagId     String  @map("tag_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  review    Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, tagId])
+  @@map("review_tags")
+}
+
+// Many-to-many between Review and Product (dynamic mapping of reviews under products)
+model ReviewProduct {
+  id         String   @id @default(cuid())
+  reviewId   String   @map("review_id")
+  productId  String   @map("product_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, productId])
+  @@map("review_products")
+}
 

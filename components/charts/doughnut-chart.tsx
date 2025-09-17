@@ -81,48 +81,46 @@ export default function DoughnutChart({
       },
       plugins: [{
         id: 'htmlLegend',
-        afterUpdate(c, args, options) {
+        afterUpdate(c) {
           const ul = legend.current
           if (!ul) return
-          // Remove old legend items
-          while (ul.firstChild) {
-            ul.firstChild.remove()
-          }
-          // Reuse the built-in legendItems generator
-          const items = c.options.plugins?.legend?.labels?.generateLabels?.(c)
-            items?.forEach((item) => {
-              const li = document.createElement('li')
-              li.style.margin = '1.5px'
-              // Button element
-              const button = document.createElement('button')
-              button.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'shadow-sm', 'rounded-full', 'px-2', 'py-1.5')
-              button.style.opacity = item.hidden ? '.3' : ''
-              button.style.fontSize = '14px'
-              button.onclick = () => {
-                c.toggleDataVisibility(item.index!)
-                c.update()
-              }
-              // Color box
-              const box = document.createElement('span')
-              box.style.display = 'inline-block'
-              box.style.width = '6px'
-              box.style.height = '6px'
-              box.style.backgroundColor = item.fillStyle as string
-              box.style.borderRadius = '3px'
-              box.style.marginRight = '3px'
-              box.style.pointerEvents = 'none'
-              // Label
-              const label = document.createElement('span')
-              label.style.display = 'inline-flex'
-              label.style.alignItems = 'center'
-              label.style.fontSize = '14px'
-              const labelText = document.createTextNode(item.text)
-              label.appendChild(labelText)
-              li.appendChild(button)
-              button.appendChild(box)
-              button.appendChild(label)
-              ul.appendChild(li)
-            })
+          while (ul.firstChild) ul.firstChild.remove()
+          const labels = (c.data?.labels as string[]) || []
+          const ds = (c.data?.datasets && c.data.datasets[0]) || undefined
+          labels.forEach((text, index) => {
+            const li = document.createElement('li')
+            li.style.margin = '1.5px'
+            const button = document.createElement('button')
+            button.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-500', 'dark:text-gray-400', 'shadow-sm', 'rounded-full', 'px-1.5', 'py-0.5')
+            button.style.fontSize = '11px'
+            button.onclick = () => {
+              c.toggleDataVisibility(index)
+              c.update()
+            }
+            const box = document.createElement('span')
+            box.style.display = 'inline-block'
+            box.style.width = '4px'
+            box.style.height = '4px'
+            const fill = Array.isArray(ds?.backgroundColor) ? (ds!.backgroundColor as any[])[index] : (ds?.backgroundColor as string) || '#999'
+            box.style.backgroundColor = String(fill)
+            box.style.borderRadius = '3px'
+            box.style.marginRight = '3px'
+            box.style.pointerEvents = 'none'
+            const label = document.createElement('span')
+            label.style.display = 'inline-flex'
+            label.style.alignItems = 'center'
+            label.style.fontSize = '11px'
+            label.style.maxWidth = '100px'
+            label.style.whiteSpace = 'nowrap'
+            label.style.overflow = 'hidden'
+            label.style.textOverflow = 'ellipsis'
+            const labelText = document.createTextNode(text)
+            label.appendChild(labelText)
+            li.appendChild(button)
+            button.appendChild(box)
+            button.appendChild(label)
+            ul.appendChild(li)
+          })
         },
       }],
     })

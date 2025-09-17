@@ -4,6 +4,8 @@ import React from "react"
 import useEmblaCarousel from "embla-carousel-react"
 import Autoplay from "embla-carousel-autoplay"
 import { Check, Plus } from "lucide-react"
+import { useState } from 'react'
+import { NewProjectModal } from '@/components/projects/new-project-modal'
 
 function Slide({
   title,
@@ -36,6 +38,7 @@ function Slide({
 export type PublishersHelpCarouselProps = { metrics?: { total: number; avgPrice: number; avgTraffic: number; avgAuthority: number } }
 
 export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarouselProps) {
+  const [open, setOpen] = useState(false)
   const [emblaRef] = useEmblaCarousel(
     { loop: true, align: "start", dragFree: true },
     [Autoplay({ delay: 4500, stopOnInteraction: false })]
@@ -101,11 +104,12 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 mt-0.5" /><span>Add your project competitors and automatically analyze their backlinks.</span></li>
             </ul>
           </div>
-          <button className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 dark:border-white/10 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
+          <button onClick={() => setOpen(true)} className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 dark:border-white/10 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700">
             <Plus className="h-4 w-4" />
             <span>New project</span>
           </button>
         </div>
+        <NewProjectModal open={open} onOpenChange={setOpen} />
       </div>
     </div>
   )

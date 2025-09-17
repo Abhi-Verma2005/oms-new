@@ -23,7 +23,13 @@ export default function Footer() {
             </div>
             <div className="border-t border-gray-200 dark:border-gray-800" />
             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500 py-3">
-              <div>Copyright © {year} Outreach Mosaic. All rights reserved.</div>
+              <div className="flex items-center gap-3">
+                <span>Copyright © {year} Outreach Mosaic. All rights reserved.</span>
+                <a href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors" title="Book a call (coming soon)">
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Book a call</span>
+                </a>
+              </div>
               <div className="flex items-center gap-4 pr-16 md:pr-24">
                 <a
                   href="https://www.linkedin.com/company/emiactech/"

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { amount, currency = 'USD', items } = await request.json()
+    const { amount, currency = 'USD', items, productId } = await request.json()
     if (typeof amount !== 'number' || amount <= 0) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
@@ -27,7 +27,8 @@ export async function POST(request: Request) {
       metadata: {
         userId: userId,
         items: JSON.stringify(items),
-        orderType: 'purchase'
+        orderType: 'purchase',
+        productId: productId || ''
       }
     })
 

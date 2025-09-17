@@ -13,11 +13,18 @@ export default function CheckoutClient() {
   const url = typeof window !== 'undefined' ? new URL(window.location.href) : null
   const priceCentsParam = url ? Number(url.searchParams.get('priceCents') || '0') : 0
   const siteName = url ? url.searchParams.get('siteName') || '' : ''
+  const productId = url ? url.searchParams.get('productId') || '' : ''
   const amount = React.useMemo(() => {
     if (priceCentsParam > 0) return Math.round(priceCentsParam / 100)
     const total = state.items.reduce((sum, it) => {
-      const p = it.site.publishing.price || it.site.publishing.priceWithContent || 0
-      return sum + p * (it.quantity || 1)
+      if (it.kind === 'site' && it.site) {
+        const p = it.site.publishing.price || it.site.publishing.priceWithContent || 0
+        return sum + p * (it.quantity || 1)
+      }
+      if (it.kind === 'product' && it.product) {
+        return sum + (it.product.priceDollars || 0) * (it.quantity || 1)
+      }
+      return sum
     }, 0)
     return Math.round(total)
   }, [state.items, priceCentsParam])
@@ -44,17 +51,29 @@ export default function CheckoutClient() {
       setError(null)
       try {
         // Prepare items for the payment intent
-        const items = state.items.map(item => ({
-          id: item.site.id,
-          name: item.site.name,
-          price: item.site.publishing.price || item.site.publishing.priceWithContent || 0,
-          quantity: item.quantity || 1
-        }))
+        const items = priceCentsParam > 0
+          ? [{ id: productId || 'package', name: siteName || 'Package', price: amount, quantity: 1 }]
+          : state.items.map(item => {
+              if (item.kind === 'site' && item.site) {
+                return {
+                  id: item.site.id,
+                  name: item.site.name,
+                  price: item.site.publishing.price || item.site.publishing.priceWithContent || 0,
+                  quantity: item.quantity || 1,
+                }
+              }
+              return {
+                id: item.product?.id || 'product',
+                name: item.product?.name || 'Product',
+                price: item.product?.priceDollars || 0,
+                quantity: item.quantity || 1,
+              }
+            })
 
         const res = await fetch('/api/payment-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount, currency, items }),
+          body: JSON.stringify({ amount, currency, items, productId }),
         })
         if (!res.ok) throw new Error('Failed to create payment intent')
         const j = await res.json()
@@ -193,8 +212,14 @@ function PaymentForm() {
   const amount = React.useMemo(() => {
     if (priceCentsParam > 0) return Math.round(priceCentsParam / 100)
     const total = state.items.reduce((sum, it) => {
-      const p = it.site.publishing.price || it.site.publishing.priceWithContent || 0
-      return sum + p * (it.quantity || 1)
+      if (it.kind === 'site' && it.site) {
+        const p = it.site.publishing.price || it.site.publishing.priceWithContent || 0
+        return sum + p * (it.quantity || 1)
+      }
+      if (it.kind === 'product' && it.product) {
+        return sum + (it.product.priceDollars || 0) * (it.quantity || 1)
+      }
+      return sum
     }, 0)
     return Math.round(total)
   }, [state.items, priceCentsParam])
