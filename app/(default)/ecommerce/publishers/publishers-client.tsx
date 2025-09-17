@@ -1038,7 +1038,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         )
       case 'countryLang':
         return (
-          <div className="text-sm leading-tight" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(s) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 400) }}>
+          <div className="text-sm leading-tight" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(s) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
             {rowLevel === 1 ? (
               // Short: Just language with country flag, full info on hover
               <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
@@ -1134,7 +1134,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             onMouseLeave={() => {
               hideTimeoutRef.current = setTimeout(() => {
                 setTrendPreviewSite(null)
-              }, 1000)
+              }, 1200)
             }}
           >
             <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
@@ -1382,7 +1382,21 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
       {/* Fixed bottom-left trend preview panel */}
       {trendPreviewSite && (
-        <div className="fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]">
+        <div
+          className="fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]"
+          onMouseEnter={() => {
+            if (hideTimeoutRef.current) {
+              clearTimeout(hideTimeoutRef.current)
+              hideTimeoutRef.current = null
+            }
+            setTrendPreviewSite(trendPreviewSite)
+          }}
+          onMouseLeave={() => {
+            hideTimeoutRef.current = setTimeout(() => {
+              setTrendPreviewSite(null)
+            }, 1200)
+          }}
+        >
           <div className="text-xs font-medium mb-2 truncate">
             Trend preview · <MaskedWebsite site={trendPreviewSite} maxStars={10} showRevealButton={false} />
           </div>
@@ -1448,7 +1462,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
       {/* Fixed top-center country preview panel */}
       {countryPreviewSite && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => setCountryPreviewSite(countryPreviewSite)} onMouseLeave={() => setCountryPreviewSite(null)}>
+  <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
           <div className="flex items-start justify-between">
             <div className="text-base font-semibold mb-2">Organic traffic by country</div>
             <div className="text-[11px] text-gray-500 whitespace-nowrap ml-2">Last updated {countryPreviewSite.quality?.lastPublished || '—'}</div>

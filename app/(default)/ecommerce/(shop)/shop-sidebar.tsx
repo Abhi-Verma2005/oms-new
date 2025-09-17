@@ -1,4 +1,29 @@
-export default function ShopSidebar() {
+type PriceRange = 'lt20' | '20-40' | '40-80' | 'gt80' | null
+
+export default function ShopSidebar({
+  selectedTags = [],
+  onToggleTag,
+  onClearTags,
+  priceRange = null,
+  onChangePriceRange,
+  availableTags,
+}: {
+  selectedTags?: string[]
+  onToggleTag: (tag: string) => void
+  onClearTags: () => void
+  priceRange?: PriceRange
+  onChangePriceRange: (range: PriceRange) => void
+  availableTags?: string[]
+}) {
+  const defaultTags = [
+    'Apps / Software',
+    'Design / Tech Products',
+    'Books & Writing',
+    'Education',
+    'Drawing / Painting',
+  ]
+  const allTags = (availableTags && availableTags.length > 0) ? availableTags : defaultTags
+
   return (
     <div>
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-5 min-w-[15rem]">
@@ -8,64 +33,53 @@ export default function ShopSidebar() {
             <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold mb-3">Discover</div>
             <ul className="text-sm font-medium space-y-2">
               <li>
-                <a className="text-violet-500" href="#0">View All</a>
+                <button onClick={onClearTags} className="text-violet-500">View All</button>
               </li>
-              <li>
-                <a className="text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200" href="#0">Apps / Software</a>
-              </li>
-              <li>
-                <a className="text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200" href="#0">Design / Tech Products</a>
-              </li>
-              <li>
-                <a className="text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200" href="#0">Books & Writing</a>
-              </li>
-              <li>
-                <a className="text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200" href="#0">Education</a>
-              </li>
-              <li>
-                <a className="text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200" href="#0">Drawing / Painting</a>
-              </li>
+              {allTags.map(tag => (
+                <li key={tag}>
+                  <button
+                    onClick={() => onToggleTag(tag)}
+                    className={`hover:text-gray-700 dark:hover:text-gray-200 ${selectedTags.includes(tag) ? 'text-violet-500' : 'text-gray-600 dark:text-gray-300'}`}
+                  >
+                    {tag}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
           {/* Price Range */}
           <div>
             <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold mb-3">Price Range</div>
             <label className="sr-only">Price</label>
-            <select className="form-select w-full">
-              <option>Less than $20</option>
-              <option>$20 - $40</option>
-              <option>$40 - $80</option>
-              <option>More than $80</option>
+            <select
+              className="form-select w-full"
+              value={priceRange ?? ''}
+              onChange={(e) => onChangePriceRange((e.target.value || null) as PriceRange)}
+            >
+              <option value="">Any price</option>
+              <option value="lt20">Less than $20</option>
+              <option value="20-40">$20 - $40</option>
+              <option value="40-80">$40 - $80</option>
+              <option value="gt80">More than $80</option>
             </select>
           </div>
           {/* Group 3 */}
           <div>
             <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold mb-3">Multi Select</div>
             <ul className="space-y-2">
-              <li>
-                <label className="flex items-center">
-                  <input type="checkbox" className="form-checkbox" />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium ml-2">Apps / Software</span>
-                </label>
-              </li>
-              <li>
-                <label className="flex items-center">
-                  <input type="checkbox" className="form-checkbox" />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium ml-2">Education</span>
-                </label>
-              </li>
-              <li>
-                <label className="flex items-center">
-                  <input type="checkbox" className="form-checkbox" />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium ml-2">Books & Writing</span>
-                </label>
-              </li>
-              <li>
-                <label className="flex items-center">
-                  <input type="checkbox" className="form-checkbox" />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 font-medium ml-2">Drawing / Painting</span>
-                </label>
-              </li>
+              {allTags.map(tag => (
+                <li key={tag}>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="form-checkbox"
+                      checked={selectedTags.includes(tag)}
+                      onChange={() => onToggleTag(tag)}
+                    />
+                    <span className="text-sm text-gray-600 dark:text-gray-300 font-medium ml-2">{tag}</span>
+                  </label>
+                </li>
+              ))}
             </ul>
           </div>
           {/* Group 4 */}

@@ -101,7 +101,7 @@ function AddToCartActions({ product }: { product: any }) {
   const priceDollars = (product.finalPricePerMonthCents ?? product.pricePerMonthCents ?? 0) / 100
   return (
     <div className="mt-4 space-y-2">
-      <AddToCartProductButton id={product.id} name={product.header} priceDollars={priceDollars} className="btn w-full bg-violet-600 hover:bg-violet-700 text-white" />
+      <AddToCartProductButton id={product.id} name={product.header} priceDollars={priceDollars} openOnAdd={false} className="btn w-full bg-violet-600 hover:bg-violet-700 text-white" />
       <a
         href={`/checkout?priceCents=${product.finalPricePerMonthCents ?? product.pricePerMonthCents ?? 0}&siteName=${encodeURIComponent(product.header)}&productId=${product.id}`}
         className="btn w-full bg-gray-900 text-gray-100 dark:bg-gray-100 dark:text-gray-800 text-center"

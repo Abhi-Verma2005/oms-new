@@ -45,7 +45,7 @@ export default function LinkBuildingPackages() {
                 ))}
               </div>
               <div className="mt-auto pt-4">
-                <Link href={`/ecommerce/product/${p.slug}`} className="btn w-full bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">View details</Link>
+                <Link href={`/ecommerce/product/${p.slug}`} className="btn w-full bg-violet-600 hover:bg-violet-700 text-white">View details</Link>
               </div>
             </div>
           </div>
