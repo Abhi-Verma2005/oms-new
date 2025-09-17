@@ -1,24 +1,50 @@
+"use client"
+
 import Link from 'next/link'
 import Markdown from 'react-markdown'
 import { ReviewsDisplay } from '@/components/reviews-display'
 import AddToCartProductButton from '@/components/ecommerce/add-to-cart-product-button'
-import { headers } from 'next/headers'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'next/navigation'
 
-async function getData(slug: string) {
-  const hdrs = await headers()
-  const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || ''
-  const proto = hdrs.get('x-forwarded-proto') || 'https'
-  const origin = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
+async function fetchProduct(slug: string) {
+  const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
   const res = await fetch(`${origin}/api/products/${slug}`, { cache: 'no-store' })
   if (!res.ok) return null
   const { product } = await res.json()
   return product
 }
 
-export default async function ProductDetail({ params }: { params: { slug: string } }) {
-  const { slug } = params
-  const product = await getData(slug)
-  if (!product) return <div className="p-8">Not found</div>
+export default function ProductDetail() {
+  const params = useParams() as { slug?: string }
+  const slug = params?.slug
+  const [product, setProduct] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    const run = async () => {
+      try {
+        if (!slug) return
+        const data = await fetchProduct(slug)
+        if (!isMounted) return
+        setProduct(data)
+      } catch (e: any) {
+        if (!isMounted) return
+        setError('Failed to load product')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    run()
+    return () => {
+      isMounted = false
+    }
+  }, [slug])
+
+  if (loading) return <div className="p-8">Loading…</div>
+  if (error || !product) return <div className="p-8">Not found</div>
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-6xl mx-auto">
       <div className="mb-5">

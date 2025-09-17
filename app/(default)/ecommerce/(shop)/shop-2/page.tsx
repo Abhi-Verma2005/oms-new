@@ -1,21 +1,40 @@
-export const metadata = {
-  title: 'Shop 2 - Mosaic',
-  description: 'Page description',
-}
+"use client"
 
 import ShopSidebar from '../shop-sidebar'
 import ShopCards07 from '../shop-cards-07'
 import Link from 'next/link'
 import AddToCartProductButton from '@/components/ecommerce/add-to-cart-product-button'
-import { Suspense } from 'react'
+import { useEffect, useState } from 'react'
 
-async function ProductsGrid() {
-  // Use relative URL so this works in server and edge environments without relying on window or env base URLs
-  const res = await fetch(`/api/products?shop2=1&limit=40`, { cache: 'no-store' })
-  if (!res.ok) {
-    return <div className="col-span-12 text-sm text-red-500">Failed to load products</div>
-  }
-  const { products } = await res.json()
+function ProductsGrid() {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    const run = async () => {
+      try {
+        const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+        const res = await fetch(`${origin}/api/products?shop2=1&limit=40`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('Failed to load')
+        const { products } = await res.json()
+        if (!isMounted) return
+        setProducts(products)
+      } catch (e: any) {
+        if (!isMounted) return
+        setError('Failed to load products')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    run()
+    return () => { isMounted = false }
+  }, [])
+
+  if (loading) return <div className="col-span-12 text-sm text-gray-500">Loading…</div>
+  if (error) return <div className="col-span-12 text-sm text-red-500">{error}</div>
+
   return (
     <>
       {products.map((p: any) => (
@@ -87,9 +106,7 @@ export default function Shop2() {
           {/* Cards 1 (Video Courses) */}
           <div>
             <div className="grid grid-cols-12 gap-6">
-              <Suspense fallback={<div className="col-span-12 text-sm text-gray-500">Loading…</div>}>
-                <ProductsGrid />
-              </Suspense>
+              <ProductsGrid />
             </div>
           </div>
 

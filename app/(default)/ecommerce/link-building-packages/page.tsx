@@ -1,19 +1,28 @@
+"use client"
+
 import Link from 'next/link'
-import { headers } from 'next/headers'
+import { useEffect, useState } from 'react'
 
 async function getPackages() {
-  const hdrs = await headers()
-  const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || ''
-  const proto = hdrs.get('x-forwarded-proto') || 'https'
-  const origin = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`
+  const origin = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
   const res = await fetch(`${origin}/api/products?link=1&limit=4`, { cache: 'no-store' })
   if (!res.ok) return []
   const { products } = await res.json()
   return products
 }
 
-export default async function LinkBuildingPackages() {
-  const products = await getPackages()
+export default function LinkBuildingPackages() {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    let isMounted = true
+    getPackages().then((p) => {
+      if (!isMounted) return
+      setProducts(p)
+      setLoading(false)
+    }).catch(() => setLoading(false))
+    return () => { isMounted = false }
+  }, [])
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
       <div className="mb-6">
@@ -21,7 +30,7 @@ export default async function LinkBuildingPackages() {
         <p className="text-gray-500 dark:text-gray-400">Choose from our curated monthly packages.</p>
       </div>
       <div className="grid grid-cols-12 gap-6">
-        {products.map((p: any) => (
+        {(loading ? [] : products).map((p: any) => (
           <div key={p.id} className="col-span-12 md:col-span-6 xl:col-span-3">
             <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-5 flex flex-col">
               {p.badge && <div className="inline-flex text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 self-start mb-2">{p.badge}</div>}
