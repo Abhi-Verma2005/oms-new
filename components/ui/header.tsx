@@ -115,31 +115,10 @@ export default function Header({
             )}
 
             {/* Logo */}
-            <Link href="/publishers" className="inline-block" aria-label="Go to Publishers">
-              <div className="relative h-10 w-28 sm:h-12 sm:w-36 lg:h-16 lg:w-60 xl:h-20 xl:w-72">
-                {/* Light mode logo */}
-                <Image
-                  src="/images/logo.png"
-                  alt="Logo"
-                  fill
-                  sizes="(min-width: 1280px) 18rem, (min-width: 1024px) 15rem, (min-width: 640px) 9rem, 7rem"
-                  className="object-contain dark:hidden"
-                  priority
-                />
-                {/* Dark mode logo */}
-                <Image
-                  src="/images/logo_dark_mode.png"
-                  alt="Logo"
-                  fill
-                  sizes="(min-width: 1280px) 18rem, (min-width: 1024px) 15rem, (min-width: 640px) 9rem, 7rem"
-                  className="object-contain hidden dark:block"
-                  priority
-                />
-              </div>
-            </Link>
+            <Logo href='/dashboard'/>
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
-            <nav className="hidden lg:flex items-center space-x-1 ml-6">
+            <nav className="hidden lg:flex items-center space-x-1 ml-6 whitespace-nowrap">
               <NavbarDropdown
                 title="Dashboard"
                 icon={<LayoutDashboard className="w-4 h-4" />}

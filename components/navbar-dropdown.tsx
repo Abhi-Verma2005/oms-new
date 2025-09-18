@@ -58,7 +58,7 @@ export default function NavbarDropdown({
     }
   }, [timeoutId])
 
-  const baseClasses = `relative inline-flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-200 ${
+  const baseClasses = `relative inline-flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-200 shrink-0 ${
     isActive 
       ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10' 
       : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50'
@@ -68,9 +68,9 @@ export default function NavbarDropdown({
     // Simple link without dropdown
     return (
       <Link href={href} className={baseClasses}>
-        <span className="flex items-center">
+        <span className="flex items-center whitespace-nowrap">
           {icon}
-          <span className="ml-2">{title}</span>
+          <span className="ml-2 whitespace-nowrap leading-none">{title}</span>
         </span>
       </Link>
     )
@@ -84,9 +84,9 @@ export default function NavbarDropdown({
       onMouseLeave={handleMouseLeave}
     >
       <button className={baseClasses}>
-        <span className="flex items-center">
+        <span className="flex items-center whitespace-nowrap">
           {icon}
-          <span className="ml-2">{title}</span>
+          <span className="ml-2 whitespace-nowrap leading-none">{title}</span>
           <svg 
             className={`ml-1 w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
             fill="none" 
