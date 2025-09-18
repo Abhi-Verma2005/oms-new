@@ -1397,7 +1397,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       {/* Fixed bottom-left trend preview panel */}
       {trendPreviewSite && (
         <div
-          className="fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]"
+          className="hidden sm:block fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]"
           onMouseEnter={() => {
             if (hideTimeoutRef.current) {
               clearTimeout(hideTimeoutRef.current)
@@ -1476,7 +1476,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
       {/* Fixed top-center country preview panel */}
       {countryPreviewSite && (
-  <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
+  <div className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
           <div className="flex items-start justify-between">
             <div className="text-base font-semibold mb-2">Organic traffic by country</div>
             <div className="text-[11px] text-gray-500 whitespace-nowrap ml-2">Last updated {countryPreviewSite.quality?.lastPublished || '—'}</div>
@@ -2070,7 +2070,7 @@ export default function PublishersClient() {
                 onBlur={() => { /* keep open handled by outside click; avoid immediate close */ }}
               />
               {suggestionsOpen && (
-                <div className="absolute left-0 top-full mt-1 w-[18rem] max-h-60 overflow-auto rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg z-50 text-xs">
+                <div className="absolute left-0 top-full mt-1 w-full sm:w-[18rem] max-h-60 overflow-auto rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg z-50 text-xs">
                   {suggestionsLoading ? (
                     <div className="px-3 py-2 text-gray-500">Searching…</div>
                   ) : suggestions.length > 0 ? (
