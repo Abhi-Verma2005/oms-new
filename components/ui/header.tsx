@@ -132,14 +132,14 @@ export default function Header({
                   alt="Logo"
                   fill
                   sizes="(min-width: 1280px) 18rem, (min-width: 1024px) 15rem, (min-width: 640px) 9rem, 7rem"
-                  className="object-contain hidden dark:block"
+                  className="object-contain hidden dark:block dark:scale-110"
                   priority
                 />
               </div>
             </Link>
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
-            <nav className="hidden lg:flex items-center space-x-1 ml-6">
+            <nav className="hidden lg:flex items-center space-x-1 ml-6 whitespace-nowrap">
               <NavbarDropdown
                 title="Dashboard"
                 icon={<LayoutDashboard className="w-4 h-4" />}
