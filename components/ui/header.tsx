@@ -131,7 +131,7 @@ export default function Header({
               />
 
               <NavbarDropdown
-                title="E-Commerce"
+                title="E‑Commerce"
                 icon={<ShoppingBag className="w-4 h-4" />}
               >
                 <NavbarDropdownItem href="/orders">
