@@ -12,7 +12,11 @@ export default function Footer() {
           <div className="flex flex-col gap-4 py-6 w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Image src="/images/logo.png" alt="Logo" width={100} height={100} />
+                {/* Light/Dark logos with larger sizes on big screens */}
+                <span className="relative block h-10 w-32 sm:h-12 sm:w-40 lg:h-16 lg:w-60 xl:h-20 xl:w-72">
+                  <Image src="/images/logo.png" alt="Logo" fill sizes="(min-width:1280px) 18rem, (min-width:1024px) 15rem, (min-width:640px) 10rem, 8rem" className="object-contain dark:hidden" />
+                  <Image src="/images/logo_dark_mode.png" alt="Logo" fill sizes="(min-width:1280px) 18rem, (min-width:1024px) 15rem, (min-width:640px) 10rem, 8rem" className="object-contain hidden dark:block" />
+                </span>
               </div>
               <div className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
                 © Copyright 2017–{year}
