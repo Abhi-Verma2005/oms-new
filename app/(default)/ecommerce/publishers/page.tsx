@@ -12,7 +12,11 @@ export const dynamic = 'force-dynamic'
 export default async function Page() {
   const session = await auth()
   if (!session) redirect('/signin')
-  return <PublishersClient />
+  return (
+    <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+      <PublishersClient />
+    </div>
+  )
 }
 
 
