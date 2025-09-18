@@ -871,7 +871,14 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(defaultVisibleColumns)
   const [columnsOpen, setColumnsOpen] = useState(false)
   const columnsRef = useRef<HTMLDivElement | null>(null)
-  const toggleColumn = (key: ColumnKey) => setVisibleColumns(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+  const toggleColumn = (key: ColumnKey) => {
+    setVisibleColumns(prev => {
+      const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+      return next
+    })
+    // Close after a short delay to provide visual feedback
+    setTimeout(() => setColumnsOpen(false), 0)
+  }
   const showAllColumns = () => setVisibleColumns(allKeys)
   const hideAllColumns = () => setVisibleColumns([])
   const resetColumns = () => setVisibleColumns(defaultVisibleColumns)
@@ -1295,10 +1302,17 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                   </svg>
                 </Button>
               </PopoverTrigger>
-            <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10">
-              <div className="space-y-1">
+            <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10 rounded-lg shadow-xl">
+              <div className="py-1">
                 {[1,2,3,4].map((lvl) => (
-                  <button key={lvl} className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${rowLevel===lvl ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'}`} onClick={() => setRowLevel(lvl as 1|2|3|4)}>
+                  <button
+                    key={lvl}
+                    className={`w-full text-left px-3 py-2 text-xs rounded-md cursor-pointer outline-none transition-colors active:scale-[0.98] ${rowLevel===lvl ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60'}`}
+                    onClick={() => {
+                      setRowLevel(lvl as 1|2|3|4)
+                      setRowsOpen(false)
+                    }}
+                  >
                     {lvl===1?'Short':lvl===2?'Medium':lvl===3?'Tall':'Extra Tall'}
                   </button>
                 ))}

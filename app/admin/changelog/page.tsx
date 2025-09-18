@@ -19,11 +19,11 @@ type Entry = {
 function ChangelogContent() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [form, setForm] = useState<Partial<Entry>>({ title: '', body: '', category: 'Announcement', isPublished: true })
-  const [filterCategory, setFilterCategory] = useState<string>('')
+  const [filterCategory, setFilterCategory] = useState<string>('all')
   const [saving, setSaving] = useState(false)
 
   async function load() {
-    const qs = filterCategory ? `?category=${encodeURIComponent(filterCategory)}` : ''
+    const qs = filterCategory && filterCategory !== 'all' ? `?category=${encodeURIComponent(filterCategory)}` : ''
     const res = await fetch(`/api/admin/changelog${qs}`, { cache: 'no-store' })
     const data = await res.json()
     setEntries(data)
@@ -64,7 +64,7 @@ function ChangelogContent() {
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="Announcement">Announcement</SelectItem>
                 <SelectItem value="Bug Fix">Bug Fix</SelectItem>
                 <SelectItem value="Product">Product</SelectItem>
