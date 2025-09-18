@@ -175,7 +175,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     if (!v) return
     setApplyingViewId(id)
     setFilters({ ...defaultFilters, ...v.filters })
-    setTimeout(() => setApplyingViewId(""), 200)
+    setTimeout(() => setApplyingViewId(""), 50)
   }
 
   const deleteViewById = async (id: string) => {
@@ -1141,7 +1141,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             onMouseLeave={() => {
               hideTimeoutRef.current = setTimeout(() => {
                 setTrendPreviewSite(null)
-              }, 1200)
+              }, 200)
             }}
           >
             <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
@@ -1408,7 +1408,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           onMouseLeave={() => {
             hideTimeoutRef.current = setTimeout(() => {
               setTrendPreviewSite(null)
-            }, 1200)
+            }, 200)
           }}
         >
           <div className="text-xs font-medium mb-2 truncate">
@@ -1669,7 +1669,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                               setTrendPreviewSite(selectedSite)
                             }}
                             onMouseLeave={() => {
-                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 50)
                             }}
                           >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Semrush Authority</span>
@@ -1682,7 +1682,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                               setTrendPreviewSite(selectedSite)
                             }}
                             onMouseLeave={() => {
-                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 50)
                             }}
                           >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Overall Traffic</span>
@@ -1695,7 +1695,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                               setTrendPreviewSite(selectedSite)
                             }}
                             onMouseLeave={() => {
-                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 1000)
+                              hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 50)
                             }}
                           >
                             <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Organic Traffic</span>
