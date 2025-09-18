@@ -2,6 +2,7 @@
 
 import Logo from '@/components/ui/logo'
 import { Linkedin, Facebook, Instagram, Twitter, Phone } from 'lucide-react'
+import Image from 'next/image'
 
 export default function Footer() {
   const year = new Date().getFullYear()
@@ -11,10 +12,7 @@ export default function Footer() {
           <div className="flex flex-col gap-4 py-6 w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Logo />
-                <span className="hidden sm:block text-sm text-gray-700 dark:text-gray-300">
-                  EMIAC TECHNOLOGIES | <span className="font-semibold text-gray-900 dark:text-gray-100">Top Rated Agency On Upwork</span>
-                </span>
+                <Image src="/images/logo.png" alt="Logo" width={100} height={100} />
               </div>
               <div className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
                 © Copyright 2017–{year}

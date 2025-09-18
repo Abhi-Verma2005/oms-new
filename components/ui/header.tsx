@@ -8,6 +8,7 @@ import SearchModal from '@/components/search-modal'
 import Notifications from '@/components/dropdown-notifications'
 import DropdownHelp from '@/components/dropdown-help'
 import ThemeToggle from '@/components/theme-toggle'
+import Image from 'next/image'
 import UserMenu from '@/components/user-menu'
 import { AIChatbot } from '@/components/ai-chatbot'
 import { useCart } from '@/contexts/cart-context'
@@ -114,7 +115,18 @@ export default function Header({
             )}
 
             {/* Logo */}
-            <Logo href="/publishers" />
+            <Link href="/publishers" className="inline-block" aria-label="Go to Publishers">
+              <div className="relative h-8 w-24 sm:h-9 sm:w-28 lg:h-10 lg:w-32">
+                <Image
+                  src="/images/logo.png"
+                  alt="Logo"
+                  fill
+                  sizes="(min-width: 1024px) 8rem, (min-width: 640px) 7rem, 6rem"
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </Link>
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
             <nav className="hidden lg:flex items-center space-x-1 ml-6">
