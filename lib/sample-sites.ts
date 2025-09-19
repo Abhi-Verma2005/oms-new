@@ -11,6 +11,8 @@ export interface APISite {
   pageAuthority: number
   linkAttribute: string
   semrushTraffic: string
+  // Value used for AS badge in UI; comes from outreach n8n payload
+  similarwebTraffic?: number
   semrushOrganicTraffic?: number
   spamScore: number
   domainRating: number
@@ -485,7 +487,8 @@ export function transformAPISiteToSite(apiSite: APISite): Site {
     dr: apiSite.domainRating || 0,
     spamScore: apiSite.spamScore || 0,
     toolScores: {
-      semrushAuthority: 0,
+    // Map AS value from incoming similarwebTraffic
+    semrushAuthority: apiSite.similarwebTraffic || 0,
       semrushOverallTraffic: parseInt(apiSite.semrushTraffic) || 0,
       semrushOrganicTraffic: apiSite.semrushOrganicTraffic || 0,
       trafficTrend: 'stable',
