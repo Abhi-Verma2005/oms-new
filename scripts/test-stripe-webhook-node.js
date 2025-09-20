@@ -10,7 +10,7 @@ const http = require('http');
 const https = require('https');
 
 // Configuration
-const WEBHOOK_URL = 'https://oms-new-five.vercel.app/api/webhooks/stripe';
+const WEBHOOK_URL = 'http://localhost:3000/api/webhooks/stripe';
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ||"";
 
 // Colors for console output
