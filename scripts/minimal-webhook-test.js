@@ -9,7 +9,7 @@ const crypto = require('crypto');
 const https = require('https');
 
 // Your webhook secret from Stripe Dashboard
-const WEBHOOK_SECRET = 'whsec_amSijv5kpME4L7L9jg4tuvzEwfsLbWNG';
+const WEBHOOK_SECRET = 'whsec_V9gr0cEGnKBAhZYh2UvG9EuVc5PNlF3a';
 const WEBHOOK_URL = 'https://oms-new-five.vercel.app/api/webhooks/stripe';
 
 // Test payload - exactly like Stripe would send
