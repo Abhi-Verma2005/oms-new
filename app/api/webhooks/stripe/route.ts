@@ -78,6 +78,18 @@ export async function POST(request: NextRequest) {
           break
         }
 
+        // Verify user exists before creating order
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true }
+        })
+
+        if (!user) {
+          console.error('User not found in database:', { userId })
+          // Return 200 to prevent webhook retries, but log the error
+          break
+        }
+
         // Parse items
         const parsedItems = JSON.parse(items)
         console.log('Parsed items:', parsedItems)
@@ -151,6 +163,8 @@ export async function POST(request: NextRequest) {
           }
         } catch (dbError) {
           console.error('Error handling order in database:', dbError)
+          // Don't return error status - Stripe payment was successful
+          // Log the error but return 200 to prevent webhook retries
         }
 
         console.log('Payment succeeded:', {
@@ -234,6 +248,8 @@ export async function POST(request: NextRequest) {
             }
           } catch (dbError) {
             console.error('Error handling failed payment:', dbError)
+            // Don't return error status - webhook was processed successfully
+            // Log the error but return 200 to prevent webhook retries
           }
         }
 
@@ -247,10 +263,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('Error processing webhook:', error)
-    return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
-    )
+    
+    // Only return 500 for critical errors that should be retried
+    // For database/logging errors, return 200 to prevent infinite retries
+    if (error instanceof Error && error.message.includes('signature')) {
+      // Signature verification failed - return 400 (don't retry)
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 400 }
+      )
+    }
+    
+    // For other errors (database, logging), return 200 to prevent retries
+    // but log the error for debugging
+    console.error('Webhook processed with errors, but returning 200 to prevent retries')
+    return NextResponse.json({ received: true, warning: 'Processed with errors' })
   }
 }
 
