@@ -30,17 +30,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma
 COPY package.json ./
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Copy the rest of the application
-COPY . .
-
-# Set build environment
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Set dummy environment variables for build (these will be overridden at runtime)
+# Set dummy environment variables for build
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 ENV NEXTAUTH_SECRET="dummy-secret-for-build"
 ENV NEXTAUTH_URL="http://localhost:3000"
@@ -57,7 +47,17 @@ ENV EMAIL_SERVER_USER="dummy"
 ENV EMAIL_SERVER_PASSWORD="dummy"
 ENV EMAIL_FROM="dummy@localhost"
 
-# Build the application (skip API routes that require real env vars)
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy the rest of the application
+COPY . .
+
+# Set build environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build the application
 RUN npm run build
 
 # Stage 3: Runner (Production)
@@ -88,13 +88,9 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files and generate client
+# Copy Prisma files and generated client
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package.json ./
-
-# Install Prisma CLI and generate client
-RUN npm install prisma @prisma/client --save-dev
-RUN npx prisma generate
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy server.js for custom server
 COPY --from=builder /app/server.js ./
