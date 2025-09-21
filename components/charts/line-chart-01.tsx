@@ -1,0 +1,113 @@
+'use client'
+
+import { useRef, useState, useEffect } from 'react'
+import { useTheme } from 'next-themes'
+
+import { chartColors } from '@/components/charts/chartjs-config'
+import {
+  Chart, LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip,
+} from 'chart.js'
+import type { ChartData } from 'chart.js'
+
+// Import utilities
+import { formatValue } from '@/components/utils/utils'
+
+Chart.register(LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip)
+
+interface LineChart01Props {
+  data: ChartData
+  width: number
+  height: number
+}
+
+export default function LineChart01({
+  data,
+  width,
+  height
+}: LineChart01Props) {
+
+  const [chart, setChart] = useState<Chart | null>(null)
+  const [mounted, setMounted] = useState(false)
+  const canvas = useRef<HTMLCanvasElement>(null)
+  const { theme } = useTheme()
+  const darkMode = theme === 'dark'
+  const { tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors     
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {    
+    if (!mounted) return
+
+    const ctx = canvas.current
+    // Guard against initializing on a detached canvas (e.g., in a hidden hover panel)
+    if (!ctx || !ctx.isConnected || !ctx.ownerDocument) return
+
+    const newChart = new Chart(ctx, {
+      type: 'line',
+      data: data,
+      options: {
+        responsive: false, // avoid Chart.js querying styles of a detached element
+        layout: {
+          padding: 20,
+        },
+        scales: {
+          y: {
+            display: false,
+            beginAtZero: true,
+          },
+          x: {
+            type: 'category',
+            display: false,
+          },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              title: () => '', // Disable tooltip title
+              label: (context) => formatValue(context.parsed.y),
+            },
+            bodyColor: darkMode ? tooltipBodyColor.dark : tooltipBodyColor.light,
+            backgroundColor: darkMode ? tooltipBgColor.dark : tooltipBgColor.light,
+            borderColor: darkMode ? tooltipBorderColor.dark : tooltipBorderColor.light,            
+          },
+          legend: {
+            display: false,
+          },
+        },
+        interaction: {
+          intersect: false,
+          mode: 'nearest',
+        },
+        maintainAspectRatio: false,
+        resizeDelay: 200,
+      },
+    })
+    setChart(newChart)
+    return () => newChart.destroy()
+  }, [mounted])
+
+  useEffect(() => {
+    if (!chart) return
+
+    if (darkMode) {
+      chart.options.plugins!.tooltip!.bodyColor = tooltipBodyColor.dark
+      chart.options.plugins!.tooltip!.backgroundColor = tooltipBgColor.dark
+      chart.options.plugins!.tooltip!.borderColor = tooltipBorderColor.dark
+    } else {
+      chart.options.plugins!.tooltip!.bodyColor = tooltipBodyColor.light
+      chart.options.plugins!.tooltip!.backgroundColor = tooltipBgColor.light
+      chart.options.plugins!.tooltip!.borderColor = tooltipBorderColor.light
+    }
+    chart.update('none')
+  }, [theme])  
+
+  if (!mounted) {
+    return <div className="flex items-center justify-center h-full">Loading chart...</div>
+  }
+
+  return (
+    <canvas ref={canvas} width={width} height={height}></canvas>
+  )
+}

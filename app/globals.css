@@ -1,0 +1,409 @@
+/* Enhanced draggable levers for input[type=range] used in publishers filters */
+input[type="range"].dual-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 0; /* track is custom */
+  touch-action: none; /* prevent scroll while dragging on touch */
+}
+input[type="range"].dual-range:focus {
+  outline: none;
+}
+input[type="range"].dual-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b; /* amber-500 */
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  cursor: grab;
+}
+input[type="range"].dual-range:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+input[type="range"].dual-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  cursor: grab;
+}
+input[type="range"].dual-range:active::-moz-range-thumb {
+  cursor: grabbing;
+}
+input[type="range"].dual-range::-ms-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  cursor: grab;
+}
+
+@import "tailwindcss";
+
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+
+.animate-spotlight {
+  animation: spotlight 2.5s ease 0.5s 1 forwards;
+}
+
+@keyframes spotlight-top-flow {
+  0%, 100% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      #7c3aed 20%, 
+      #8b5cf6 40%, 
+      #a855f7 50%, 
+      #8b5cf6 60%, 
+      #7c3aed 80%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      #8b5cf6 20%, 
+      #a855f7 40%, 
+      #c084fc 50%, 
+      #a855f7 60%, 
+      #8b5cf6 80%, 
+      transparent 100%);
+  }
+}
+
+@keyframes spotlight-top-glow {
+  0%, 100% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(124, 58, 237, 0.6) 20%, 
+      rgba(139, 92, 246, 0.4) 40%, 
+      rgba(168, 85, 247, 0.8) 50%, 
+      rgba(139, 92, 246, 0.4) 60%, 
+      rgba(124, 58, 237, 0.6) 80%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(139, 92, 246, 0.7) 20%, 
+      rgba(168, 85, 247, 0.5) 40%, 
+      rgba(192, 132, 252, 0.9) 50%, 
+      rgba(168, 85, 247, 0.5) 60%, 
+      rgba(139, 92, 246, 0.7) 80%, 
+      transparent 100%);
+  }
+}
+
+@keyframes spotlight-left-flow {
+  0%, 100% {
+    background: linear-gradient(180deg, 
+      #c084fc 0%, 
+      #d8b4fe 15%, 
+      #e9d5ff 30%, 
+      #f3e8ff 40%, 
+      #e9d5ff 50%, 
+      #d8b4fe 70%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(180deg, 
+      #d8b4fe 0%, 
+      #e9d5ff 15%, 
+      #f3e8ff 30%, 
+      #faf5ff 40%, 
+      #f3e8ff 50%, 
+      #e9d5ff 70%, 
+      transparent 100%);
+  }
+}
+
+@keyframes spotlight-left-glow {
+  0%, 100% {
+    background: linear-gradient(180deg, 
+      rgba(192, 132, 252, 0.4) 0%, 
+      rgba(216, 180, 254, 0.3) 15%, 
+      rgba(233, 213, 255, 0.4) 30%, 
+      rgba(243, 232, 255, 0.5) 40%, 
+      rgba(233, 213, 255, 0.4) 50%, 
+      rgba(216, 180, 254, 0.2) 70%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(180deg, 
+      rgba(216, 180, 254, 0.5) 0%, 
+      rgba(233, 213, 255, 0.4) 15%, 
+      rgba(243, 232, 255, 0.5) 30%, 
+      rgba(250, 245, 255, 0.6) 40%, 
+      rgba(243, 232, 255, 0.5) 50%, 
+      rgba(233, 213, 255, 0.3) 70%, 
+      transparent 100%);
+  }
+}
+
+@keyframes gradient-flow-dark {
+  0%, 100% {
+    background: linear-gradient(135deg, 
+      #a855f7 0%, 
+      #c084fc 25%, 
+      #d8b4fe 50%, 
+      #c084fc 75%, 
+      #a855f7 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, 
+      #c084fc 0%, 
+      #d8b4fe 25%, 
+      #e9d5ff 50%, 
+      #d8b4fe 75%, 
+      #c084fc 100%);
+  }
+}
+
+/* White spotlight animations for dark mode */
+@keyframes spotlight-top-flow-white {
+  0%, 100% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(255, 255, 255, 0.4) 20%, 
+      rgba(248, 250, 252, 0.3) 40%, 
+      rgba(255, 255, 255, 0.4) 50%, 
+      rgba(248, 250, 252, 0.3) 60%, 
+      rgba(255, 255, 255, 0.4) 80%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(248, 250, 252, 0.5) 20%, 
+      rgba(255, 255, 255, 0.4) 40%, 
+      rgba(241, 245, 249, 0.6) 50%, 
+      rgba(255, 255, 255, 0.4) 60%, 
+      rgba(248, 250, 252, 0.5) 80%, 
+      transparent 100%);
+  }
+}
+
+@keyframes spotlight-top-glow-white {
+  0%, 100% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(255, 255, 255, 0.3) 20%, 
+      rgba(248, 250, 252, 0.2) 40%, 
+      rgba(255, 255, 255, 0.4) 50%, 
+      rgba(248, 250, 252, 0.2) 60%, 
+      rgba(255, 255, 255, 0.3) 80%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(248, 250, 252, 0.4) 20%, 
+      rgba(255, 255, 255, 0.3) 40%, 
+      rgba(241, 245, 249, 0.5) 50%, 
+      rgba(255, 255, 255, 0.3) 60%, 
+      rgba(248, 250, 252, 0.4) 80%, 
+      transparent 100%);
+  }
+}
+
+@keyframes spotlight-left-flow-white {
+  0%, 100% {
+    background: linear-gradient(180deg, 
+      rgba(255, 255, 255, 0.4) 0%, 
+      rgba(248, 250, 252, 0.3) 15%, 
+      rgba(241, 245, 249, 0.3) 30%, 
+      rgba(226, 232, 240, 0.2) 40%, 
+      rgba(241, 245, 249, 0.3) 50%, 
+      rgba(248, 250, 252, 0.3) 70%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(180deg, 
+      rgba(248, 250, 252, 0.5) 0%, 
+      rgba(241, 245, 249, 0.4) 15%, 
+      rgba(226, 232, 240, 0.3) 30%, 
+      rgba(203, 213, 225, 0.4) 40%, 
+      rgba(226, 232, 240, 0.3) 50%, 
+      rgba(241, 245, 249, 0.4) 70%, 
+      transparent 100%);
+  }
+}
+
+@keyframes spotlight-left-glow-white {
+  0%, 100% {
+    background: linear-gradient(180deg, 
+      rgba(255, 255, 255, 0.2) 0%, 
+      rgba(248, 250, 252, 0.15) 15%, 
+      rgba(241, 245, 249, 0.2) 30%, 
+      rgba(226, 232, 240, 0.25) 40%, 
+      rgba(241, 245, 249, 0.2) 50%, 
+      rgba(248, 250, 252, 0.1) 70%, 
+      transparent 100%);
+  }
+  50% {
+    background: linear-gradient(180deg, 
+      rgba(248, 250, 252, 0.3) 0%, 
+      rgba(241, 245, 249, 0.2) 15%, 
+      rgba(226, 232, 240, 0.25) 30%, 
+      rgba(203, 213, 225, 0.3) 40%, 
+      rgba(226, 232, 240, 0.25) 50%, 
+      rgba(241, 245, 249, 0.15) 70%, 
+      transparent 100%);
+  }
+}
+
+/* Top-only spotlight border effect */
+.spotlight-border-top {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Dark mode spotlight border classes */
+.dark .spotlight-border-top-dark {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.4) 0%, rgba(248, 250, 252, 0.3) 10%, rgba(241, 245, 249, 0.3) 20%, rgba(226, 232, 240, 0.2) 30%, rgba(241, 245, 249, 0.3) 35%, rgba(248, 250, 252, 0.3) 50%, rgba(255, 255, 255, 0.4) 70%, transparent 95%);
+  border-radius: 16px;
+  z-index: 1;
+  animation: spotlight-top-flow-white 3s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(248, 250, 252, 0.2);
+}
+
+.dark .spotlight-border-left-dark {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  bottom: -2px;
+  width: 4px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(248, 250, 252, 0.3) 15%, rgba(241, 245, 249, 0.3) 30%, rgba(226, 232, 240, 0.2) 40%, rgba(241, 245, 249, 0.3) 50%, rgba(248, 250, 252, 0.3) 70%, transparent 100%);
+  border-radius: 16px 0 0 16px;
+  z-index: 1;
+  animation: spotlight-left-flow-white 3s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3), 0 0 16px rgba(248, 250, 252, 0.2);
+}
+
+.dark .spotlight-glow-top-dark {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  height: 8px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0%, rgba(248, 250, 252, 0.15) 10%, rgba(241, 245, 249, 0.2) 20%, rgba(226, 232, 240, 0.25) 30%, rgba(241, 245, 249, 0.2) 35%, rgba(248, 250, 252, 0.1) 50%, rgba(255, 255, 255, 0.15) 70%, transparent 95%);
+  border-radius: 16px;
+  filter: blur(4px);
+  z-index: 0;
+  animation: spotlight-top-glow-white 3s ease-in-out infinite;
+}
+
+.dark .spotlight-glow-left-dark {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  bottom: -4px;
+  width: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(248, 250, 252, 0.15) 15%, rgba(241, 245, 249, 0.2) 30%, rgba(226, 232, 240, 0.25) 40%, rgba(241, 245, 249, 0.2) 50%, rgba(248, 250, 252, 0.1) 70%, transparent 100%);
+  border-radius: 16px 0 0 16px;
+  filter: blur(4px);
+  z-index: 0;
+  animation: spotlight-left-glow-white 3s ease-in-out infinite;
+}
+
+.spotlight-border-top::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #7c3aed 20%, 
+    #8b5cf6 40%, 
+    #a855f7 50%, 
+    #8b5cf6 60%, 
+    #7c3aed 80%, 
+    transparent 100%);
+  border-radius: 16px 16px 0 0;
+  z-index: 1;
+  animation: spotlight-top-flow 3s ease-in-out infinite;
+}
+
+.spotlight-border-top::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  height: 8px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(124, 58, 237, 0.6) 20%, 
+    rgba(139, 92, 246, 0.4) 40%, 
+    rgba(168, 85, 247, 0.8) 50%, 
+    rgba(139, 92, 246, 0.4) 60%, 
+    rgba(124, 58, 237, 0.6) 80%, 
+    transparent 100%);
+  border-radius: 16px 16px 0 0;
+  filter: blur(3px);
+  z-index: 0;
+  animation: spotlight-top-glow 3s ease-in-out infinite;
+}
+
+.spotlight-border:hover,
+.spotlight-border:focus-within {
+  animation-duration: 0.5s;
+  transform: scale(1.02);
+  box-shadow: 
+    0 0 30px rgba(255, 0, 0, 0.7),
+    0 0 60px rgba(255, 0, 255, 0.5),
+    inset 0 0 30px rgba(0, 255, 255, 0.3);
+}
+
+/* Dark mode spotlight border */
+.dark .spotlight-border::before {
+  background: linear-gradient(135deg, 
+    #a855f7 0%, 
+    #c084fc 25%, 
+    #d8b4fe 50%, 
+    #c084fc 75%, 
+    #a855f7 100%);
+  opacity: 0.9;
+  animation: gradient-flow-dark 3s ease-in-out infinite;
+}
+
+.dark .spotlight-border::after {
+  background: linear-gradient(135deg, 
+    rgba(168, 85, 247, 0.5) 0%, 
+    rgba(192, 132, 252, 0.4) 25%, 
+    rgba(216, 180, 254, 0.6) 50%, 
+    rgba(192, 132, 252, 0.4) 75%, 
+    rgba(168, 85, 247, 0.5) 100%);
+  opacity: 0.7;
+}
+
+.dark .spotlight-border:hover::before,
+.dark .spotlight-border:focus-within::before {
+  opacity: 1;
+}
+
+.dark .spotlight-border:hover::after,
+.dark .spotlight-border:focus-within::after {
+  opacity: 0.8;
+}
+

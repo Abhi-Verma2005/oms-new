@@ -1,0 +1,65 @@
+"use client"
+
+import React, { Suspense } from "react"
+import OrdersTable, { type Order as UiOrder } from "./orders-table"
+import OrdersSkeleton from "./orders-skeleton"
+// Removed image import to avoid broken image on Orders page
+import { SelectedItemsProvider } from '@/app/selected-items-context'
+
+function OrdersList() {
+  const [data, setData] = React.useState<any>(null)
+  const [loading, setLoading] = React.useState<boolean>(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    fetch('/api/orders').then(async (r) => {
+      if (!r.ok) throw new Error('Failed to load orders')
+      const j = await r.json()
+      setData(j)
+    }).catch((e) => setError(e.message)).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <OrdersSkeleton />
+  if (error) return <div className="p-8 text-red-600">{error}</div>
+
+  const orders: UiOrder[] = (data?.orders ?? []).map((o: any, idx: number) => ({
+    id: idx,
+    image: undefined,
+    order: `#${o.id.substring(0, 6)}`,
+    date: new Date(o.createdAt).toLocaleDateString('en-US', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      year: '2-digit' 
+    }),
+    customer: o.user?.name || '—',
+    total: `${o.currency} ${(o.totalAmount / 100).toFixed(2)}`,
+    status: o.status,
+    items: String(o.items?.length ?? 0),
+    location: '—',
+    type: '—',
+    description: '',
+  }))
+
+  return (
+    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+      <div className="sm:flex sm:justify-between sm:items-center mb-8">
+        <div className="mb-4 sm:mb-0">
+          <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Orders</h1>
+        </div>
+      </div>
+      <OrdersTable orders={orders} />
+    </div>
+  )
+}
+
+export default function OrdersClient() {
+  return (
+    <SelectedItemsProvider>
+      <Suspense fallback={<OrdersSkeleton />}>
+        <OrdersList />
+      </Suspense>
+    </SelectedItemsProvider>
+  )
+}
+
+
