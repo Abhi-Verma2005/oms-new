@@ -230,18 +230,36 @@ function PaymentForm() {
     setSuccess(null)
     if (!stripe || !elements) return
     setLoading(true)
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.origin + '/checkout',
-      },
-      redirect: 'if_required',
-    })
-    if (error) setError(error.message || 'Payment failed')
-    else if (paymentIntent?.status === 'succeeded') {
-      setSuccess('Payment succeeded')
-      clearCart()
+    
+    try {
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + '/checkout',
+        },
+        redirect: 'if_required',
+      })
+      
+      if (error) {
+        setError(error.message || 'Payment failed')
+        console.error('Payment error:', error)
+      } else if (paymentIntent?.status === 'succeeded') {
+        setSuccess('Payment succeeded')
+        console.log('Payment succeeded:', paymentIntent)
+        clearCart()
+        
+        // Optional: Wait a moment for webhook to process, then redirect
+        setTimeout(() => {
+          window.location.href = '/orders'
+        }, 2000)
+      } else {
+        console.log('Payment status:', paymentIntent?.status)
+      }
+    } catch (err) {
+      console.error('Payment confirmation error:', err)
+      setError('Payment confirmation failed')
     }
+    
     setLoading(false)
   }
 

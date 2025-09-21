@@ -10,8 +10,8 @@ const http = require('http');
 const https = require('https');
 
 // Configuration
-const WEBHOOK_URL = 'http://localhost:3000/api/webhooks/stripe';
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ||"";
+const WEBHOOK_URL = 'https://oms-new-five.vercel.app/api/webhooks/stripe';
+const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_V9gr0cEGnKBAhZYh2UvG9EuVc5PNlF3a';
 
 // Colors for console output
 const colors = {
@@ -33,8 +33,12 @@ function log(level, message) {
 function generateStripeSignature(payload, secret) {
     const timestamp = Math.floor(Date.now() / 1000);
     const signedPayload = `${timestamp}.${payload}`;
+    
+    // Remove whsec_ prefix if present - Stripe uses the raw secret for signing
+    const rawSecret = secret.startsWith('whsec_') ? secret.slice(6) : secret;
+    
     const signature = crypto
-        .createHmac('sha256', secret)
+        .createHmac('sha256', rawSecret)
         .update(signedPayload, 'utf8')
         .digest('base64');
     
@@ -218,15 +222,10 @@ async function runTests() {
             
             // Add signature if needed
             if (testCase.useSignature && testCase.method === 'POST') {
-                // For localhost testing, use development mode bypass
-                if (WEBHOOK_URL.includes('localhost')) {
-                    headers['stripe-signature'] = 'test-signature';
-                    log('cyan', 'Using development mode bypass signature');
-                } else {
-                    const signature = generateStripeSignature(testCase.payload, WEBHOOK_SECRET);
-                    headers['stripe-signature'] = signature;
-                    log('cyan', `Generated signature: ${signature.substring(0, 20)}...`);
-                }
+                // Always use proper signature generation for production testing
+                const signature = generateStripeSignature(testCase.payload, WEBHOOK_SECRET);
+                headers['stripe-signature'] = signature;
+                log('cyan', `Generated signature: ${signature.substring(0, 20)}...`);
             }
 
             const response = await makeRequest(WEBHOOK_URL, {
