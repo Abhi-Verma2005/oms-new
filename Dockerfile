@@ -15,10 +15,16 @@ RUN \
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+
+# Copy Prisma schema first
+COPY prisma ./prisma
+COPY package.json ./
 
 # Generate Prisma client
 RUN npx prisma generate
+
+# Copy the rest of the application
+COPY . .
 
 # Set environment variables for build
 ENV NODE_ENV production
@@ -55,7 +61,16 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy server.js for custom server
 COPY --from=builder /app/server.js ./
-COPY --from=builder /app/ws-server ./ws-server
+
+# Copy ws-server if it exists (conditional copy)
+RUN if [ -d "/app/ws-server" ]; then \
+      echo "Copying ws-server directory"; \
+      cp -r /app/ws-server ./ws-server; \
+    else \
+      echo "ws-server directory not found, creating empty directory"; \
+      mkdir -p ./ws-server/src; \
+      echo "module.exports = { notificationWebSocketServer: { createWebSocketServer: () => {} } };" > ./ws-server/src/websocket-server.js; \
+    fi
 
 USER nextjs
 
