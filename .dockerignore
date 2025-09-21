@@ -19,6 +19,7 @@ dist
 .env.development.local
 .env.test.local
 .env.production.local
+.env.build
 
 # Vercel
 .vercel
@@ -131,7 +132,7 @@ logs
 *.sqlite
 *.sqlite3
 
-# Prisma migrations (keep schema)
+# Prisma migrations (keep schema and generated client)
 prisma/migrations
 
 # Development files
