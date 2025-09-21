@@ -3,11 +3,13 @@ FROM node:18-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Copy package files
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
+
+# Install dependencies without running postinstall scripts
 RUN \
-  if [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
+  if [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile --ignore-scripts; \
+  elif [ -f package-lock.json ]; then npm ci --ignore-scripts; \
   else echo "Lockfile not found." && exit 1; \
   fi
 
@@ -20,8 +22,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma
 COPY package.json ./
 
-# Generate Prisma client
-RUN npx prisma generate
+# Run postinstall scripts (including prisma generate)
+RUN npm run postinstall
 
 # Copy the rest of the application
 COPY . .

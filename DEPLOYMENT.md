@@ -187,6 +187,12 @@ curl http://localhost:3000/api/hello
 - Verify the file exists: `ls -la docker-compose.yml`
 - If the file doesn't exist, you need to clone your repository first (see step 2)
 
+**If you get Prisma schema errors during Docker build:**
+- The Dockerfile has been updated to handle Prisma properly
+- Make sure you have the latest version: `git pull origin main`
+- The build process now installs dependencies without running postinstall scripts first
+- Then copies the Prisma schema and runs `prisma generate` separately
+
 ### 7. SSL Setup (Optional but Recommended)
 
 ```bash
