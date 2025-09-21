@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       console.log('Signature verification successful for event:', event.type)
     } catch (err) {
       console.error('Webhook signature verification failed:', {
-        error: err.message,
+        error: err instanceof Error ? err.message : String(err),
         signature: signature?.substring(0, 20) + '...',
         bodyLength: rawBody.byteLength,
         webhookSecretLength: process.env.STRIPE_WEBHOOK_SECRET?.length
