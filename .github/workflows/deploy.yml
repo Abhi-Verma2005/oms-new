@@ -1,0 +1,177 @@
+name: Deploy Next.js App to VM
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Generate Prisma client
+      run: npx prisma generate
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Run type check
+      run: npx tsc --noEmit
+
+    - name: Build application
+      run: npm run build
+      env:
+        NODE_ENV: production
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to VM
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          set -e
+          
+          echo "🚀 Starting deployment process..."
+          cd /home/${{ secrets.SSH_USER }}/app
+          
+          # Verify we're in the right repository
+          echo "📋 Current repository:"
+          git remote -v
+          
+          # Pull latest code from the repository
+          echo "📥 Pulling latest code..."
+          git pull origin main
+          
+          # Create environment file with secrets
+          echo "🔧 Setting up environment variables..."
+          cat > .env.production << EOF
+          NODE_ENV=production
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          STRIPE_PUBLISHABLE_KEY=${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          NEXT_PUBLIC_WEBSOCKET_URL=${{ secrets.NEXT_PUBLIC_WEBSOCKET_URL }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          EMAIL_SERVER_HOST=${{ secrets.EMAIL_SERVER_HOST }}
+          EMAIL_SERVER_PORT=${{ secrets.EMAIL_SERVER_PORT }}
+          EMAIL_SERVER_USER=${{ secrets.EMAIL_SERVER_USER }}
+          EMAIL_SERVER_PASSWORD=${{ secrets.EMAIL_SERVER_PASSWORD }}
+          EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+          EOF
+          
+          # Stop existing containers gracefully
+          echo "🛑 Stopping existing containers..."
+          docker-compose down --timeout 30 || true
+          
+          # Build and start new containers
+          echo "🔨 Building new containers..."
+          docker-compose build --no-cache
+          
+          echo "🚀 Starting containers..."
+          docker-compose up -d
+          
+          # Wait for application to be ready
+          echo "⏳ Waiting for application to start..."
+          sleep 30
+          
+          # Health check
+          echo "🏥 Performing health check..."
+          for i in {1..10}; do
+            if curl -f http://localhost:3000/api/hello > /dev/null 2>&1; then
+              echo "✅ Application is healthy!"
+              break
+            else
+              echo "⏳ Attempt $i/10: Application not ready yet..."
+              sleep 10
+            fi
+          done
+          
+          # Final health check
+          if ! curl -f http://localhost:3000/api/hello > /dev/null 2>&1; then
+            echo "❌ Health check failed after 10 attempts"
+            echo "📋 Container status:"
+            docker-compose ps
+            echo "📋 Application logs:"
+            docker-compose logs nextjs-app --tail=50
+            exit 1
+          fi
+          
+          # Clean up unused images
+          echo "🧹 Cleaning up unused Docker images..."
+          docker image prune -f
+          
+          # Show deployment status
+          echo "📊 Deployment Status:"
+          docker-compose ps
+          
+          echo "✅ Deployment successful!"
+          echo "📋 Repository: $(git config --get remote.origin.url)"
+          echo "📋 Latest commit: $(git log -1 --oneline)"
+          echo "🌐 Application URL: http://localhost:3000"
+
+    - name: Rollback on failure
+      if: failure()
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          echo "🔄 Starting rollback process..."
+          cd /home/${{ secrets.SSH_USER }}/app
+          
+          # Get the previous commit
+          PREVIOUS_COMMIT=$(git log -2 --oneline | tail -1 | cut -d' ' -f1)
+          echo "🔄 Rolling back to commit: $PREVIOUS_COMMIT"
+          
+          # Reset to previous commit
+          git reset --hard $PREVIOUS_COMMIT
+          
+          # Rebuild and restart
+          docker-compose build --no-cache
+          docker-compose up -d
+          
+          # Wait and check health
+          sleep 30
+          if curl -f http://localhost:3000/api/hello > /dev/null 2>&1; then
+            echo "✅ Rollback successful!"
+          else
+            echo "❌ Rollback failed - manual intervention required"
+            exit 1
+          fi
