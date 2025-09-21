@@ -1,0 +1,92 @@
+# Simple Dockerfile for Next.js with Prisma
+# Based on 2024 best practices from web search
+
+FROM node:20-alpine AS base
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f pnpm-lock.yaml ]; then \
+    corepack enable pnpm && pnpm i --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then \
+    npm ci; \
+  else \
+    echo "Lockfile not found." && exit 1; \
+  fi
+
+# Copy application code
+COPY . .
+
+# Set environment variables for build
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV NEXTAUTH_SECRET="dummy-secret-for-build"
+ENV NEXTAUTH_URL="http://localhost:3000"
+ENV GOOGLE_CLIENT_ID="dummy"
+ENV GOOGLE_CLIENT_SECRET="dummy"
+ENV STRIPE_PUBLISHABLE_KEY="pk_test_dummy"
+ENV STRIPE_SECRET_KEY="sk_test_dummy"
+ENV STRIPE_WEBHOOK_SECRET="whsec_dummy"
+ENV NEXT_PUBLIC_WEBSOCKET_URL="ws://localhost:3000"
+ENV GEMINI_API_KEY="dummy"
+ENV EMAIL_SERVER_HOST="localhost"
+ENV EMAIL_SERVER_PORT="587"
+ENV EMAIL_SERVER_USER="dummy"
+ENV EMAIL_SERVER_PASSWORD="dummy"
+ENV EMAIL_FROM="dummy@localhost"
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the application
+RUN npm run build
+
+# Production image
+FROM node:20-alpine AS production
+WORKDIR /app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Copy built application and dependencies
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/.next ./.next
+COPY --from=base /app/public ./public
+COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/server.js ./
+
+# Handle ws-server directory (create stub if missing)
+RUN if [ -d "/app/ws-server" ]; then \
+      cp -r /app/ws-server ./ws-server; \
+    else \
+      mkdir -p ./ws-server/src; \
+      echo "module.exports = { notificationWebSocketServer: { createWebSocketServer: () => {} } };" > ./ws-server/src/websocket-server.js; \
+    fi
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/hello || exit 1
+
+# Use dumb-init for proper signal handling
+CMD ["dumb-init", "node", "server.js"]
