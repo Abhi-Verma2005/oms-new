@@ -14,17 +14,20 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
 
-# Install dependencies
+# Copy Prisma schema first (needed for postinstall script)
+COPY prisma ./prisma
+
+# Install dependencies (this will run postinstall script which includes prisma generate)
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile; \
+    corepack enable pnpm && pnpm install --frozen-lockfile && pnpm approve-builds; \
   elif [ -f package-lock.json ]; then \
     npm ci; \
   else \
     echo "No lockfile found" && exit 1; \
   fi
 
-# Copy application code
+# Copy the rest of the application code
 COPY . .
 
 # Set environment variables for build
@@ -46,9 +49,6 @@ ENV EMAIL_SERVER_USER="dummy"
 ENV EMAIL_SERVER_PASSWORD="dummy"
 ENV EMAIL_FROM="dummy@localhost"
 ENV PRISMA_TELEMETRY_INFORMATION='{"is_docker":true}'
-
-# Generate Prisma client
-RUN npx prisma generate
 
 # Build the application
 RUN \
