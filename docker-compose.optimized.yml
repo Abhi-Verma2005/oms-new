@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   nextjs-app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
     ports:
       - "3000:3000"
     environment:
