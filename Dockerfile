@@ -66,6 +66,9 @@ FROM node:22-alpine AS production
 # Install system dependencies
 RUN apk add --no-cache libc6-compat openssl dumb-init curl
 
+# Enable pnpm for production dependencies
+RUN corepack enable pnpm && corepack prepare pnpm@latest --activate
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -80,8 +83,26 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV PRISMA_TELEMETRY_INFORMATION='{"is_docker":true}'
 
-# Copy built application and dependencies
-COPY --from=base /app/node_modules ./node_modules
+# Copy package files for production dependencies
+COPY --from=base /app/package.json ./package.json
+COPY --from=base /app/package-lock.json* ./package-lock.json*
+COPY --from=base /app/pnpm-lock.yaml* ./pnpm-lock.yaml*
+
+# Install only production dependencies
+RUN \
+  if [ -f pnpm-lock.yaml ]; then \
+    pnpm install --prod --frozen-lockfile --ignore-scripts; \
+  elif [ -f package-lock.json ]; then \
+    npm ci --only=production --ignore-scripts; \
+  else \
+    echo "No lockfile found" && exit 1; \
+  fi
+
+# Copy Prisma client and generated files
+COPY --from=base /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=base /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy built application
 COPY --from=base /app/.next ./.next
 COPY --from=base /app/public ./public
 COPY --from=base /app/prisma ./prisma
