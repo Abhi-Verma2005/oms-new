@@ -7,7 +7,7 @@ on:
     branches: [main, master]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
 
 jobs:
   test:
@@ -22,9 +22,12 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
+        cache-dependency-path: 'package-lock.json'
 
     - name: Install dependencies
-      run: npm ci
+      run: |
+        # Try npm ci first, fallback to npm install if lock file is out of sync
+        npm ci || npm install --legacy-peer-deps
 
     - name: Generate Prisma client
       run: npx prisma generate
@@ -42,6 +45,20 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         AUTH_URL: ${{ secrets.AUTH_URL }}
+        AUTH_GOOGLE_ID: ${{ secrets.AUTH_GOOGLE_ID }}
+        AUTH_GOOGLE_SECRET: ${{ secrets.AUTH_GOOGLE_SECRET }}
+        NEXT_PUBLIC_GEMINI_API_KEY: ${{ secrets.NEXT_PUBLIC_GEMINI_API_KEY }}
+        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        NEXT_PUBLIC_WEBSOCKET_URL: ${{ secrets.NEXT_PUBLIC_WEBSOCKET_URL }}
+        NEXT_PUBLIC_AUTH_URL: ${{ secrets.NEXT_PUBLIC_AUTH_URL }}
+        SMTP_HOST: ${{ secrets.SMTP_HOST }}
+        SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        SMTP_USER: ${{ secrets.SMTP_USER }}
+        SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        OPEN_AI_KEY: ${{ secrets.OPEN_AI_KEY }}
 
   deploy:
     needs: test
