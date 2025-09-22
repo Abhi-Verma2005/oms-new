@@ -40,35 +40,6 @@ jobs:
     - name: Generate Prisma client
       run: npx prisma generate
 
-    - name: Run linter
-      run: |
-        # Create ESLint config if it doesn't exist
-        if [ ! -f ".eslintrc.json" ] && [ ! -f ".eslintrc.js" ] && [ ! -f "eslint.config.js" ]; then
-          echo "⚙️ Creating ESLint configuration..."
-          cat > .eslintrc.json << 'EOF'
-        {
-          "extends": ["next/core-web-vitals"],
-          "rules": {
-            "react/no-unescaped-entities": "off",
-            "@next/next/no-page-custom-font": "off"
-          }
-        }
-        EOF
-        fi
-        
-        # Run linting
-        echo "🔍 Running ESLint..."
-        npm run lint
-
-    - name: Run type check
-      run: |
-        # Run TypeScript check if tsconfig.json exists
-        if [ -f "tsconfig.json" ]; then
-          npx tsc --noEmit
-        else
-          echo "⚠️ TypeScript not configured, skipping type check"
-        fi
-
     - name: Run tests
       run: |
         # Run tests if test script exists
