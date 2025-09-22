@@ -6,7 +6,7 @@
 FROM node:22-alpine AS base
 
 # Install system dependencies
-RUN apk add --no-cache libc6-compat openssl dumb-init
+RUN apk add --no-cache libc6-compat openssl dumb-init curl
 
 # Set working directory
 WORKDIR /app
@@ -34,20 +34,22 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-ENV NEXTAUTH_SECRET="dummy-secret-for-build"
-ENV NEXTAUTH_URL="http://localhost:3000"
-ENV GOOGLE_CLIENT_ID="dummy"
-ENV GOOGLE_CLIENT_SECRET="dummy"
-ENV STRIPE_PUBLISHABLE_KEY="pk_test_dummy"
+ENV AUTH_SECRET="dummy-secret-for-build"
+ENV AUTH_URL="http://localhost:3000"
+ENV AUTH_GOOGLE_ID="dummy"
+ENV AUTH_GOOGLE_SECRET="dummy"
+ENV NEXT_PUBLIC_GEMINI_API_KEY="dummy"
 ENV STRIPE_SECRET_KEY="sk_test_dummy"
 ENV STRIPE_WEBHOOK_SECRET="whsec_dummy"
 ENV NEXT_PUBLIC_WEBSOCKET_URL="ws://localhost:3000"
-ENV GEMINI_API_KEY="dummy"
-ENV EMAIL_SERVER_HOST="localhost"
-ENV EMAIL_SERVER_PORT="587"
-ENV EMAIL_SERVER_USER="dummy"
-ENV EMAIL_SERVER_PASSWORD="dummy"
+ENV NEXT_PUBLIC_AUTH_URL="http://localhost:3000"
+ENV SMTP_HOST="localhost"
+ENV SMTP_PORT="587"
+ENV SMTP_USER="dummy"
+ENV SMTP_PASS="dummy"
 ENV EMAIL_FROM="dummy@localhost"
+ENV JWT_SECRET="dummy-jwt-secret"
+ENV OPEN_AI_KEY="dummy"
 ENV PRISMA_TELEMETRY_INFORMATION='{"is_docker":true}'
 
 # Build the application
@@ -62,7 +64,7 @@ RUN \
 FROM node:22-alpine AS production
 
 # Install system dependencies
-RUN apk add --no-cache libc6-compat openssl dumb-init
+RUN apk add --no-cache libc6-compat openssl dumb-init curl
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -104,7 +106,7 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/hello || exit 1
+  CMD curl -f http://localhost:3000/api/hello || exit 1
 
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
