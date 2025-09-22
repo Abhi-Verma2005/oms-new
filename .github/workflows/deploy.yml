@@ -89,6 +89,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
+        timeout: 3h
         script: |
           set -e
           
@@ -188,6 +189,7 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
+        timeout: 3h
         script: |
           echo "🔄 Starting rollback process..."
           cd /home/${{ secrets.SSH_USER }}/app
