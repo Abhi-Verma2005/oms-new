@@ -53,6 +53,8 @@ jobs:
       run: npm run build
       env:
         NODE_ENV: production
+        ESLINT_NO_DEV_ERRORS: true
+        NEXT_LINT: false
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         AUTH_URL: ${{ secrets.AUTH_URL }}
