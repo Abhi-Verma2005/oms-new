@@ -1,36 +1,54 @@
 # =============================================================================
-# Simple and Reliable Dockerfile for Next.js + Prisma
-# Based on proven patterns from web research
+# Next.js + Prisma Production Dockerfile
+# Based on 2024 best practices from deep web research
 # =============================================================================
 
+# Stage 1: Base dependencies
 FROM node:22-alpine AS base
 
-# Install system dependencies
-RUN apk add --no-cache libc6-compat openssl dumb-init curl
+# Install system dependencies required for Prisma and other packages
+RUN apk add --no-cache \
+    libc6-compat \
+    openssl \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
+# Enable pnpm
+RUN corepack enable pnpm && corepack prepare pnpm@latest --activate
 
-# Copy Prisma schema first (needed for postinstall script)
-COPY prisma ./prisma
+# =============================================================================
+# Stage 2: Dependencies installation
+FROM base AS deps
 
-# Install dependencies (this will run postinstall script which includes prisma generate)
+# Copy package files for better Docker layer caching
+COPY package.json pnpm-lock.yaml* package-lock.json* ./
+
+# Install dependencies without running scripts (to avoid Prisma generate issues)
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile && pnpm approve-builds; \
+    pnpm install --frozen-lockfile --ignore-scripts; \
   elif [ -f package-lock.json ]; then \
-    npm ci; \
+    npm ci --ignore-scripts; \
   else \
     echo "No lockfile found" && exit 1; \
   fi
 
-# Copy the rest of the application code
-COPY . .
+# =============================================================================
+# Stage 3: Builder
+FROM base AS builder
 
-# Set environment variables for build
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy Prisma schema first
+COPY prisma ./prisma
+COPY package.json ./
+
+# Set build-time environment variables (dummy values for build)
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
@@ -52,7 +70,13 @@ ENV JWT_SECRET="dummy-jwt-secret"
 ENV OPEN_AI_KEY="dummy"
 ENV PRISMA_TELEMETRY_INFORMATION='{"is_docker":true}'
 
-# Build the application
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy the rest of the application
+COPY . .
+
+# Build the Next.js application
 RUN \
   if [ -f pnpm-lock.yaml ]; then \
     pnpm build; \
@@ -60,21 +84,9 @@ RUN \
     npm run build; \
   fi
 
-# Production image
-FROM node:22-alpine AS production
-
-# Install system dependencies
-RUN apk add --no-cache libc6-compat openssl dumb-init curl
-
-# Enable pnpm for production dependencies
-RUN corepack enable pnpm && corepack prepare pnpm@latest --activate
-
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# Set working directory
-WORKDIR /app
+# =============================================================================
+# Stage 4: Production runner
+FROM base AS runner
 
 # Set production environment
 ENV NODE_ENV=production
@@ -83,30 +95,30 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV PRISMA_TELEMETRY_INFORMATION='{"is_docker":true}'
 
-# Copy package files for production dependencies
-COPY --from=base /app/package.json ./package.json
-COPY --from=base /app/package-lock.json* ./package-lock.json*
-COPY --from=base /app/pnpm-lock.yaml* ./pnpm-lock.yaml*
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Install only production dependencies
-RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-    pnpm install --prod --frozen-lockfile --ignore-scripts; \
-  elif [ -f package-lock.json ]; then \
-    npm ci --only=production --ignore-scripts; \
-  else \
-    echo "No lockfile found" && exit 1; \
-  fi
+# Set working directory
+WORKDIR /app
 
-# Copy Prisma client and generated files
-COPY --from=base /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=base /app/node_modules/@prisma ./node_modules/@prisma
+# Copy built application from builder stage
+COPY --from=builder /app/public ./public
 
-# Copy built application
-COPY --from=base /app/.next ./.next
-COPY --from=base /app/public ./public
-COPY --from=base /app/prisma ./prisma
-COPY --from=base /app/server.js ./
+# Set correct permissions for prerender cache
+RUN mkdir .next && chown nextjs:nodejs .next
+
+# Copy standalone output (if using standalone mode)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy Prisma files and generated client
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy server.js for custom server
+COPY --from=builder /app/server.js ./
 
 # Handle ws-server directory (create stub if missing)
 RUN if [ -d "/app/ws-server" ]; then \
@@ -116,7 +128,7 @@ RUN if [ -d "/app/ws-server" ]; then \
       echo "module.exports = { notificationWebSocketServer: { createWebSocketServer: () => {} } };" > ./ws-server/src/websocket-server.js; \
     fi
 
-# Set correct ownership
+# Set correct ownership for all files
 RUN chown -R nextjs:nodejs /app
 
 # Switch to non-root user
