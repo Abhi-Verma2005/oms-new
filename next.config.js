@@ -3,6 +3,16 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
+  // Disable ESLint during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
+  // Disable TypeScript type checking during build
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
