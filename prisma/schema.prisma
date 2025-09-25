@@ -74,6 +74,10 @@ model User {
   userTags       UserTag[]
   orderFilters   OrderFilter[]
   bonusGrants    BonusGrant[]
+  
+  // Enhanced User Context Relations
+  userContext    UserContext?
+  interactions   UserInteraction[]
 
   @@map("users")
 }
@@ -819,5 +823,125 @@ model ReviewProduct {
 
   @@unique([reviewId, productId])
   @@map("review_products")
+}
+
+// Enhanced User Context & AI Insights Models
+model UserContext {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  
+  // Company Information
+  companyName     String?  @map("company_name")
+  companySize     String?  @map("company_size") // "startup", "small", "medium", "enterprise"
+  industry        String?
+  role            String?  // User's role in company
+  department      String?
+  
+  // Professional Context
+  experience      String?  // "beginner", "intermediate", "advanced", "expert"
+  primaryGoals    String[] @map("primary_goals") // ["seo", "content", "link-building", etc.]
+  currentProjects String[] @map("current_projects") // Active project domains/names
+  
+  // Preferences & Behavior
+  communicationStyle String? @map("communication_style") // "formal", "casual", "technical", "brief"
+  preferredContentType String[] @map("preferred_content_type") // ["video", "text", "infographics", etc.]
+  timezone         String?
+  workingHours     Json?    @map("working_hours") // Store working hours as JSON
+  
+  // AI Insights & Learning
+  aiInsights      Json?    @map("ai_insights") // Store AI-generated insights about user
+  learningStyle   String?  @map("learning_style") // "visual", "auditory", "kinesthetic", "reading"
+  expertiseLevel  Json?    @map("expertise_level") // Store expertise levels for different topics
+  
+  // Context History
+  lastUpdated     DateTime @updatedAt @map("last_updated")
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contextUpdates  ContextUpdate[]
+  
+  @@map("user_context")
+}
+
+model ContextUpdate {
+  id              String   @id @default(cuid())
+  userContextId   String   @map("user_context_id")
+  
+  // Update Details
+  updateType      ContextUpdateType @map("update_type")
+  field           String?  // Which field was updated
+  oldValue        Json?    @map("old_value")
+  newValue        Json?    @map("new_value")
+  
+  // AI Context
+  aiConfidence    Float?   @map("ai_confidence") // 0-1 confidence score
+  aiReasoning     String?  @map("ai_reasoning") // Why AI made this update
+  source          String?  // "chat_interaction", "behavior_analysis", "explicit_update"
+  
+  // Metadata
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  userContext     UserContext @relation(fields: [userContextId], references: [id], onDelete: Cascade)
+  
+  @@map("context_updates")
+  @@index([userContextId, createdAt])
+  @@index([updateType, createdAt])
+}
+
+model UserInteraction {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  
+  // Interaction Details
+  interactionType InteractionType @map("interaction_type")
+  content         String?  // What the user said/did
+  response        String?  // AI/system response
+  context         Json?    // Additional context about the interaction
+  
+  // AI Analysis
+  sentiment       String?  // "positive", "negative", "neutral"
+  intent          String?  // Detected user intent
+  topics          String[] // Extracted topics
+  preferences     Json?    // Inferred preferences from this interaction
+  
+  // Metadata
+  timestamp       DateTime @default(now())
+  sessionId       String?  @map("session_id")
+  pageUrl         String?  @map("page_url")
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_interactions")
+  @@index([userId, timestamp])
+  @@index([interactionType, timestamp])
+}
+
+enum ContextUpdateType {
+  COMPANY_INFO
+  PREFERENCES
+  BEHAVIOR
+  EXPERTISE
+  GOALS
+  COMMUNICATION_STYLE
+  LEARNING_STYLE
+  WORKING_HOURS
+  AI_INSIGHTS
+  GENERAL
+}
+
+enum InteractionType {
+  CHAT_MESSAGE
+  PAGE_VIEW
+  SEARCH_QUERY
+  FILTER_USAGE
+  PURCHASE
+  FEEDBACK
+  SUPPORT_REQUEST
+  NAVIGATION
+  PREFERENCE_CHANGE
+  OTHER
 }
 

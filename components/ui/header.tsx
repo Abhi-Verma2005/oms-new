@@ -6,17 +6,15 @@ import { useAppProvider } from '@/app/app-provider'
 
 import SearchModal from '@/components/search-modal'
 import Notifications from '@/components/dropdown-notifications'
-import DropdownHelp from '@/components/dropdown-help'
 import ThemeToggle from '@/components/theme-toggle'
-import Image from 'next/image'
 import UserMenu from '@/components/user-menu'
-import { AIChatbot } from '@/components/ai-chatbot'
 import { useCart } from '@/contexts/cart-context'
 import CartModal from '@/components/cart-modal'
-import NavbarDropdown, { NavbarDropdownItem, NavbarDropdownSection } from '@/components/navbar-dropdown'
+import NavbarDropdown, { NavbarDropdownItem } from '@/components/navbar-dropdown'
 import Logo from '@/components/ui/logo'
 import Link from 'next/link'
-import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench } from 'lucide-react'
+import { useLayout } from '@/contexts/LayoutContext'
+import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench, MessageCircle, Coins, Phone } from 'lucide-react'
 
 export default function Header({
   variant = 'default',
@@ -24,8 +22,8 @@ export default function Header({
   variant?: 'default' | 'v2' | 'v3'
 }) {
 
-  const { sidebarOpen, setSidebarOpen } = useAppProvider()
   const { getTotalItems, toggleCart } = useCart()
+  const { toggleSidebar, isSidebarOpen } = useLayout()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
   const [credits, setCredits] = useState<number | null>(null)
@@ -61,18 +59,18 @@ export default function Header({
     return () => { active = false; clearInterval(id) }
   }, [])
 
-  // Keyboard shortcut for search (Cmd/Ctrl + K)
+  // Keyboard shortcut for AI sidebar (Cmd/Ctrl + K)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault()
-        setSearchModalOpen(true)
+        toggleSidebar()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [toggleSidebar])
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -209,10 +207,11 @@ export default function Header({
               <button
                 onMouseEnter={() => setShowCreditHint(true)}
                 onMouseLeave={() => setShowCreditHint(false)}
-                className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
                 title="Daily credits"
               >
-                Credits: {credits ?? '—'}
+                <Coins className="w-4 h-4" />
+                {credits ?? '—'}
               </button>
               {showCreditHint && (
                 <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl">
@@ -225,18 +224,22 @@ export default function Header({
                 </div>
               )}
             </div>
-            {/* Book a call button (compact) */}
-            <a href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer" className="hidden md:inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors" title="Book a call (coming soon)">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a1 1 0 0 1 1 .75l1 3a1 1 0 0 1-.27 1L9.91 9.09a16 16 0 0 0 5 5l1.34-1.91a1 1 0 0 1 1-.27l3 1a1 1 0 0 1 .75 1z"/>
-              </svg>
-              Book a call
-            </a>
+            {/* Call button (compact) */}
+            <div className="relative group">
+              <a href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer" className="hidden md:inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors">
+                <Phone className="w-3.5 h-3.5" />
+                Call
+              </a>
+              {/* Hover tooltip */}
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-gray-700/95 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-40">
+                Book a call
+              </div>
+            </div>
             <div className="relative group">
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
                 onClick={() => { setSearchModalOpen(true) }}
-                title="Search (⌘K)"
+                title="Search"
               >
                 <span className="sr-only">Search</span>
                 <Search className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
@@ -244,7 +247,7 @@ export default function Header({
               
               {/* Keyboard shortcut hint (positioned below to avoid browser chrome clipping) */}
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-gray-700/95 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-40">
-                ⌘K
+                Search
               </div>
               
               <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
@@ -269,6 +272,17 @@ export default function Header({
               <CartModal />
             </div>
             <Notifications align="right" />
+            {/* AI Assistant Toggle */}
+            <button
+              onClick={toggleSidebar}
+              className={`relative p-2 text-gray-500/80 dark:text-gray-400/80 hover:text-gray-600 dark:hover:text-gray-300 transition-colors ${
+                isSidebarOpen ? 'text-violet-600 dark:text-violet-400' : ''
+              }`}
+              title={isSidebarOpen ? "Close AI Assistant (⌘K)" : "Open AI Assistant (⌘K)"}
+            >
+              <span className="sr-only">AI Assistant</span>
+              <MessageCircle className="h-4 w-4" />
+            </button>
             {/* Replace unused help icon with theme toggle */}
             <ThemeToggle />
             {/*  Divider */}
@@ -357,7 +371,7 @@ export default function Header({
       )}
 
       {/* AI Chatbot (kept for pages that explicitly open it) */}
-      <AIChatbot isOpen={chatbotOpen} onToggle={() => setChatbotOpen(!chatbotOpen)} />
+      {/* <AIChatbot isOpen={chatbotOpen} onToggle={() => setChatbotOpen(!chatbotOpen)} /> */}
     </header>
   )
 }

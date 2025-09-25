@@ -9,7 +9,8 @@ import { WishlistProvider } from '@/contexts/wishlist-context'
 import { NotificationProvider } from '@/contexts/notification-context'
 import { NotificationToastContainer } from '@/components/notification-toast'
 import { AIChatbotProvider } from '@/components/ai-chatbot-provider'
-import { AIAssistantButton } from '@/components/ai-assistant-button'
+import { LayoutProvider } from '@/contexts/LayoutContext'
+import { UserContextProvider } from '@/components/user-context-provider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -32,19 +33,22 @@ export default function RootLayout({
       <body className="font-inter antialiased bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
         <Theme>
           <AuthProvider>
-            <AppProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  <NotificationProvider>
-                    <AIChatbotProvider>
-                      {children}
-                      <NotificationToastContainer />
-                      <AIAssistantButton />
-                    </AIChatbotProvider>
-                  </NotificationProvider>
-                </WishlistProvider>
-              </CartProvider>
-            </AppProvider>
+            <UserContextProvider>
+              <AppProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    <NotificationProvider>
+                      <AIChatbotProvider>
+                        <LayoutProvider>
+                          {children}
+                          <NotificationToastContainer />
+                        </LayoutProvider>
+                      </AIChatbotProvider>
+                    </NotificationProvider>
+                  </WishlistProvider>
+                </CartProvider>
+              </AppProvider>
+            </UserContextProvider>
           </AuthProvider>
         </Theme>
       </body>

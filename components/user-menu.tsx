@@ -7,11 +7,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import UserAvatar from '@/public/images/user-avatar-32.png'
+import { useLayout } from '@/contexts/LayoutContext'
 
 function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
   const { data: session, status } = useSession()
   const { theme, setTheme } = useTheme()
-
+  const { toggleSidebar } = useLayout()
   if (status === "loading") {
     return (
       <div className="inline-flex justify-center items-center group">
@@ -93,6 +94,14 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
             </MenuItem>
           )}
           
+          <MenuItem as="li">
+          <button
+            onClick={toggleSidebar}
+            className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
+          >
+            Toggle Sidebar
+          </button>
+          </MenuItem>
           <MenuItem as="li">
             <button 
               className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"

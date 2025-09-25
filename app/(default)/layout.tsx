@@ -1,6 +1,7 @@
 import Header from '@/components/ui/header'
 import Footer from '@/components/ui/footer'
 import { Suspense } from 'react'
+import { LayoutProvider } from '@/contexts/LayoutContext'
 
 export default function DefaultLayout({
   children,
@@ -8,7 +9,8 @@ export default function DefaultLayout({
   children: React.ReactNode
 }) {  
   return (
-    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <LayoutProvider>
+      <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 flex flex-col">
 
       {/* Site header - sticky at top */}
       <Suspense fallback={null}>
@@ -29,6 +31,7 @@ export default function DefaultLayout({
         </Suspense>
       </div>
 
-    </div>
+      </div>
+    </LayoutProvider>
   )
 }

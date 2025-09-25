@@ -1795,10 +1795,17 @@ function WishlistInlineButton({ site }: { site: Site }) {
   )
 }
 
-export default function PublishersClient() {
+interface PublishersClientProps {
+  searchParams?: { [key: string]: string | string[] | undefined }
+}
+
+export default function PublishersClient({ searchParams: propSearchParams }: PublishersClientProps = {}) {
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const hookSearchParams = useSearchParams()
+  
+  // Use prop searchParams if provided, otherwise use hook searchParams
+  const searchParams = propSearchParams || hookSearchParams
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
   function HeaderCheckout() {
@@ -1867,8 +1874,25 @@ export default function PublishersClient() {
     return { ...defaultFilters, ...parsed }
   }, [])
 
-  const [filters, setFilters] = useState<Filters>(() => parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || "")))
-  const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || "")
+  // Helper function to safely get search params
+  const getSearchParamValue = (key: string): string => {
+    if (propSearchParams && typeof propSearchParams === 'object') {
+      const value = propSearchParams[key]
+      return Array.isArray(value) ? value[0] || '' : value || ''
+    }
+    if (hookSearchParams) {
+      return hookSearchParams.get(key) || ''
+    }
+    return ''
+  }
+
+  const [filters, setFilters] = useState<Filters>(() => {
+    const paramsString = propSearchParams 
+      ? new URLSearchParams(propSearchParams as Record<string, string>).toString()
+      : hookSearchParams?.toString() || ""
+    return parseFiltersFromParams(new URLSearchParams(paramsString))
+  })
+  const [searchQuery, setSearchQuery] = useState(() => getSearchParamValue('q'))
   const [sites, setSites] = useState<Site[]>([])
   const [revealed, setRevealed] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -1923,6 +1947,25 @@ export default function PublishersClient() {
     const apiFilters = convertFiltersToAPI(filters, searchQuery)
     debouncedFetch(apiFilters, 500)
   }, [filters, searchQuery, debouncedFetch])
+
+  // Watch for changes in searchParams and update filters accordingly
+  useEffect(() => {
+    const newSearchQuery = getSearchParamValue('q')
+    const paramsString = propSearchParams 
+      ? new URLSearchParams(propSearchParams as Record<string, string>).toString()
+      : hookSearchParams?.toString() || ""
+    
+    const newFilters = parseFiltersFromParams(new URLSearchParams(paramsString))
+    
+    // Only update if there are actual changes to avoid infinite loops
+    const filtersChanged = JSON.stringify(newFilters) !== JSON.stringify(filters)
+    const searchQueryChanged = newSearchQuery !== searchQuery
+    
+    if (filtersChanged || searchQueryChanged) {
+      setFilters(newFilters)
+      setSearchQuery(newSearchQuery)
+    }
+  }, [propSearchParams, hookSearchParams, parseFiltersFromParams, filters, searchQuery])
 
   // Fetch search suggestions from external API (debounced)
   const fetchSuggestions = useCallback(async (q: string) => {

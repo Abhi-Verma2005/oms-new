@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Send, Bot, Minimize2, Trash2 } from 'lucide-react'
 import { useAIChatbot } from './ai-chatbot-provider'
+import { useUserContextStore } from '@/stores/user-context-store'
 
 interface Message {
   id: string
@@ -23,6 +24,31 @@ interface AIChatbotProps {
 export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const router = useRouter()
   const { config, configLoading } = useAIChatbot()
+  const { 
+    company, 
+    professional, 
+    preferences, 
+    aiInsights, 
+    fetchUserContext, 
+    needsUpdate,
+    isLoaded,
+    isLoading: contextLoading,
+    error
+  } = useUserContextStore()
+
+  // Debug: Log user context state changes
+  useEffect(() => {
+    console.log('🔍 User Context State:', {
+      company,
+      professional,
+      preferences,
+      aiInsights,
+      isLoaded,
+      isLoading: contextLoading,
+      error
+    })
+  }, [company, professional, preferences, aiInsights, isLoaded, contextLoading, error])
+  
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -43,6 +69,20 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     }
   }, [isOpen])
 
+  // Fetch user context when chatbot opens
+  useEffect(() => {
+    console.log('🤖 Chatbot state changed:', { isOpen })
+    if (isOpen) {
+      console.log('📡 Fetching user context...')
+      // Always try to fetch context when chatbot opens, not just when needs update
+      fetchUserContext().then(() => {
+        console.log('✅ User context fetched successfully')
+      }).catch(error => {
+        console.error('❌ Failed to fetch user context:', error)
+      })
+    }
+  }, [isOpen, fetchUserContext])
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
 
@@ -57,6 +97,25 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     setInput('')
     setIsLoading(true)
 
+    // Debug: Log user context being sent
+    const contextToSend = {
+      company,
+      professional,
+      preferences,
+      aiInsights
+    }
+    console.log('📤 Sending user context to API:', contextToSend)
+    console.log('📊 Context summary:', {
+      hasCompany: !!company?.name,
+      hasIndustry: !!company?.industry,
+      hasRole: !!company?.role,
+      hasExperience: !!professional?.experience,
+      hasGoals: !!(professional?.primaryGoals?.length),
+      hasCommunicationStyle: !!preferences?.communicationStyle,
+      hasLearningStyle: !!aiInsights?.learningStyle,
+      hasExpertise: !!(Object.keys(aiInsights?.expertiseLevel || {}).length)
+    })
+
     try {
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
@@ -67,7 +126,11 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
           message: userMessage.content,
           messages: messages,
           // Include preloaded config so the API doesn't need to fetch again
-          config: config ?? undefined
+          config: config ?? undefined,
+          // Include current URL for context-aware filtering
+          currentUrl: window.location.href,
+          // Include user context for personalized responses
+          userContext: contextToSend
         })
       })
 
@@ -77,6 +140,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       }
 
       const data = await response.json()
+      console.log('📥 Received AI response:', data.response)
       
       // Check if the response contains navigation instruction
       const navigationMatch = data.response.match(/\[NAVIGATE:([^\]]+)\]/)

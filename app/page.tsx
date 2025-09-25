@@ -73,7 +73,13 @@ export default function LandingPage() {
             <NavItems items={navItems} />
             <div className="flex items-center gap-4">
               <NavbarButton variant="secondary" href="/signin">Login</NavbarButton>
-              <NavbarButton variant="primary" href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer">Book a call</NavbarButton>
+              <div className="relative group">
+                <NavbarButton variant="primary" href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer">Call</NavbarButton>
+                {/* Hover tooltip */}
+                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-gray-700/95 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-40">
+                  Book a call
+                </div>
+              </div>
             </div>
           </NavBody>
 
@@ -115,8 +121,9 @@ export default function LandingPage() {
                   href="https://cal.com/emiactech/30min"
                   target="_blank"
                   rel="noopener noreferrer"
+                  title="Book a call"
                 >
-                  Book a call
+                  Call
                 </NavbarButton>
               </div>
             </MobileNavMenu>
@@ -125,7 +132,7 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative pt-40 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Spotlight effect - Dark Mode */}
         <Spotlight
           className="-top-60 left-2/5 transform -translate-x-1/2 hidden dark:block opacity-40"
