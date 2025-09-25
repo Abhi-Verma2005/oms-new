@@ -65,3 +65,4 @@ echo "⚠️  Important:"
 echo "   - Make sure to use your actual domain in NEXTAUTH_URL and NEXT_PUBLIC_WEBSOCKET_URL"
 echo "   - Use HTTPS (https://) and WSS (wss://) for production URLs"
 echo "   - Keep your secrets secure and don't commit this file to git"
+
