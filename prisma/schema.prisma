@@ -852,6 +852,8 @@ model UserContext {
   aiInsights      Json?    @map("ai_insights") // Store AI-generated insights about user
   learningStyle   String?  @map("learning_style") // "visual", "auditory", "kinesthetic", "reading"
   expertiseLevel  Json?    @map("expertise_level") // Store expertise levels for different topics
+  // Flexible AI-captured metadata from conversations (arbitrary, namespaced keys)
+  aiMetadata      Json?    @map("ai_metadata")
   
   // Context History
   lastUpdated     DateTime @updatedAt @map("last_updated")

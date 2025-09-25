@@ -183,6 +183,7 @@ Be conservative with confidence scores. Only include insights you're reasonably 
           { role: 'system', content: 'You are an expert at analyzing user behavior and preferences from interaction data. Respond only with valid JSON.' },
           { role: 'user', content: prompt }
         ],
+        response_format: { type: 'json_object' },
         temperature: 0.3,
         max_tokens: 800,
       }),
@@ -193,15 +194,25 @@ Be conservative with confidence scores. Only include insights you're reasonably 
       throw new Error(`OpenAI API error: ${response.status} ${errorText}`)
     }
 
-    const data = await response.json()
-    const content = data?.choices?.[0]?.message?.content
-
+    let content: string | undefined
+    try {
+      const data = await response.json()
+      content = data?.choices?.[0]?.message?.content
+    } catch (e) {
+      // Non-JSON body returned; treat as failure and fallback
+      throw new Error('OpenAI returned non-JSON body in analyze route')
+    }
     if (!content) {
       throw new Error('No content received from OpenAI')
     }
 
-    // Parse the JSON response
-    const analysis = JSON.parse(content)
+    // Parse the JSON response safely
+    let analysis: any
+    try {
+      analysis = JSON.parse(content)
+    } catch (e) {
+      throw new Error('Non-JSON response from OpenAI in analyze route')
+    }
 
     // Validate and clean the response
     const cleanAnalysis = {

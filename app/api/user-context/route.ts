@@ -52,8 +52,28 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Fetch core user info and roles
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        userRoles: {
+          where: { isActive: true },
+          include: { role: true }
+        }
+      }
+    })
+
+    const userInfo = user ? {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      image: user.image,
+      roles: (user.userRoles || []).filter(ur => ur.isActive).map(ur => ur.role?.name).filter(Boolean)
+    } : undefined
+
     // Transform to match frontend store format
     const contextData = {
+      user: userInfo,
       company: {
         name: userContext.companyName,
         size: userContext.companySize,
@@ -79,6 +99,7 @@ export async function GET(request: NextRequest) {
         behaviorPatterns: userContext.aiInsights?.behaviorPatterns || [],
         lastAnalyzed: userContext.aiInsights?.lastAnalyzed
       },
+      aiMetadata: userContext.aiMetadata || {},
       lastUpdated: userContext.lastUpdated.toISOString(),
       isLoaded: true
     }
@@ -102,7 +123,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { company, professional, preferences, aiInsights } = body
+    const { company, professional, preferences, aiInsights, aiMetadata } = body
 
     // Update or create user context
     const userContext = await prisma.userContext.upsert({
@@ -133,7 +154,8 @@ export async function PUT(request: NextRequest) {
           personalityTraits: aiInsights?.personalityTraits || [],
           behaviorPatterns: aiInsights?.behaviorPatterns || [],
           lastAnalyzed: aiInsights?.lastAnalyzed
-        }
+        },
+        aiMetadata: aiMetadata || undefined
       },
       create: {
         userId: session.user.id,
@@ -162,7 +184,8 @@ export async function PUT(request: NextRequest) {
           personalityTraits: aiInsights?.personalityTraits || [],
           behaviorPatterns: aiInsights?.behaviorPatterns || [],
           lastAnalyzed: aiInsights?.lastAnalyzed
-        }
+        },
+        aiMetadata: aiMetadata || {}
       }
     })
 

@@ -37,10 +37,18 @@ interface AIInsights {
 }
 
 interface UserContextData {
+  user?: {
+    id?: string
+    name?: string | null
+    email?: string
+    image?: string | null
+    roles?: string[]
+  }
   company: CompanyInfo
   professional: ProfessionalContext
   preferences: Preferences
   aiInsights: AIInsights
+  aiMetadata?: Record<string, any>
   lastUpdated: string | null
   isLoaded: boolean
 }
@@ -157,10 +165,12 @@ export const useUserContextStore = create<UserContextStore>()(
       // Core context management
       setContext: (context) => {
         set((state) => {
+          if (context.user) state.user = { ...(state.user || {}), ...context.user }
           if (context.company) state.company = { ...state.company, ...context.company }
           if (context.professional) state.professional = { ...state.professional, ...context.professional }
           if (context.preferences) state.preferences = { ...state.preferences, ...context.preferences }
           if (context.aiInsights) state.aiInsights = { ...state.aiInsights, ...context.aiInsights }
+          if (context.aiMetadata) state.aiMetadata = { ...(state.aiMetadata || {}), ...context.aiMetadata }
           if (context.lastUpdated) state.lastUpdated = context.lastUpdated
           if (context.isLoaded !== undefined) state.isLoaded = context.isLoaded
         })
@@ -209,10 +219,12 @@ export const useUserContextStore = create<UserContextStore>()(
 
       clearContext: () => {
         set((state) => {
+          state.user = undefined
           state.company = {}
           state.professional = {}
           state.preferences = {}
           state.aiInsights = {}
+          state.aiMetadata = {}
           state.lastUpdated = null
           state.isLoaded = false
           state.updates = []
@@ -500,7 +512,7 @@ export const useUserContextStore = create<UserContextStore>()(
       // Utility functions
       getContextSummary: () => {
         const state = get()
-        const parts = []
+        const parts: string[] = []
         
         if (state.company.name) parts.push(`Company: ${state.company.name}`)
         if (state.company.industry) parts.push(`Industry: ${state.company.industry}`)
@@ -561,7 +573,8 @@ export const useUserContextStore = create<UserContextStore>()(
               company: state.company,
               professional: state.professional,
               preferences: state.preferences,
-              aiInsights: state.aiInsights
+              aiInsights: state.aiInsights,
+              aiMetadata: state.aiMetadata
             })
           })
           

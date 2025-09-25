@@ -95,42 +95,39 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         })
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send message')
+      if (!response.ok || !response.body) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to send message')
       }
 
-      const data = await response.json()
-      
-      // Check if the response contains navigation instruction
-      const navigationMatch = data.response.match(/\[NAVIGATE:([^\]]+)\]/)
-      if (navigationMatch) {
-        const route = navigationMatch[1]
-        // Remove the navigation instruction from the message
-        const cleanResponse = data.response.replace(/\[NAVIGATE:[^\]]+\]/, '').trim()
-        
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: cleanResponse || 'Navigating to the requested page...',
-          role: 'assistant',
-          timestamp: new Date()
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let botBuffer = ''
+
+      // Create a placeholder assistant message and update it as chunks arrive
+      const assistantId = (Date.now() + 1).toString()
+      setMessages(prev => [...prev, { id: assistantId, content: '', role: 'assistant', timestamp: new Date() }])
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        botBuffer += chunk
+
+        // Check for navigation directive in the growing buffer
+        const navMatch = botBuffer.match(/\[NAVIGATE:([^\]]+)\]/)
+        let displayText = botBuffer
+        if (navMatch) {
+          const route = navMatch[1]
+          displayText = botBuffer.replace(/\[NAVIGATE:[^\]]+\]/, '').trim()
+          // navigate after short delay once we detect directive
+          setTimeout(() => {
+            router.push(route)
+            onClose?.()
+          }, 800)
         }
 
-        setMessages(prev => [...prev, assistantMessage])
-        
-        // Navigate to the route
-        setTimeout(() => {
-          router.push(route)
-        }, 1000)
-      } else {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.response,
-          role: 'assistant',
-          timestamp: new Date()
-        }
-
-        setMessages(prev => [...prev, assistantMessage])
+        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: displayText } : m))
       }
     } catch (error) {
       console.error('Error sending message:', error)

@@ -25,10 +25,12 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const router = useRouter()
   const { config, configLoading } = useAIChatbot()
   const { 
+    user,
     company, 
     professional, 
     preferences, 
     aiInsights, 
+    aiMetadata,
     fetchUserContext, 
     needsUpdate,
     isLoaded,
@@ -39,15 +41,17 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   // Debug: Log user context state changes
   useEffect(() => {
     console.log('🔍 User Context State:', {
+      user,
       company,
       professional,
       preferences,
       aiInsights,
+      aiMetadata,
       isLoaded,
       isLoading: contextLoading,
       error
     })
-  }, [company, professional, preferences, aiInsights, isLoaded, contextLoading, error])
+  }, [user, company, professional, preferences, aiInsights, aiMetadata, isLoaded, contextLoading, error])
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -99,10 +103,12 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
 
     // Debug: Log user context being sent
     const contextToSend = {
+      user,
       company,
       professional,
       preferences,
-      aiInsights
+      aiInsights,
+      aiMetadata
     }
     console.log('📤 Sending user context to API:', contextToSend)
     console.log('📊 Context summary:', {
@@ -119,59 +125,49 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     try {
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage.content,
           messages: messages,
-          // Include preloaded config so the API doesn't need to fetch again
           config: config ?? undefined,
-          // Include current URL for context-aware filtering
           currentUrl: window.location.href,
-          // Include user context for personalized responses
           userContext: contextToSend
         })
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send message')
+      if (!response.ok || !response.body) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to send message')
       }
 
-      const data = await response.json()
-      console.log('📥 Received AI response:', data.response)
-      
-      // Check if the response contains navigation instruction
-      const navigationMatch = data.response.match(/\[NAVIGATE:([^\]]+)\]/)
-      if (navigationMatch) {
-        const route = navigationMatch[1]
-        // Remove the navigation instruction from the message
-        const cleanResponse = data.response.replace(/\[NAVIGATE:[^\]]+\]/, '').trim()
-        
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: cleanResponse || 'Navigating to the requested page...',
-          role: 'assistant',
-          timestamp: new Date()
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let botBuffer = ''
+
+      // Create a placeholder assistant message and update it as chunks arrive
+      const assistantId = (Date.now() + 1).toString()
+      setMessages(prev => [...prev, { id: assistantId, content: '', role: 'assistant', timestamp: new Date() }])
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        botBuffer += chunk
+
+        // Check for navigation directive in the growing buffer
+        const navMatch = botBuffer.match(/\[NAVIGATE:([^\]]+)\]/)
+        let displayText = botBuffer
+        if (navMatch) {
+          const route = navMatch[1]
+          displayText = botBuffer.replace(/\[NAVIGATE:[^\]]+\]/, '').trim()
+          // navigate after short delay once we detect directive
+          setTimeout(() => {
+            router.push(route)
+            onToggle()
+          }, 800)
         }
 
-        setMessages(prev => [...prev, assistantMessage])
-        
-        // Navigate to the route
-        setTimeout(() => {
-          router.push(route)
-          onToggle() // Close the chat modal
-        }, 1000)
-      } else {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.response,
-          role: 'assistant',
-          timestamp: new Date()
-        }
-
-        setMessages(prev => [...prev, assistantMessage])
+        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: displayText } : m))
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -255,20 +251,15 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                 <div
                   key={message.id}
                   className={cn(
-                    "flex gap-2",
+                    'flex',
                     message.role === 'user' ? 'justify-end' : 'justify-start'
                   )}
                 >
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                      message.role === 'user'
-                        ? "bg-violet-600 text-white"
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-                    )}
-                  >
-                    {message.content}
-                  </div>
+                  {message.role === 'user' ? (
+                    <div className={cn('max-w-[80%] rounded-lg px-3 py-2 text-sm bg-violet-600 text-white')}>{message.content}</div>
+                  ) : (
+                    <div className={cn('w-full text-sm text-gray-900 dark:text-white leading-7')}>{message.content}</div>
+                  )}
                 </div>
               ))}
               
