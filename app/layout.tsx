@@ -9,7 +9,6 @@ import { WishlistProvider } from '@/contexts/wishlist-context'
 import { NotificationProvider } from '@/contexts/notification-context'
 import { NotificationToastContainer } from '@/components/notification-toast'
 import { AIChatbotProvider } from '@/components/ai-chatbot-provider'
-import { AIAssistantButton } from '@/components/ai-assistant-button'
 import { LayoutProvider } from '@/contexts/LayoutContext'
 import { ResizableLayout } from '@/components/resizable-layout'
 
@@ -44,7 +43,6 @@ export default function RootLayout({
                           {children}
                         </ResizableLayout>
                         <NotificationToastContainer />
-                        <AIAssistantButton />
                       </LayoutProvider>
                     </AIChatbotProvider>
                   </NotificationProvider>

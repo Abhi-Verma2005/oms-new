@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useAppProvider } from '@/app/app-provider'
+import { useLayout } from '@/contexts/LayoutContext'
 
 import SearchModal from '@/components/search-modal'
 import Notifications from '@/components/dropdown-notifications'
@@ -16,7 +17,7 @@ import CartModal from '@/components/cart-modal'
 import NavbarDropdown, { NavbarDropdownItem, NavbarDropdownSection } from '@/components/navbar-dropdown'
 import Logo from '@/components/ui/logo'
 import Link from 'next/link'
-import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench, Coins, Phone } from 'lucide-react'
+import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench, Coins, Phone, MessageCircle } from 'lucide-react'
 
 export default function Header({
   variant = 'default',
@@ -25,6 +26,7 @@ export default function Header({
 }) {
 
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
+  const { openSidebar } = useLayout()
   const { getTotalItems, toggleCart } = useCart()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
@@ -61,18 +63,18 @@ export default function Header({
     return () => { active = false; clearInterval(id) }
   }, [])
 
-  // Keyboard shortcut for search (Cmd/Ctrl + K)
+  // Keyboard shortcut for AI sidebar (Cmd/Ctrl + K)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault()
-        setSearchModalOpen(true)
+        openSidebar()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [openSidebar])
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -261,18 +263,30 @@ export default function Header({
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
                 onClick={() => { setSearchModalOpen(true) }}
-                title="Search (⌘K)"
+                title="Search"
               >
                 <span className="sr-only">Search</span>
                 <Search className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
+              </button>
+              
+              <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
+            </div>
+            
+            {/* AI Sidebar Button */}
+            <div className="relative group">
+              <button
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full"
+                onClick={openSidebar}
+                title="AI Assistant (⌘K)"
+              >
+                <span className="sr-only">AI Assistant</span>
+                <MessageCircle className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
               
               {/* Keyboard shortcut hint (positioned below to avoid browser chrome clipping) */}
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-gray-700/95 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-40">
                 ⌘K
               </div>
-              
-              <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
             </div>
             
             {/* Cart Button */}
@@ -284,11 +298,6 @@ export default function Header({
               >
                 <span className="sr-only">Shopping Cart</span>
                 <ShoppingCart className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
-                {getTotalItems() > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-violet-600 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                    {getTotalItems()}
-                  </span>
-                )}
               </button>
               {/* Cart Modal positioned relative to this button */}
               <CartModal />
