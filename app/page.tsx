@@ -54,11 +54,12 @@ const testimonials = [
 
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPagesDropdownOpen, setIsPagesDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const navItems = [
     { name: "Features", link: "#features" },
-    { name: "Pricing", link: "#pricing" },
+    { name: "About", link: "/about" },
     { name: "Contact", link: "#contact" },
   ];
 
@@ -70,9 +71,73 @@ export default function LandingPage() {
         <Navbar className="fixed top-0 left-0 right-0 z-50">
           <NavBody>
             <NavbarLogo />
-            <NavItems items={navItems} />
+            {/* Centered nav (avoids collision with absolute NavItems) */}
+            <div className="absolute inset-0 hidden lg:flex items-center justify-center space-x-2 text-sm font-medium">
+              {navItems.map((item, idx) => (
+                <Link
+                  key={`nav-link-${idx}`}
+                  href={item.link}
+                  className="relative px-4 py-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200"
+                >
+                  {item.name}
+                </Link>
+              ))}
+              {/* Pages Dropdown */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setIsPagesDropdownOpen(true)}
+                onMouseLeave={() => setIsPagesDropdownOpen(false)}
+              >
+                <button className="relative px-4 py-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 flex items-center">
+                  <span>Pages</span>
+                  <svg 
+                    className={`w-3 h-3 shrink-0 ml-1 fill-current text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                      isPagesDropdownOpen ? 'rotate-180' : ''
+                    }`} 
+                    viewBox="0 0 12 12"
+                  >
+                    <path d="M5.9 11.4L.5 6l1.4-1.4 4 4 4-4L11.3 6z" />
+                  </svg>
+                </button>
+                <div 
+                  className={`absolute left-0 top-full mt-1 min-w-[220px] rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 shadow-lg shadow-purple-500/10 backdrop-blur-md overflow-hidden transition-all duration-200 ${
+                    isPagesDropdownOpen 
+                      ? 'opacity-100 visible translate-y-0' 
+                      : 'opacity-0 invisible -translate-y-2'
+                  }`}
+                >
+                  <div className="py-1">
+                    <Link 
+                      href="/pricing" 
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
+                    >
+                      Pricing
+                    </Link>
+                    <Link 
+                      href="/integrations" 
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
+                    >
+                      Integrations
+                    </Link>
+                    <Link 
+                      href="/customers" 
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
+                    >
+                      Customers
+                    </Link>
+                    <Link 
+                      href="/changelog" 
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
+                    >
+                      Changelog
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className="flex items-center gap-4">
               <NavbarButton variant="secondary" href="/signin">Login</NavbarButton>
+              <NavbarButton variant="secondary" href="/publishers">App</NavbarButton>
               <NavbarButton variant="primary" href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer">Book a call</NavbarButton>
             </div>
           </NavBody>
@@ -100,6 +165,16 @@ export default function LandingPage() {
                   <span className="block">{item.name}</span>
                 </a>
               ))}
+              {/* Mobile dropdown content as simple section */}
+              <div className="mt-2 w-full">
+                <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Pages</div>
+                <div className="flex flex-col">
+                  <Link href="/pricing" onClick={() => setIsMobileMenuOpen(false)} className="px-2 py-2 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Pricing</Link>
+                  <Link href="/integrations" onClick={() => setIsMobileMenuOpen(false)} className="px-2 py-2 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Integrations</Link>
+                  <Link href="/customers" onClick={() => setIsMobileMenuOpen(false)} className="px-2 py-2 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Customers</Link>
+                  <Link href="/changelog" onClick={() => setIsMobileMenuOpen(false)} className="px-2 py-2 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Changelog</Link>
+                </div>
+              </div>
               <div className="flex w-full flex-col gap-4">
                 <NavbarButton
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -117,6 +192,14 @@ export default function LandingPage() {
                   rel="noopener noreferrer"
                 >
                   Book a call
+                </NavbarButton>
+                <NavbarButton
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  variant="secondary"
+                  className="w-full"
+                  href="/publishers"
+                >
+                  App
                 </NavbarButton>
               </div>
             </MobileNavMenu>
