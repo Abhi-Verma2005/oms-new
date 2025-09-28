@@ -58,7 +58,6 @@ export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const navItems = [
-    { name: "Features", link: "#features" },
     { name: "About", link: "/about" },
     { name: "Contact", link: "#contact" },
   ];
@@ -138,7 +137,6 @@ export default function LandingPage() {
             <div className="flex items-center gap-4">
               <NavbarButton variant="secondary" href="/signin">Login</NavbarButton>
               <NavbarButton variant="secondary" href="/publishers">App</NavbarButton>
-              <NavbarButton variant="primary" href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer">Book a call</NavbarButton>
             </div>
           </NavBody>
 
