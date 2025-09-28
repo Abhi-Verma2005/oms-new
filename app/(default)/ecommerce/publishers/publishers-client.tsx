@@ -1906,6 +1906,24 @@ export default function PublishersClient() {
   }, [])
 
   useEffect(() => { fetchData() }, [])
+
+  // Monitor URL parameter changes and update filters accordingly
+  useEffect(() => {
+    const newFilters = parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || ""))
+    const newSearchQuery = searchParams?.get('q') || ""
+    
+    // Update filters if they've changed
+    setFilters(prevFilters => {
+      const hasChanged = JSON.stringify(prevFilters) !== JSON.stringify(newFilters)
+      return hasChanged ? newFilters : prevFilters
+    })
+    
+    // Update search query if it's changed
+    setSearchQuery(prevQuery => {
+      return prevQuery !== newSearchQuery ? newSearchQuery : prevQuery
+    })
+  }, [searchParams, parseFiltersFromParams])
+
   async function revealWebsite(id: string) {
     try {
       const res = await fetch('/api/publishers/reveal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
