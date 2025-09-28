@@ -77,6 +77,8 @@ model User {
   
   // Enhanced User Context Relations
   userContext    UserContext?
+  userProfile    UserProfile?
+  userAIInsights UserAIInsights?
   interactions   UserInteraction[]
 
   @@map("users")
@@ -825,7 +827,113 @@ model ReviewProduct {
   @@map("review_products")
 }
 
-// Enhanced User Context & AI Insights Models
+// User Profile Data (User-provided with consent - stable, structured data)
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  
+  // Company Information (User-provided)
+  companyName     String?  @map("company_name")
+  companySize     String?  @map("company_size") // "startup", "small", "medium", "enterprise"
+  industry        String?
+  role            String?  // User's role in company
+  department      String?
+  website         String?  // Company website
+  
+  // Professional Context (User-provided)
+  experience      String?  // "beginner", "intermediate", "advanced", "expert"
+  primaryGoals    String[] @map("primary_goals") // ["seo", "content", "link-building", etc.]
+  currentProjects String[] @map("current_projects") // Active project domains/names
+  budget          String?  // Monthly budget range
+  teamSize        String?  // Team size
+  
+  // Preferences (User-provided)
+  communicationStyle String? @map("communication_style") // "formal", "casual", "technical", "brief"
+  preferredContentType String[] @map("preferred_content_type") // ["video", "text", "infographics", etc.]
+  timezone         String?
+  workingHours     Json?    @map("working_hours") // Store working hours as JSON
+  language         String?  @default("en")
+  
+  // Marketing & Lead Data (User-provided with consent)
+  leadSource      String?  @map("lead_source") // How they found us
+  leadScore       Int?     @map("lead_score") // 1-100 lead quality score
+  marketingOptIn  Boolean  @default(false) @map("marketing_opt_in")
+  newsletterOptIn Boolean  @default(false) @map("newsletter_opt_in")
+  
+  // Timestamps
+  lastUpdated     DateTime @updatedAt @map("last_updated")
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_profiles")
+}
+
+// AI-Generated User Insights (AI-only writes here - dynamic, rapidly updated)
+model UserAIInsights {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  
+  // AI-Generated Personality & Behavior Analysis
+  personalityTraits Json?  @map("personality_traits") // ["analytical", "creative", "detail-oriented"]
+  behaviorPatterns  Json?  @map("behavior_patterns") // Usage patterns, preferences
+  learningStyle     String? @map("learning_style") // "visual", "auditory", "kinesthetic", "reading"
+  expertiseLevel    Json?  @map("expertise_level") // Dynamic expertise tracking per topic
+  
+  // AI Conversation Analysis
+  conversationTone  String? @map("conversation_tone") // "professional", "casual", "technical"
+  communicationPatterns Json? @map("communication_patterns") // How they communicate
+  topicInterests    String[] @map("topic_interests") // Topics they're interested in
+  painPoints        String[] @map("pain_points") // Problems they mention
+  
+  // Dynamic AI Metadata (arbitrary, namespaced keys for marketing/leads)
+  aiMetadata      Json?    @map("ai_metadata") // Flexible field for any AI insights
+  // Examples: {"company:budget": "high", "project:deadline": "urgent", "tools:favorite-seo-tool": "ahrefs"}
+  
+  // AI Confidence & Reasoning
+  confidenceScore Float?   @map("confidence_score") // 0-1 overall confidence in insights
+  lastAnalysisAt  DateTime @map("last_analysis_at")
+  
+  // Timestamps
+  lastUpdated     DateTime @updatedAt @map("last_updated")
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  insightUpdates  AIInsightUpdate[]
+  
+  @@map("user_ai_insights")
+}
+
+// AI Insight Updates (Track what AI learns over time)
+model AIInsightUpdate {
+  id              String   @id @default(cuid())
+  userAIInsightsId String  @map("user_ai_insights_id")
+  
+  // Update Details
+  updateType      AIInsightUpdateType @map("update_type")
+  field           String?  // Which field was updated
+  oldValue        Json?    @map("old_value")
+  newValue        Json?    @map("new_value")
+  
+  // AI Context
+  aiConfidence    Float?   @map("ai_confidence") // 0-1 confidence score
+  aiReasoning     String?  @map("ai_reasoning") // Why AI made this update
+  source          String?  // "chat_interaction", "behavior_analysis", "pattern_recognition"
+  
+  // Metadata
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  userAIInsights  UserAIInsights @relation(fields: [userAIInsightsId], references: [id], onDelete: Cascade)
+  
+  @@map("ai_insight_updates")
+  @@index([userAIInsightsId, createdAt])
+  @@index([updateType, createdAt])
+}
+
+// Legacy UserContext model (for backward compatibility - will be deprecated)
 model UserContext {
   id              String   @id @default(cuid())
   userId          String   @unique @map("user_id")
@@ -931,6 +1039,20 @@ enum ContextUpdateType {
   LEARNING_STYLE
   WORKING_HOURS
   AI_INSIGHTS
+  GENERAL
+}
+
+enum AIInsightUpdateType {
+  PERSONALITY_TRAITS
+  BEHAVIOR_PATTERNS
+  LEARNING_STYLE
+  EXPERTISE_LEVEL
+  CONVERSATION_TONE
+  COMMUNICATION_PATTERNS
+  TOPIC_INTERESTS
+  PAIN_POINTS
+  AI_METADATA
+  CONFIDENCE_SCORE
   GENERAL
 }
 

@@ -26,7 +26,7 @@ export default function Header({
 }) {
 
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
-  const { openSidebar } = useLayout()
+  const { openSidebar, toggleSidebar } = useLayout()
   const { getTotalItems, toggleCart } = useCart()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
@@ -68,13 +68,13 @@ export default function Header({
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault()
-        openSidebar()
+        toggleSidebar()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [openSidebar])
+  }, [toggleSidebar])
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -276,7 +276,7 @@ export default function Header({
             <div className="relative group">
               <button
                 className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full"
-                onClick={openSidebar}
+                onClick={toggleSidebar}
                 title="AI Assistant (⌘K)"
               >
                 <span className="sr-only">AI Assistant</span>
