@@ -245,36 +245,23 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
         {/* Welcome Section - Only show when no messages */}
         {messages.length === 0 && (
-          <div className="p-6">
-            <div className="text-2xl font-bold mb-1">Hi,</div>
-            <div className="text-base text-white/80 mb-6">How can I assist you today?</div>
-            
-            {/* Feature Buttons */}
-            <div className="grid grid-cols-2 gap-2 mb-6">
-              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
-                <div className="flex items-center gap-2">
-                  <Monitor className="h-4 w-4 text-blue-300" />
-                  <span className="text-sm font-medium">Full Screen Chat</span>
-                </div>
-              </button>
-              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
-                <div className="flex items-center gap-2">
-                  <Network className="h-4 w-4 text-green-300" />
-                  <span className="text-sm font-medium">Deep Research</span>
-                </div>
-              </button>
-              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-yellow-300" />
-                  <span className="text-sm font-medium">My Highlights</span>
-                </div>
-              </button>
-              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
-                <div className="flex items-center gap-2">
-                  <Presentation className="h-4 w-4 text-purple-300" />
-                  <span className="text-sm font-medium">AI Slides</span>
-                </div>
-              </button>
+          <div className="p-6 pt-16">
+            <div className="flex items-center gap-2">
+              <div className="flex-shrink-0">
+                <svg
+                  className="fill-violet-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={24}
+                  height={24}
+                  viewBox="0 0 32 32"
+                >
+                  <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+                </svg>
+              </div>
+              <div className="flex-1 text-white">
+                <div className="text-2xl font-bold mb-1">Hi,</div>
+                <div className="text-base text-white/80">How can I assist you today?</div>
+              </div>
             </div>
           </div>
         )}
@@ -308,6 +295,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                       xmlns="http://www.w3.org/2000/svg"
                       width={16}
                       height={16}
+                      viewBox="0 0 32 32"
                     >
                       <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                     </svg>
@@ -329,6 +317,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                     xmlns="http://www.w3.org/2000/svg"
                     width={16}
                     height={16}
+                    viewBox="0 0 32 32"
                   >
                     <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                   </svg>
@@ -347,48 +336,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Context Bar */}
-        <div className="px-6 py-2">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2 flex items-center justify-between border border-white/20">
-            <div className="flex items-center gap-2">
-              <ChevronDown className="h-3 w-3 text-white/60" />
-              <span className="text-xs text-white/80">Publishers</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-violet-300 font-medium">Summarize</span>
-              <div className="w-px h-3 bg-white/30"></div>
-              <FileText className="h-3 w-3 text-white/60" />
-            </div>
-          </div>
-        </div>
 
         {/* Input Area */}
         <div className="px-6 pb-4">
-          {/* Utility Icons */}
-          <div className="flex items-center gap-2 mb-2">
-            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              <Zap className="h-3 w-3 text-violet-300" />
-            </button>
-            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              <Scissors className="h-3 w-3 text-white/60" />
-            </button>
-            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              <Paperclip className="h-3 w-3 text-white/60" />
-            </button>
-            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              <Book className="h-3 w-3 text-white/60" />
-            </button>
-            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors relative">
-              <Filter className="h-3 w-3 text-white/60" />
-              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full"></div>
-            </button>
-            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              <Clock className="h-3 w-3 text-white/60" />
-            </button>
-            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              <Plus className="h-3 w-3 text-violet-300" />
-            </button>
-          </div>
 
           {/* Input Field */}
           <div className="relative">
