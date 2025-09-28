@@ -6,11 +6,14 @@ import { useTheme } from 'next-themes'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
+import { MessageCircle } from 'lucide-react'
+import { useLayout } from '@/contexts/LayoutContext'
 import UserAvatar from '@/public/images/user-avatar-32.png'
 
 function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
   const { data: session, status } = useSession()
   const { theme, setTheme } = useTheme()
+  const { toggleSidebar, isSidebarOpen } = useLayout()
 
   if (status === "loading") {
     return (
@@ -84,6 +87,15 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
             <Link className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50" href="/settings/account">
               Settings
             </Link>
+          </MenuItem>
+          <MenuItem as="li">
+            <button 
+              className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
+              onClick={toggleSidebar}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              {isSidebarOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
+            </button>
           </MenuItem>
           {isAdmin && (
             <MenuItem as="li">

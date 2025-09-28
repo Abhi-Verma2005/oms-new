@@ -10,6 +10,8 @@ import { NotificationProvider } from '@/contexts/notification-context'
 import { NotificationToastContainer } from '@/components/notification-toast'
 import { AIChatbotProvider } from '@/components/ai-chatbot-provider'
 import { AIAssistantButton } from '@/components/ai-assistant-button'
+import { LayoutProvider } from '@/contexts/LayoutContext'
+import { ResizableLayout } from '@/components/resizable-layout'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -37,9 +39,13 @@ export default function RootLayout({
                 <WishlistProvider>
                   <NotificationProvider>
                     <AIChatbotProvider>
-                      {children}
-                      <NotificationToastContainer />
-                      <AIAssistantButton />
+                      <LayoutProvider>
+                        <ResizableLayout>
+                          {children}
+                        </ResizableLayout>
+                        <NotificationToastContainer />
+                        <AIAssistantButton />
+                      </LayoutProvider>
                     </AIChatbotProvider>
                   </NotificationProvider>
                 </WishlistProvider>
