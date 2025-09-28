@@ -3,25 +3,31 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { 
   Send, 
   Bot, 
-  X, 
   Trash2, 
+  X, 
+  Monitor, 
+  Network, 
+  FileText, 
+  Presentation, 
   Zap, 
   Scissors, 
   Paperclip, 
   Book, 
   Filter, 
   Clock, 
-  Plus,
-  FileText,
-  Maximize2,
-  Search,
-  Lightbulb,
-  Star,
-  Presentation
+  Plus, 
+  Mic, 
+  Globe, 
+  Gift, 
+  Heart, 
+  HelpCircle, 
+  ChevronDown,
+  Rocket
 } from 'lucide-react'
 import { useAIChatbot } from './ai-chatbot-provider'
 
@@ -39,12 +45,11 @@ interface AIChatbotSidebarProps {
 export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const router = useRouter()
   const { config, configLoading } = useAIChatbot()
-  
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -55,14 +60,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   }, [messages])
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.focus()
+    if (inputRef.current) {
+      inputRef.current.focus()
     }
-  }, [])
-
-  // Sidebar opened effect
-  useEffect(() => {
-    console.log('🤖 Sidebar opened')
   }, [])
 
   const sendMessage = async () => {
@@ -78,9 +78,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
-
-    // Debug: Log message being sent
-    console.log('📤 Sending message to API:', userMessage.content)
 
     try {
       const response = await fetch('/api/ai-chat', {
@@ -104,7 +101,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       }
 
       const data = await response.json()
-      console.log('📥 Received AI response:', data.response)
       
       // Check if the response contains navigation instruction
       const navigationMatch = data.response.match(/\[NAVIGATE:([^\]]+)\]/)
@@ -161,23 +157,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     setMessages([])
   }
 
-  const openFullScreen = () => {
-    // This could open a full-screen modal or navigate to a dedicated chat page
-    console.log('Opening full screen chat')
-  }
-
-  const getCurrentPageContext = () => {
-    const path = window.location.pathname
-    if (path.includes('/publishers')) return 'Publishers'
-    if (path.includes('/dashboard')) return 'Dashboard'
-    if (path.includes('/tasks')) return 'Tasks'
-    if (path.includes('/community')) return 'Community'
-    return 'Home'
-  }
-
   return (
     <div className="h-[100dvh] flex flex-col relative text-white overflow-hidden">
-      {/* Solid Brand Background */}
+      {/* Solid Brand Background (from screenshot) */}
       <div className="absolute inset-0 bg-[#1f2230]"></div>
       
       {/* Content */}
@@ -204,215 +186,170 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           )}
         </div>
 
-        {/* Welcome Section (when no messages) */}
+        {/* Welcome Section - Only show when no messages */}
         {messages.length === 0 && (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-            <div className="mb-6">
-              <Bot className="h-16 w-16 mx-auto mb-4 text-white/60" />
-              <h2 className="text-xl font-semibold text-white mb-2">Hi, How can I assist you today?</h2>
-              <p className="text-white/70 text-sm">Ask me anything about your workflow, get insights, or explore features.</p>
-            </div>
+          <div className="p-6">
+            <div className="text-2xl font-bold mb-1">Hi,</div>
+            <div className="text-base text-white/80 mb-6">How can I assist you today?</div>
             
-            {/* Feature Buttons Grid */}
-            <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-              <Button
-                variant="ghost"
-                onClick={openFullScreen}
-                className="h-20 flex flex-col items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20"
-              >
-                <Maximize2 className="h-5 w-5" />
-                <span className="text-xs">Full Screen Chat</span>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setInput('Research and analyze the latest trends in ')}
-                className="h-20 flex flex-col items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20"
-              >
-                <Search className="h-5 w-5" />
-                <span className="text-xs">Deep Research</span>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setInput('Show me my highlights and important notes from ')}
-                className="h-20 flex flex-col items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20"
-              >
-                <Star className="h-5 w-5" />
-                <span className="text-xs">My Highlights</span>
-              </Button>
-              
-              <Button
-                variant="ghost"
-                onClick={() => setInput('Create a presentation about ')}
-                className="h-20 flex flex-col items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20"
-              >
-                <Presentation className="h-5 w-5" />
-                <span className="text-xs">AI Slides</span>
-              </Button>
+            {/* Feature Buttons */}
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
+                <div className="flex items-center gap-2">
+                  <Monitor className="h-4 w-4 text-blue-300" />
+                  <span className="text-sm font-medium">Full Screen Chat</span>
+                </div>
+              </button>
+              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
+                <div className="flex items-center gap-2">
+                  <Network className="h-4 w-4 text-green-300" />
+                  <span className="text-sm font-medium">Deep Research</span>
+                </div>
+              </button>
+              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-yellow-300" />
+                  <span className="text-sm font-medium">My Highlights</span>
+                </div>
+              </button>
+              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-left transition-all duration-200 border border-white/20">
+                <div className="flex items-center gap-2">
+                  <Presentation className="h-4 w-4 text-purple-300" />
+                  <span className="text-sm font-medium">AI Slides</span>
+                </div>
+              </button>
             </div>
-            
-            {configLoading && (
-              <p className="text-xs mt-4 text-white/50">Loading configuration...</p>
-            )}
           </div>
         )}
 
         {/* Messages Area */}
-        {messages.length > 0 && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          {configLoading && messages.length === 0 && (
+            <div className="text-center text-white/60 py-6">
+              <Bot className="h-8 w-8 mx-auto mb-3 opacity-50" />
+              <p className="text-sm">Loading config…</p>
+            </div>
+          )}
+          
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                "flex gap-2",
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              )}
+            >
               <div
-                key={message.id}
                 className={cn(
-                  "flex gap-2",
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                  "max-w-[85%] rounded-xl px-3 py-2 text-sm select-text backdrop-blur-sm",
+                  message.role === 'user'
+                    ? "bg-violet-600/90 text-white selection:bg-violet-400 selection:text-white border border-violet-500/30"
+                    : "bg-white/10 text-white selection:bg-violet-500/20 selection:text-white border border-white/20"
                 )}
               >
-                <div
-                  className={cn(
-                    "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                    message.role === 'user'
-                      ? "bg-violet-600 text-white"
-                      : "bg-white/10 text-white backdrop-blur-sm"
-                  )}
-                >
-                  {message.content}
-                </div>
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex gap-2 justify-start">
-                <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 text-sm">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-
-        {/* Context Bar */}
-        {messages.length > 0 && (
-          <div className="px-4 py-2 border-t border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-white/70">
-                <span>Context: {getCurrentPageContext()}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setInput('Summarize this page: ')}
-                  className="h-6 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10"
-                >
-                  <FileText className="h-3 w-3 mr-1" />
-                  Summarize
-                </Button>
+                {message.content}
               </div>
             </div>
+          ))}
+          
+          {isLoading && (
+            <div className="flex gap-2 justify-start">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 text-sm border border-white/20">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Context Bar */}
+        <div className="px-6 py-2">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2 flex items-center justify-between border border-white/20">
+            <div className="flex items-center gap-2">
+              <ChevronDown className="h-3 w-3 text-white/60" />
+              <span className="text-xs text-white/80">Publishers</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-violet-300 font-medium">Summarize</span>
+              <div className="w-px h-3 bg-white/30"></div>
+              <FileText className="h-3 w-3 text-white/60" />
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Input Area */}
-        <div className="p-4 border-t border-white/10">
+        <div className="px-6 pb-4">
           {/* Utility Icons */}
-          <div className="flex items-center gap-2 mb-3">
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white/50 hover:text-white hover:bg-white/10">
-              <Zap className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white/50 hover:text-white hover:bg-white/10">
-              <Scissors className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white/50 hover:text-white hover:bg-white/10">
-              <Paperclip className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white/50 hover:text-white hover:bg-white/10">
-              <Book className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white/50 hover:text-white hover:bg-white/10">
-              <Filter className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white/50 hover:text-white hover:bg-white/10">
-              <Clock className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white/50 hover:text-white hover:bg-white/10">
-              <Plus className="h-3 w-3" />
-            </Button>
+          <div className="flex items-center gap-2 mb-2">
+            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <Zap className="h-3 w-3 text-violet-300" />
+            </button>
+            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <Scissors className="h-3 w-3 text-white/60" />
+            </button>
+            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <Paperclip className="h-3 w-3 text-white/60" />
+            </button>
+            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <Book className="h-3 w-3 text-white/60" />
+            </button>
+            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors relative">
+              <Filter className="h-3 w-3 text-white/60" />
+              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full"></div>
+            </button>
+            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <Clock className="h-3 w-3 text-white/60" />
+            </button>
+            <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <Plus className="h-3 w-3 text-violet-300" />
+            </button>
           </div>
 
           {/* Input Field */}
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
+          <div className="relative">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
               <textarea
-                ref={textareaRef}
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask anything, @models, / prompts"
                 disabled={isLoading}
-                className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent resize-none"
-                rows={1}
-                style={{ minHeight: '40px', maxHeight: '120px' }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement
-                  target.style.height = 'auto'
-                  target.style.height = target.scrollHeight + 'px'
-                }}
+                className="w-full bg-transparent text-white placeholder-white/60 resize-none focus:outline-none text-sm border-0 selection:bg-violet-500/20 selection:text-white focus:ring-0 focus:border-0"
+                rows={2}
               />
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-1.5">
+                  <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/30">
+                    <div className="w-1.5 h-1.5 bg-violet-300 rounded-sm"></div>
+                    Think (R1)
+                  </button>
+                  <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/30">
+                    <Globe className="h-2.5 w-2.5" />
+                    Search
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                    <Mic className="h-3 w-3 text-white/60" />
+                  </button>
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!input.trim() || isLoading}
+                    size="sm"
+                    className="bg-violet-600/90 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg backdrop-blur-sm border border-violet-500/30"
+                  >
+                    <Send className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
             </div>
-            
-            {/* Mode Buttons */}
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <Lightbulb className="h-3 w-3 mr-1" />
-                Think R1
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs text-white/70 hover:text-white hover:bg-white/10"
-              >
-                <Search className="h-3 w-3 mr-1" />
-                Search
-              </Button>
-            </div>
-            
-            {/* Send Button */}
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
-              size="sm"
-              className="h-8 w-8 p-0 bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
           </div>
-
-          {/* Clear Chat Button */}
-          {messages.length > 0 && (
-            <div className="flex justify-end mt-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearChat}
-                className="h-6 px-2 text-xs text-white/50 hover:text-white hover:bg-white/10"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Clear chat
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </div>
