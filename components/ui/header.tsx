@@ -16,7 +16,7 @@ import CartModal from '@/components/cart-modal'
 import NavbarDropdown, { NavbarDropdownItem, NavbarDropdownSection } from '@/components/navbar-dropdown'
 import Logo from '@/components/ui/logo'
 import Link from 'next/link'
-import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench } from 'lucide-react'
+import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench, Coins, Phone } from 'lucide-react'
 
 export default function Header({
   variant = 'default',
@@ -218,17 +218,18 @@ export default function Header({
           {/* Header: Right side */}
           <div className="flex items-center space-x-2 sm:space-x-3 relative z-30">
             {/* Credits Display */}
-            <div className="relative">
+            <div className="relative group">
               <button
                 onMouseEnter={() => setShowCreditHint(true)}
                 onMouseLeave={() => setShowCreditHint(false)}
-                className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
                 title="Daily credits"
               >
-                Credits: {credits ?? '—'}
+                <Coins className="w-4 h-4" />
+                <span className="font-medium">{credits ?? '—'}</span>
               </button>
               {showCreditHint && (
-                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl">
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl z-50">
                   <div className="font-semibold mb-1">How credits work</div>
                   <ul className="list-disc pl-4 space-y-1">
                     <li>50 credits added daily.</li>
@@ -239,12 +240,23 @@ export default function Header({
               )}
             </div>
             {/* Book a call button (compact) */}
-            <a href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer" className="hidden md:inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors" title="Book a call (coming soon)">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a1 1 0 0 1 1 .75l1 3a1 1 0 0 1-.27 1L9.91 9.09a16 16 0 0 0 5 5l1.34-1.91a1 1 0 0 1 1-.27l3 1a1 1 0 0 1 .75 1z"/>
-              </svg>
-              Book a call
-            </a>
+            <div className="relative group">
+              <a 
+                href="https://cal.com/emiactech/30min" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors"
+                title="Book a call"
+              >
+                <Phone className="w-4 h-4" />
+                <span className="font-medium">Call</span>
+              </a>
+              {/* Hover tooltip */}
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                <div className="font-semibold mb-1">Book a call</div>
+                <p>Schedule a 30-minute consultation to discuss your needs and get personalized recommendations.</p>
+              </div>
+            </div>
             <div className="relative group">
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
