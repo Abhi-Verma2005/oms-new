@@ -19,6 +19,7 @@ import BarChart01 from "@/components/charts/bar-chart-01"
 import LineChart01 from "@/components/charts/line-chart-01"
 import DoughnutChart from "@/components/charts/doughnut-chart"
 import LandingUserMenu from "@/components/landing-user-menu"
+import InsightsSection from "@/components/insights-section"
 
 const testimonials = [
   {
@@ -130,6 +131,12 @@ export default function LandingPage() {
                       className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
                     >
                       Changelog
+                    </Link>
+                    <Link 
+                      href="/insights" 
+                      className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
+                    >
+                      Insights
                     </Link>
                   </div>
                 </div>
@@ -532,6 +539,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Insights Section */}
+      <InsightsSection />
 
       {/* Goal Selection Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
