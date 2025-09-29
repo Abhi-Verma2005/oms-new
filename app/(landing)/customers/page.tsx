@@ -6,6 +6,7 @@ import Particles from '../../../components/particles'
 import Customers from '../../../components/customers'
 import Cta from '../../../components/cta'
 import LandingFooter from '../../../components/landing-footer'
+import InsightsSection from '../../../components/insights-section'
 
 export default function CustomersPage() {
   return (
@@ -73,6 +74,9 @@ export default function CustomersPage() {
 
         {/* Customer Testimonials */}
         <Customers />
+
+        {/* Insights Section */}
+        <InsightsSection />
 
         {/* CTA Section */}
         <Cta />

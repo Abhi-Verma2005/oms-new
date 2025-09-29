@@ -29,13 +29,14 @@ export default function LandingLayout({
   const navItems = [
     { name: "About", link: "/about" },
     { name: "Pricing", link: "/pricing" },
+    { name: "Insights", link: "/insights" },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 text-gray-900 dark:text-white">
       {/* Navigation */}
       <div className="relative flex flex-col">
-        <Navbar className="fixed top-0 left-0 right-0 z-50">
+        <Navbar className="fixed top-0 left-0 right-0 z-50 pr-2 sm:pr-0">
           <NavBody>
             <NavbarLogo />
             <div className="absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-sm font-medium text-zinc-600 transition duration-200 hover:text-zinc-800 lg:flex lg:space-x-2">
@@ -71,6 +72,10 @@ export default function LandingLayout({
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Show Insights shortcut on small screens */}
+              <Link href="/insights" className="lg:hidden text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md">
+                Insights
+              </Link>
               <LandingUserMenu align="right" />
               <div className="relative">
                 <NavbarButton variant="primary" href="/publishers">App</NavbarButton>
@@ -80,13 +85,15 @@ export default function LandingLayout({
           </NavBody>
 
           <MobileNav>
-            <MobileNavHeader>
-              <NavbarLogo />
+          <MobileNavHeader>
+            <NavbarLogo />
+            <div className="mr-2">
               <MobileNavToggle
                 isOpen={isMobileMenuOpen}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               />
-            </MobileNavHeader>
+            </div>
+          </MobileNavHeader>
 
             <MobileNavMenu
               isOpen={isMobileMenuOpen}
@@ -109,6 +116,9 @@ export default function LandingLayout({
                   Pages
                 </div>
                 <div className="space-y-1">
+                  <a href="/insights" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+                    Insights
+                  </a>
                   <a href="/integrations" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
                     Integrations
                   </a>

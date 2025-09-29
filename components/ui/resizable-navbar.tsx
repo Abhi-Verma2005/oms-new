@@ -88,7 +88,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
   return (
     <motion.div
       animate={{
-        backdropFilter: visible ? "blur(10px)" : "none",
+        backdropFilter: visible ? "blur(16px) saturate(1.5)" : "blur(8px) saturate(1.2)",
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
@@ -104,8 +104,11 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         minWidth: "800px",
       }}
       className={cn(
-        "relative z-[60] mx-auto hidden w-full max-w-7xl flex-row items-center justify-between self-start rounded-full bg-transparent px-6 py-3 lg:flex dark:bg-transparent",
-        visible && "bg-white/90 backdrop-blur-md border border-gray-200/20 dark:bg-gray-900/90 dark:border-purple-500/20 shadow-lg shadow-purple-500/10",
+        "relative z-[60] mx-auto hidden w-full max-w-7xl flex-row items-center justify-between self-start rounded-full px-6 py-3 lg:flex",
+        // Always-glass base
+        "bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-white/20 dark:ring-white/10 shadow-lg shadow-purple-500/10",
+        // On scroll, subtly intensify
+        visible && "bg-white/50 dark:bg-gray-900/50 ring-1 ring-white/30 dark:ring-white/20 shadow-purple-500/20",
         className,
       )}
     >
@@ -174,7 +177,7 @@ export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
   return (
     <motion.div
       animate={{
-        backdropFilter: visible ? "blur(10px)" : "none",
+        backdropFilter: visible ? "blur(16px) saturate(1.5)" : "blur(8px) saturate(1.2)",
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
@@ -190,8 +193,11 @@ export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
         damping: 50,
       }}
       className={cn(
-        "relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between bg-transparent px-4 py-3 lg:hidden",
-        visible && "bg-white/90 backdrop-blur-md border border-gray-200/20 dark:bg-gray-900/90 dark:border-purple-500/20 shadow-lg shadow-purple-500/10",
+        "relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between px-4 py-3 lg:hidden",
+        // Always-glass base
+        "bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-white/20 dark:ring-white/10 shadow-lg shadow-purple-500/10",
+        // On scroll/open, intensify slightly
+        visible && "bg-white/50 dark:bg-gray-900/50 ring-1 ring-white/30 dark:ring-white/20 shadow-purple-500/20",
         className,
       )}
     >
@@ -231,7 +237,9 @@ export const MobileNavMenu = ({
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
           className={cn(
-            "absolute inset-x-0 top-full mt-2 z-[70] flex w-full flex-col items-start justify-start gap-4 rounded-lg bg-white/95 backdrop-blur-md border border-gray-200/20 px-6 py-6 shadow-lg shadow-purple-500/10 dark:bg-gray-900/95 dark:border-purple-500/20",
+            "absolute inset-x-0 top-full mt-2 z-[70] flex w-full flex-col items-start justify-start gap-4 rounded-lg px-6 py-6 shadow-lg",
+            // Glass styling for dropdown
+            "bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-white/20 dark:ring-white/10 shadow-purple-500/10",
             className,
           )}
         >
