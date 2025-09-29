@@ -10,16 +10,14 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export async function POST(request: NextRequest) {
-  // Get the raw body as a buffer for signature verification
-  const rawBody = await request.arrayBuffer()
-  const body = Buffer.from(rawBody).toString('utf8')
+  // Get the raw body as a string for signature verification
+  const rawBody = await request.text()
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
 
   console.log('Webhook received:', {
     hasSignature: !!signature,
-    bodyLength: body.length,
-    rawBodyLength: rawBody.byteLength,
+    bodyLength: rawBody.length,
     webhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
     signature: signature?.substring(0, 20) + '...'
   })
@@ -30,7 +28,7 @@ export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV === 'development' && signature === 'test-signature') {
     console.log('Development mode: Bypassing signature verification')
     try {
-      event = JSON.parse(body) as Stripe.Event
+      event = JSON.parse(rawBody) as Stripe.Event
     } catch (err) {
       console.error('Failed to parse webhook body:', err)
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
@@ -48,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     try {
       event = stripe.webhooks.constructEvent(
-        Buffer.from(rawBody),
+        rawBody,
         signature,
         process.env.STRIPE_WEBHOOK_SECRET
       )
@@ -57,7 +55,7 @@ export async function POST(request: NextRequest) {
       console.error('Webhook signature verification failed:', {
         error: err instanceof Error ? err.message : String(err),
         signature: signature?.substring(0, 20) + '...',
-        bodyLength: rawBody.byteLength,
+        bodyLength: rawBody.length,
         webhookSecretLength: process.env.STRIPE_WEBHOOK_SECRET?.length
       })
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })

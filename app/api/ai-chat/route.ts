@@ -7,7 +7,19 @@ import { processUserContext, getComprehensiveUserContext, extractMetadataFromMes
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, messages, config: clientConfig, currentUrl } = await request.json()
+    const { message, messages, config: clientConfig, currentUrl, cartState, autoMessage } = await request.json()
+    
+    // Debug cart state received from client
+    console.log('🛒 DEBUG: Received cart state in AI API:', {
+      cartState: cartState,
+      cartStateType: typeof cartState,
+      cartStateKeys: cartState ? Object.keys(cartState) : 'null',
+      cartItems: cartState?.items,
+      cartItemsLength: cartState?.items?.length,
+      totalItems: cartState?.totalItems,
+      totalPrice: cartState?.totalPrice,
+      cartStateStringified: JSON.stringify(cartState, null, 2)
+    })
 
     if (!process.env.OPEN_AI_KEY) {
       return NextResponse.json(
@@ -19,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Get session for user context
     const session = await getServerSession(authOptions)
 
-    // Get comprehensive user context
+    // Get comprehensive user context (with database error handling)
     let finalUserContext: any = null
     if (session?.user?.id) {
       try {
@@ -75,15 +87,48 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (error) {
-        console.warn('Failed to fetch comprehensive user context:', error)
+        console.warn('Failed to fetch comprehensive user context (database may be unavailable):', error)
+        // Create a minimal user context when database is unavailable
+        finalUserContext = {
+          user: {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email
+          },
+          profile: undefined,
+          aiInsights: undefined,
+          aiMetadata: {},
+          recentInteractions: 0,
+          lastInteraction: null
+        }
       }
     }
 
     // Prefer config supplied by client (preloaded on app startup) to avoid DB hits
-    let systemPrompt = clientConfig?.systemPrompt || 'You are a helpful AI assistant for this application.'
+    let systemPrompt = clientConfig?.systemPrompt || `You are a helpful AI assistant for this application.
+
+IMPORTANT: Keep responses concise and focused - aim for 3-4 lines maximum. Use markdown formatting to make your responses visually appealing and easy to read:
+- **Bold text** for emphasis and important information
+- *Italic text* for subtle emphasis
+- \`inline code\` for technical terms, commands, or specific values
+- # Headers for main topics and sections
+- ## Subheaders for subtopics
+- - Bullet points for lists
+- > Blockquotes for important notes or tips
+- Tables for structured data
+- **Links** with [descriptive text](url) for external resources
+
+Be concise, direct, and helpful. Use markdown formatting to maximize impact in minimal space.
+
+EXAMPLES OF CONCISE MARKDOWN USAGE:
+- Product details: "## Product: **Site Name** - \`$99\` *High DA site*"
+- Features: "**Key features:** *Fast delivery*, \`24/7 support\`"
+- Instructions: "1. **Select** your site 2. **Add** to cart 3. **Checkout**"
+- Success: "# ✅ Success! Order \`#123\` confirmed"
+- Help: "> **Need help?** I'm here to assist!"
     let navigationData: any[] = Array.isArray(clientConfig?.navigationData) ? clientConfig.navigationData : []
 
-    // If not supplied by client, fall back to DB
+    // If not supplied by client, fall back to DB (with error handling)
     if (!clientConfig) {
       try {
         const config = await prisma?.aIChatbotConfig.findFirst({
@@ -104,7 +149,23 @@ export async function POST(request: NextRequest) {
           description: nav.description
         }))
       } catch (error) {
-        console.warn('Failed to fetch AI chatbot config from database, using defaults:', error)
+        console.warn('Failed to fetch AI chatbot config from database (database may be unavailable), using defaults:', error)
+        // Use default system prompt and navigation data when database is unavailable
+        systemPrompt = `You are a helpful AI assistant for this application.
+
+IMPORTANT: Keep responses concise and focused - aim for 3-4 lines maximum. Use markdown formatting to make your responses visually appealing and easy to read:
+- **Bold text** for emphasis and important information
+- *Italic text* for subtle emphasis
+- \`inline code\` for technical terms, commands, or specific values
+- # Headers for main topics and sections
+- ## Subheaders for subtopics
+- - Bullet points for lists
+- > Blockquotes for important notes or tips
+- Tables for structured data
+- **Links** with [descriptive text](url) for external resources
+
+Be concise, direct, and helpful. Use markdown formatting to maximize impact in minimal space.`
+        navigationData = []
       }
     }
 
@@ -159,44 +220,229 @@ ${navigationData.map((nav: any) => `- ${nav.name}: ${nav.route}`).join('\n')}
 
 When users ask to navigate to a specific page, respond with a special format: [NAVIGATE:ROUTE] where ROUTE is the actual route from the navigation data above. The frontend will handle the navigation.`
 
-    // Add publishers filtering context if on publishers page
-    const publishersContext = isOnPublishersPage ? `
+    // Add comprehensive e-commerce flow context
+    const ecommerceFlowContext = `
 
-PUBLISHERS FILTERING CONTEXT:
-You are currently on the publishers page. You can help users filter publishers by understanding their requests and applying appropriate filters.
+SMART E-COMMERCE FLOW CONTEXT:
+You are an intelligent AI assistant that can guide users through the complete e-commerce journey from discovery to purchase completion. You have access to advanced tools and can orchestrate the entire flow seamlessly.
 
-CURRENT FILTERS:
+RESPONSE FORMATTING:
+Keep responses concise (3-4 lines max) and use markdown formatting to make them visually appealing and professional:
+- Use **bold text** for important information, prices, and key features
+- Use *italic text* for subtle emphasis and product descriptions
+- Use \`inline code\` for technical terms, product IDs, and specific values
+- Use # Headers for main sections like "Product Details" or "Order Summary"
+- Use ## Subheaders for subsections like "Features" or "Pricing"
+- Use bullet points (-) for lists of features, benefits, or steps
+- Use > blockquotes for important notes, warnings, or special offers
+- Use tables for comparing products or showing order details
+- Use **links** with [descriptive text](url) for external resources
+
+Be direct and helpful - maximize impact in minimal space.
+
+AVAILABLE TOOLS & ACTIONS:
+
+1. FILTERING & DISCOVERY:
+   - [FILTER:param=value] - Apply specific filters to publishers/products
+   - [NAVIGATE:/publishers?filters] - Navigate with pre-applied filters
+   - [SEARCH:query] - Perform intelligent search across the platform
+
+2. CART MANAGEMENT:
+   - [ADD_TO_CART:itemId] - Add specific item to cart
+   - [REMOVE_FROM_CART:itemId] - Remove item from cart
+   - [VIEW_CART] - Show current cart contents
+   - [CLEAR_CART] - Clear all items from cart
+   - [CART_SUMMARY] - Get detailed cart summary with pricing
+
+3. CHECKOUT & PAYMENT:
+   - [PROCEED_TO_CHECKOUT] - Navigate to checkout page
+   - [PAYMENT_STATUS:orderId] - Check payment status
+   - [PAYMENT_SUCCESS:orderId] - Confirm successful payment
+   - [PAYMENT_FAILED:reason] - Handle payment failure
+
+4. ORDER MANAGEMENT:
+   - [VIEW_ORDERS] - Navigate to orders page
+   - [ORDER_DETAILS:orderId] - Get specific order details
+   - [TRACK_ORDER:orderId] - Track order status
+
+5. SMART RECOMMENDATIONS:
+   - [RECOMMEND:criteria] - Suggest items based on criteria
+   - [SIMILAR_ITEMS:itemId] - Find similar items
+   - [BEST_DEALS] - Show current best deals
+
+INTELLIGENT FLOW ORCHESTRATION:
+
+When users express interest in items or ask about purchasing:
+
+1. FILTERING PHASE:
+   - Understand their requirements (price, niche, quality metrics)
+   - Apply appropriate filters using [FILTER:...] commands
+   - Show them relevant results with explanations
+
+2. CART ENGAGEMENT PHASE:
+   - After showing filtered results, proactively suggest adding items to cart
+   - Use friendly, encouraging language: "I found some great options for you! Would you like me to add the best matches to your cart?"
+   - Show cart summary with [CART_SUMMARY] before proceeding
+
+3. CHECKOUT GUIDANCE PHASE:
+   - Once items are in cart, guide them to checkout: "Perfect! I've added those to your cart. Ready to proceed to checkout?"
+   - Use [PROCEED_TO_CHECKOUT] to navigate to payment page
+   - Provide reassurance about the payment process
+
+4. PAYMENT CONFIRMATION PHASE:
+   - After payment completion, automatically send confirmation message
+   - Use [PAYMENT_SUCCESS:orderId] to show success message
+   - Navigate to orders page with [VIEW_ORDERS]
+   - Provide next steps and support information
+
+5. POST-PURCHASE SUPPORT:
+   - Check order status with [ORDER_DETAILS:orderId]
+   - Offer additional recommendations
+   - Provide customer support guidance
+
+CONVERSATION FLOW EXAMPLES:
+
+Example 1 - Complete Purchase Flow:
+User: "I need high DA sites for tech content"
+AI: "I'll find high Domain Authority sites perfect for tech content! Let me filter those for you."
+[FILTER:daMin=50&niche=technology]
+"Great! I found 15 high-quality tech sites with DA 50+. The top options are [list]. Would you like me to add the best matches to your cart?"
+[ADD_TO_CART:site1,site2,site3]
+"Perfect! I've added 3 excellent tech sites to your cart. Ready to proceed to checkout?"
+[PROCEED_TO_CHECKOUT]
+[After payment] "🎉 Payment successful! Your order has been confirmed. Let me show you your orders."
+[VIEW_ORDERS]
+
+Example 2 - Cart Management:
+User: "What's in my cart?"
+AI: [CART_SUMMARY]
+"Your cart has 2 items totaling $1,200. Would you like to proceed to checkout or add more items?"
+
+Example 3 - Order Tracking:
+User: "Where's my order?"
+AI: [VIEW_ORDERS]
+"I can see your recent orders. Let me get the details for your latest order."
+[ORDER_DETAILS:orderId]
+
+SMART PROMPTING STRATEGY:
+- Always be proactive in suggesting next steps
+- Use encouraging and helpful language
+- Provide clear value propositions
+- Handle objections gracefully
+- Guide users through the complete journey
+- Celebrate successful purchases
+- Offer additional value after purchase
+
+CURRENT CONTEXT:
+${isOnPublishersPage ? `You are on the publishers page with these current filters:
 ${Object.entries(currentFilters).filter(([_, v]) => v !== undefined && v !== '' && v !== null).map(([k, v]) => `- ${k}: ${v}`).join('\n')}
 
-AVAILABLE FILTERS:
-- q: Search query for website names
-- niche: Content niche/category
-- language: Website language
-- country: Website country
-- priceMin/priceMax: Price range in dollars
-- daMin/daMax: Domain Authority range (0-100)
-- paMin/paMax: Page Authority range (0-100)
-- drMin/drMax: Domain Rating range (0-100)
-- spamMin/spamMax: Spam Score range (0-10)
-- availability: Boolean for available publishers
-- tool: "Semrush" or "Ahrefs"
-- backlinkNature: "dofollow" or "nofollow"
-- linkPlacement: "in-content", "author-bio", or "footer"
-- permanence: "lifetime" or "12-months"
-- remarkIncludes: Text to include in remarks
-- lastPublishedAfter: Date filter (YYYY-MM-DD)
-- outboundLinkLimitMax: Maximum outbound links
-- disclaimerIncludes: Text to include in disclaimers
-- trend: Trend filter
+Available filters: q, niche, language, country, priceMin/priceMax, daMin/daMax, paMin/paMax, drMin/drMax, spamMin/spamMax, availability, tool, backlinkNature, linkPlacement, permanence, remarkIncludes, lastPublishedAfter, outboundLinkLimitMax, disclaimerIncludes, trend` : 'You can help users discover, filter, and purchase items from anywhere on the platform.'}
 
-FILTERING INSTRUCTIONS:
-1. When users mention price ranges (e.g., "min price 500", "max 3000"), use [FILTER:priceMin=500] or [FILTER:priceMax=3000]
-2. For multiple filters, combine them: [FILTER:priceMin=500&priceMax=3000&daMin=30]
-3. To reset a specific filter, set it to empty: [FILTER:priceMax=] (removes max price)
-4. To reset all filters, use: [FILTER:RESET]
-5. For navigation to publishers with filters, use: [NAVIGATE:/publishers?priceMin=500&priceMax=3000]
+CURRENT CART STATE:
+${cartState ? `
+- Total Items: ${cartState.totalItems || 0}
+- Total Price: $${(cartState.totalPrice || 0).toFixed(2)}
+- Items in Cart: ${cartState.items?.length || 0}
+${cartState.items && cartState.items.length > 0 ? `
+Cart Contents:
+${cartState.items.map((item: any, index: number) => `  ${index + 1}. ${item.kind === 'site' ? item.site?.name : item.product?.name} - $${item.kind === 'site' ? (item.site?.publishing?.price || 0) : (item.product?.priceDollars || 0)} x${item.quantity || 1}`).join('\n')}` : 'Cart is empty'}
+` : 'Cart state not available'}
 
-When users ask about filtering or want to modify search criteria, respond with the appropriate [FILTER:...] command. The frontend will handle applying these filters and refetching the data.` : ''
+Remember: Your goal is to create a smooth, intelligent shopping experience that guides users from discovery to purchase completion with minimal friction.`
+
+    // Check for recent payment success notifications (with database error handling)
+    let paymentSuccessNotification = ''
+    if (session?.user?.id) {
+      try {
+        // In a real implementation, you'd check a database or cache for recent notifications
+        // For now, we'll simulate this by checking if the user just completed a payment
+        // This could be enhanced with a proper notification system
+        const recentPayment = await prisma.order.findFirst({
+          where: {
+            userId: session.user.id,
+            status: 'PAID',
+            createdAt: {
+              gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          include: { items: true }
+        })
+
+        if (recentPayment) {
+          const itemNames = recentPayment.items.map(item => item.siteName).join(', ')
+          paymentSuccessNotification = `
+
+🎉 RECENT PAYMENT SUCCESS DETECTED:
+- Order ID: ${recentPayment.id}
+- Amount: $${(recentPayment.totalAmount / 100).toFixed(2)}
+- Items: ${itemNames}
+- Status: Payment completed successfully
+
+The user just completed a purchase! You should:
+1. Congratulate them on their successful purchase
+2. Offer to show them their orders
+3. Provide next steps or additional recommendations
+4. Be enthusiastic and helpful about their purchase
+
+Use [PAYMENT_SUCCESS:${recentPayment.id}] to confirm the payment and [VIEW_ORDERS] to show their orders.`
+        }
+      } catch (error) {
+        console.warn('Failed to check for recent payment success (database may be unavailable):', error)
+        // Continue without payment success notification when database is unavailable
+      }
+    }
+
+    // Handle automatic payment success message
+    if (autoMessage && message.includes('payment successfully') && message.includes('show me my orders')) {
+      // Force a payment success notification for automatic messages
+      if (session?.user?.id) {
+        try {
+          const recentPayment = await prisma.order.findFirst({
+            where: {
+              userId: session.user.id,
+              status: 'PAID',
+              createdAt: {
+                gte: new Date(Date.now() - 10 * 60 * 1000) // Last 10 minutes for auto messages
+              }
+            },
+            orderBy: { createdAt: 'desc' },
+            include: { items: true }
+          })
+
+          if (recentPayment) {
+            const itemNames = recentPayment.items.map(item => item.siteName).join(', ')
+            paymentSuccessNotification = `
+
+# 🎉 CONGRATULATIONS! PAYMENT SUCCESSFUL! 🎉
+
+## Order Details
+- **Order ID:** \`${recentPayment.id}\`
+- **Amount:** **$${(recentPayment.totalAmount / 100).toFixed(2)}**
+- **Items:** ${itemNames}
+- **Status:** ✅ Payment completed successfully
+
+---
+
+Fantastic! Your payment has been processed successfully. I can see your order details above. 
+
+You're now on your **orders page** where you can view all your purchases. Your new order should appear in the list below.
+
+### Next Steps
+1. **View your order details** - See complete order information
+2. **Track your order status** - Monitor delivery progress
+3. **Download receipts** - Get your purchase documentation
+
+> **💡 Need help?** I'm here to assist with any questions about your order or other inquiries!
+
+Use [VIEW_ORDERS] to show detailed order information.`
+          }
+        } catch (error) {
+          console.warn('Failed to check for recent payment success for auto message:', error)
+        }
+      }
+    }
 
     // Build comprehensive user context section for AI
     const userContextSection = finalUserContext ? `
@@ -276,7 +522,7 @@ CONTEXT USAGE INSTRUCTIONS:
 7. Build on previous conversations and interests
 8. Be consistent with their communication patterns` : ''
 
-    const fullSystemPrompt = baseSystem + publishersContext + userContextSection
+    const fullSystemPrompt = baseSystem + ecommerceFlowContext + userContextSection + paymentSuccessNotification
 
     const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: fullSystemPrompt },
@@ -307,7 +553,7 @@ CONTEXT USAGE INSTRUCTIONS:
     const data = await openAIRes.json()
     const text = data?.choices?.[0]?.message?.content || ''
 
-    // Log user interaction immediately (non-blocking)
+    // Log user interaction immediately (non-blocking, with error handling)
     if (session?.user?.id) {
       prisma.userInteraction.create({
         data: {
@@ -325,13 +571,18 @@ CONTEXT USAGE INSTRUCTIONS:
             } : null
           }
         }
-      }).catch(error => console.warn('Failed to log user interaction:', error))
+      }).catch(error => console.warn('Failed to log user interaction (database may be unavailable):', error))
 
-      // Process context analysis in background (non-blocking)
-      processContextInBackground(session.user.id, message, text, messages || [], currentUrl, finalUserContext)
+      // Process context analysis in background (non-blocking, with error handling)
+      processContextInBackground(session.user.id, message, text, messages || [], currentUrl, finalUserContext).catch(error => 
+        console.warn('Background context processing failed (database may be unavailable):', error)
+      )
     }
 
-    return NextResponse.json({ response: text })
+    return NextResponse.json({ 
+      response: text,
+      cartState: cartState // Include cart state in response for client-side actions
+    })
   } catch (error) {
     console.error('Error in AI chat API:', error)
     return NextResponse.json(

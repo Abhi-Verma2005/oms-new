@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useAppProvider } from '@/app/app-provider'
 import { useLayout } from '@/contexts/LayoutContext'
+import { useResizableLayout } from '@/components/resizable-layout'
 
 import SearchModal from '@/components/search-modal'
 import Notifications from '@/components/dropdown-notifications'
@@ -26,7 +27,8 @@ export default function Header({
 }) {
 
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
-  const { openSidebar, toggleSidebar } = useLayout()
+  const { openSidebar } = useLayout()
+  const { toggleSidebar } = useResizableLayout()
   const { getTotalItems, toggleCart } = useCart()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
