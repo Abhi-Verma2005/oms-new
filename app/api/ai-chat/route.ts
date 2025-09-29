@@ -125,7 +125,8 @@ EXAMPLES OF CONCISE MARKDOWN USAGE:
 - Features: "**Key features:** *Fast delivery*, \`24/7 support\`"
 - Instructions: "1. **Select** your site 2. **Add** to cart 3. **Checkout**"
 - Success: "# ✅ Success! Order \`#123\` confirmed"
-- Help: "> **Need help?** I'm here to assist!"
+- Help: "> **Need help?** I'm here to assist!"`
+
     let navigationData: any[] = Array.isArray(clientConfig?.navigationData) ? clientConfig.navigationData : []
 
     // If not supplied by client, fall back to DB (with error handling)
