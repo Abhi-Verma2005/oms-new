@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, createContext, useContext } from 'react'
+import React, { useEffect, createContext, useContext, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useLayout } from '@/contexts/LayoutContext'
@@ -15,16 +15,31 @@ const ResizableLayoutContext = createContext<{
   toggleSidebar: () => void
 } | null>(null)
 
-// Custom hook to use the resizable layout context
+// Custom hook to toggle sidebar with URL sync, falling back if context not present
 export const useResizableLayout = () => {
-  const context = useContext(ResizableLayoutContext)
-  if (!context) {
-    throw new Error('useResizableLayout must be used within a ResizableLayout')
-  }
-  return context
+  const resizableContext = useContext(ResizableLayoutContext)
+  const { isSidebarOpen, updateSidebarState } = useLayout()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const toggleSidebar = useCallback(() => {
+    if (resizableContext?.toggleSidebar) {
+      resizableContext.toggleSidebar()
+      return
+    }
+    // Fallback: toggle and sync URL even when not inside ResizableLayout tree
+    const newState = !isSidebarOpen
+    updateSidebarState(newState)
+    const newParams = new URLSearchParams(searchParams?.toString() || '')
+    newParams.set('sidebar', newState ? 'open' : 'closed')
+    router.replace(`?${newParams.toString()}`, { scroll: false })
+  }, [resizableContext, isSidebarOpen, updateSidebarState, searchParams, router])
+
+  return { toggleSidebar }
 }
 
-export function ResizableLayout({ children }: ResizableLayoutProps) {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function ResizableLayoutContent({ children }: ResizableLayoutProps) {
   const { mainWidth, sidebarWidth, isSidebarOpen, closeSidebar, openSidebar, updateSidebarState } = useLayout()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -86,6 +101,18 @@ export function ResizableLayout({ children }: ResizableLayoutProps) {
         </div>
       )}
     </ResizableLayoutContext.Provider>
+  )
+}
+
+export function ResizableLayout({ children }: ResizableLayoutProps) {
+  return (
+    <Suspense fallback={
+      <div className="h-[100dvh] overflow-y-auto bg-[#1f2230]">
+        {children}
+      </div>
+    }>
+      <ResizableLayoutContent>{children}</ResizableLayoutContent>
+    </Suspense>
   )
 }
 
