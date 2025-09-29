@@ -8,6 +8,7 @@ import Features03 from '../../../components/features-03'
 import Features04 from '../../../components/features-04'
 import Cta from '../../../components/cta'
 import LandingFooter from '../../../components/landing-footer'
+import InsightsSection from '../../../components/insights-section'
 
 export default function AboutPage() {
   return (
@@ -105,6 +106,9 @@ export default function AboutPage() {
 
         {/* Why Trust Us */}
         <Features04 />
+
+        {/* Insights Section */}
+        <InsightsSection />
 
         {/* CTA Section */}
         <Cta />

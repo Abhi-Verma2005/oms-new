@@ -96,7 +96,7 @@ export default function Header({
   }, [mobileMenuOpen, isClient])
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 before:absolute before:inset-0 before:backdrop-blur-md before:bg-white/95 dark:before:bg-gray-900/95 before:-z-10 ${variant === 'v2' || variant === 'v3' ? 'after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'shadow-sm border-b border-gray-200/50 dark:border-gray-700/50'} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 before:absolute before:inset-0 before:backdrop-blur-2xl before:backdrop-saturate-150 before:bg-white/40 dark:before:bg-gray-900/40 before:ring-1 before:ring-white/20 dark:before:ring-white/10 before:-z-10 ${variant === 'v2' || variant === 'v3' ? 'after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'shadow-sm border-b border-gray-200/50 dark:border-gray-700/50'} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className={`flex items-center justify-between h-16 ${variant === 'v2' || variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60'}`}>
 
