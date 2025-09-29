@@ -10,6 +10,7 @@ interface LayoutContextType {
   setWidths: (main: number, sidebar: number) => void
   openSidebar: () => void
   closeSidebar: () => void
+  updateSidebarState: (isOpen: boolean) => void
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined)
@@ -61,6 +62,18 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
     setIsSidebarOpen(sidebar > 0)
   }, [])
 
+  const updateSidebarState = useCallback((isOpen: boolean) => {
+    if (isOpen) {
+      setMainWidth(75)
+      setSidebarWidth(25)
+      setIsSidebarOpen(true)
+    } else {
+      setMainWidth(100)
+      setSidebarWidth(0)
+      setIsSidebarOpen(false)
+    }
+  }, [])
+
   return (
     <LayoutContext.Provider
       value={{
@@ -71,6 +84,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
         setWidths,
         openSidebar,
         closeSidebar,
+        updateSidebarState,
       }}
     >
       {children}

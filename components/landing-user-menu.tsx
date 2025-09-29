@@ -1,58 +1,40 @@
 'use client'
 
-import { Suspense } from "react"
-import { useSession, signOut } from "next-auth/react"
-import { useTheme } from 'next-themes'
+import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
-import { MessageCircle } from 'lucide-react'
-import { useLayout } from '@/contexts/LayoutContext'
-import { useResizableLayout } from '@/components/resizable-layout'
+import { useAuthStore } from '@/stores/auth-store'
 import UserAvatar from '@/public/images/user-avatar-32.png'
 
-function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
-  const { data: session, status } = useSession()
-  const { theme, setTheme } = useTheme()
-  const { isSidebarOpen } = useLayout()
-  const { toggleSidebar } = useResizableLayout()
+export default function LandingUserMenu({ align }: { align?: 'left' | 'right' }) {
+  const { user, isAuthenticated, logout } = useAuthStore()
 
-  if (status === "loading") {
-    return (
-      <div className="inline-flex justify-center items-center group">
-        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-        <div className="ml-2 h-4 w-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
-      </div>
-    )
-  }
-
-  if (!session?.user) {
+  if (!isAuthenticated || !user) {
     return (
       <Link 
         href="/signin" 
-        className="inline-flex justify-center items-center group text-sm font-medium text-gray-600 dark:text-gray-100 hover:text-gray-800 dark:hover:text-white"
+        className="inline-flex justify-center items-center group text-sm font-medium text-gray-600 dark:text-gray-100 hover:text-gray-800 dark:hover:text-white px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200"
       >
         Sign In
       </Link>
     )
   }
 
-  const user = session.user
-  const userRoles = (user as any)?.roles || []
-  const isAdmin = (user as any)?.isAdmin || false
+  const userRoles = user.roles || []
+  const isAdmin = user.isAdmin || userRoles.includes('admin')
 
   return (
     <Menu as="div" className="relative inline-flex">
-      <MenuButton className="inline-flex justify-center items-center group">
+      <MenuButton className="inline-flex justify-center items-center group px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
         <Image 
-          className="w-8 h-8 rounded-full" 
+          className="w-6 h-6 rounded-full" 
           src={user.image || UserAvatar} 
-          width={32} 
-          height={32} 
+          width={24} 
+          height={24} 
           alt={user.name || "User"} 
         />
-        <div className="flex items-center truncate">
-          <span className="truncate ml-2 text-sm font-medium text-gray-600 dark:text-gray-100 group-hover:text-gray-800 dark:group-hover:text-white">
+        <div className="flex items-center truncate ml-2">
+          <span className="truncate text-sm font-medium text-gray-600 dark:text-gray-100 group-hover:text-gray-800 dark:group-hover:text-white">
             {user.name || user.email}
           </span>
           <svg className="w-3 h-3 shrink-0 ml-1 fill-current text-gray-400 dark:text-gray-500" viewBox="0 0 12 12">
@@ -81,7 +63,7 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
         </div>
         <MenuItems as="ul" className="focus:outline-hidden">
           <MenuItem as="li">
-            <Link className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50" href="/dashboard">
+            <Link className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50" href="/publishers">
               Dashboard
             </Link>
           </MenuItem>
@@ -89,15 +71,6 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
             <Link className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50" href="/settings/account">
               Settings
             </Link>
-          </MenuItem>
-          <MenuItem as="li">
-            <button 
-              className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
-              onClick={toggleSidebar}
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              {isSidebarOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
-            </button>
           </MenuItem>
           {isAdmin && (
             <MenuItem as="li">
@@ -110,7 +83,7 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
           <MenuItem as="li">
             <button 
               className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
-              onClick={() => signOut({ callbackUrl: '/' })}
+              onClick={() => logout()}
             >
               Sign Out
             </button>
@@ -121,15 +94,3 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
   )
 }
 
-export default function UserMenu({ align }: { align?: 'left' | 'right' }) {
-  return (
-    <Suspense fallback={
-      <div className="inline-flex justify-center items-center group">
-        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-        <div className="ml-2 h-4 w-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
-      </div>
-    }>
-      <UserMenuContent align={align} />
-    </Suspense>
-  )
-}

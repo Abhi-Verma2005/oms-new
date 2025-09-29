@@ -49,39 +49,50 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Get notifications that are active and either global or targeted to this user
-    const notifications = await prisma.notification.findMany({
-      where: {
-        isActive: true,
-        AND: [
-          {
-            OR: [
-              { isGlobal: true },
-              { targetUserIds: { has: userId } }
-            ]
-          },
-          {
-            OR: [
-              { expiresAt: null },
-              { expiresAt: { gt: new Date() } }
-            ]
+    let notifications = [];
+    try {
+      notifications = await prisma.notification.findMany({
+        where: {
+          isActive: true,
+          AND: [
+            {
+              OR: [
+                { isGlobal: true },
+                { targetUserIds: { has: userId } }
+              ]
+            },
+            {
+              OR: [
+                { expiresAt: null },
+                { expiresAt: { gt: new Date() } }
+              ]
+            }
+          ]
+        },
+        include: {
+          type: true,
+          userReads: {
+            where: {
+              userId: userId
+            }
           }
-        ]
-      },
-      include: {
-        type: true,
-        userReads: {
-          where: {
-            userId: userId
-          }
-        }
-      },
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'desc' }
-      ],
-      take: limit,
-      skip: offset
-    });
+        },
+        orderBy: [
+          { priority: 'desc' },
+          { createdAt: 'desc' }
+        ],
+        take: limit,
+        skip: offset
+      });
+    } catch (dbError) {
+      console.warn('Database connection failed for notifications, returning empty list:', dbError);
+      // Return empty notifications when database is unavailable
+      return NextResponse.json({
+        notifications: [],
+        total: 0,
+        error: 'Database temporarily unavailable'
+      });
+    }
 
     // Transform the data to include read status
     const notificationsWithReadStatus = notifications.map((notification: any) => ({
@@ -124,15 +135,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has admin role
-    const userRoles = await prisma.userRole.findMany({
-      where: {
-        userId: userId,
-        isActive: true
-      },
-      include: {
-        role: true
-      }
-    });
+    let userRoles = [];
+    try {
+      userRoles = await prisma.userRole.findMany({
+        where: {
+          userId: userId,
+          isActive: true
+        },
+        include: {
+          role: true
+        }
+      });
+    } catch (dbError) {
+      console.warn('Database connection failed for user roles check:', dbError);
+      return NextResponse.json(
+        { error: 'Database temporarily unavailable' },
+        { status: 503 }
+      );
+    }
 
     const isAdmin = userRoles.some((userRole: any) => 
       userRole.role.name === 'admin' || userRole.role.name === 'super_admin'
@@ -163,9 +183,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify notification type exists
-    const notificationType = await prisma.notificationType.findUnique({
-      where: { id: typeId }
-    });
+    let notificationType;
+    try {
+      notificationType = await prisma.notificationType.findUnique({
+        where: { id: typeId }
+      });
+    } catch (dbError) {
+      console.warn('Database connection failed for notification type check:', dbError);
+      return NextResponse.json(
+        { error: 'Database temporarily unavailable' },
+        { status: 503 }
+      );
+    }
 
     if (!notificationType) {
       return NextResponse.json(
@@ -175,22 +204,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Create notification
-    const notification = await prisma.notification.create({
-      data: {
-        title,
-        body: notificationBody,
-        imageUrl,
-        typeId,
-        isGlobal,
-        targetUserIds: isGlobal ? [] : targetUserIds,
-        priority,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        createdBy: userId
-      },
-      include: {
-        type: true
-      }
-    });
+    let notification;
+    try {
+      notification = await prisma.notification.create({
+        data: {
+          title,
+          body: notificationBody,
+          imageUrl,
+          typeId,
+          isGlobal,
+          targetUserIds: isGlobal ? [] : targetUserIds,
+          priority,
+          expiresAt: expiresAt ? new Date(expiresAt) : null,
+          createdBy: userId
+        },
+        include: {
+          type: true
+        }
+      });
+    } catch (dbError) {
+      console.warn('Database connection failed for notification creation:', dbError);
+      return NextResponse.json(
+        { error: 'Database temporarily unavailable' },
+        { status: 503 }
+      );
+    }
 
     // Prepare notification data for WebSocket broadcast
     const notificationData = {

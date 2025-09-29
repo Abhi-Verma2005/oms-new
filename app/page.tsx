@@ -18,6 +18,7 @@ import { Spotlight } from "@/components/ui/spotlight"
 import BarChart01 from "@/components/charts/bar-chart-01"
 import LineChart01 from "@/components/charts/line-chart-01"
 import DoughnutChart from "@/components/charts/doughnut-chart"
+import LandingUserMenu from "@/components/landing-user-menu"
 
 const testimonials = [
   {
@@ -135,7 +136,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <NavbarButton variant="secondary" href="/signin">Login</NavbarButton>
+              <LandingUserMenu align="right" />
               <NavbarButton variant="secondary" href="/publishers">App</NavbarButton>
             </div>
           </NavBody>
@@ -174,13 +175,9 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="flex w-full flex-col gap-4">
-                <NavbarButton
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  variant="primary"
-                  className="w-full"
-                >
-                  Login
-                </NavbarButton>
+                <div className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                  <LandingUserMenu align="right" />
+                </div>
                 <NavbarButton
                   onClick={() => setIsMobileMenuOpen(false)}
                   variant="primary"

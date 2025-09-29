@@ -1,11 +1,13 @@
 'use client'
 
 import { useLayout } from '@/contexts/LayoutContext'
+import { useResizableLayout } from '@/components/resizable-layout'
 import { useSession } from 'next-auth/react'
 import { MessageCircle } from 'lucide-react'
 
 export function AIAssistantButton() {
-  const { toggleSidebar, isSidebarOpen } = useLayout()
+  const { isSidebarOpen } = useLayout()
+  const { toggleSidebar } = useResizableLayout()
   const { data: session, status } = useSession()
 
   // Don't render the button if user is not authenticated

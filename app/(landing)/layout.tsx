@@ -16,6 +16,7 @@ import {
 import NavbarDropdown, { NavbarDropdownItem, NavbarDropdownSection } from "@/components/navbar-dropdown"
 import { useAuthStore } from "@/stores/auth-store"
 import ThemeToggle from "@/components/theme-toggle"
+import LandingUserMenu from "@/components/landing-user-menu"
 
 export default function LandingLayout({
   children,
@@ -70,9 +71,7 @@ export default function LandingLayout({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {!isAuthenticated && (
-                <NavbarButton variant="secondary" href="/signin">Login</NavbarButton>
-              )}
+              <LandingUserMenu align="right" />
               <div className="relative">
                 <NavbarButton variant="primary" href="/publishers">App</NavbarButton>
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">NEW</span>
@@ -132,16 +131,9 @@ export default function LandingLayout({
                 <div className="flex items-center justify-center py-2">
                   <ThemeToggle />
                 </div>
-                {!isAuthenticated && (
-                  <NavbarButton
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    variant="secondary"
-                    className="w-full"
-                    href="/signin"
-                  >
-                    Login
-                  </NavbarButton>
-                )}
+                <div className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                  <LandingUserMenu align="right" />
+                </div>
                 <div className="relative">
                   <NavbarButton
                     onClick={() => setIsMobileMenuOpen(false)}

@@ -54,6 +54,14 @@ export const useCartStore = create<CartStore>()(
 
       // Actions
       addItem: (site: Site) => {
+        console.log('🛒 DEBUG: addItem called with site:', {
+          site: site,
+          siteId: site.id,
+          siteName: site.name,
+          currentItems: get().items,
+          currentItemsLength: get().items.length
+        })
+        
         set((state) => {
           // Check if site already exists
           const existingItem = state.items.find(
@@ -63,16 +71,32 @@ export const useCartStore = create<CartStore>()(
           if (existingItem) {
             // Update quantity if item exists
             existingItem.quantity += 1
+            console.log('🛒 DEBUG: Updated existing item quantity:', {
+              item: existingItem,
+              newQuantity: existingItem.quantity
+            })
           } else {
             // Add new item
-            state.items.push({
+            const newItem = {
               id: `${site.id}-${Date.now()}`,
-              kind: 'site',
+              kind: 'site' as const,
               site,
               quantity: 1,
               addedAt: new Date(),
+            }
+            state.items.push(newItem)
+            console.log('🛒 DEBUG: Added new item:', {
+              newItem: newItem,
+              totalItems: state.items.length
             })
           }
+        })
+        
+        console.log('🛒 DEBUG: After addItem, cart state:', {
+          items: get().items,
+          itemsLength: get().items.length,
+          totalItems: get().getTotalItems(),
+          totalPrice: get().getTotalPrice()
         })
       },
 
@@ -90,7 +114,7 @@ export const useCartStore = create<CartStore>()(
             // Add new item
             state.items.push({
               id: `${product.id}-${Date.now()}`,
-              kind: 'product',
+              kind: 'product' as const,
               product,
               quantity: 1,
               addedAt: new Date(),
@@ -160,11 +184,23 @@ export const useCartStore = create<CartStore>()(
       },
 
       getTotalItems: () => {
-        return get().items.reduce((acc, item) => acc + item.quantity, 0)
+        const total = get().items.reduce((acc, item) => acc + item.quantity, 0)
+        console.log('🛒 DEBUG: getTotalItems called:', {
+          items: get().items,
+          itemsLength: get().items.length,
+          total,
+          itemsDetails: get().items.map(item => ({
+            id: item.id,
+            kind: item.kind,
+            quantity: item.quantity,
+            name: item.kind === 'site' ? item.site?.name : item.product?.name
+          }))
+        })
+        return total
       },
 
       getTotalPrice: () => {
-        return get().items.reduce((acc, item) => {
+        const total = get().items.reduce((acc, item) => {
           if (item.kind === 'site' && item.site) {
             return acc + (item.site.publishing.price || 0) * item.quantity
           }
@@ -173,6 +209,19 @@ export const useCartStore = create<CartStore>()(
           }
           return acc
         }, 0)
+        console.log('🛒 DEBUG: getTotalPrice called:', {
+          items: get().items,
+          itemsLength: get().items.length,
+          total,
+          itemsDetails: get().items.map(item => ({
+            id: item.id,
+            kind: item.kind,
+            quantity: item.quantity,
+            price: item.kind === 'site' ? (item.site?.publishing?.price || 0) : (item.product?.priceDollars || 0),
+            total: item.kind === 'site' ? (item.site?.publishing?.price || 0) * item.quantity : (item.product?.priceDollars || 0) * item.quantity
+          }))
+        })
+        return total
       },
 
       isItemInCart: (siteId: string) => {
@@ -185,7 +234,22 @@ export const useCartStore = create<CartStore>()(
     })),
     {
       name: 'cart-storage',
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => {
+        console.log('🛒 DEBUG: Cart store partialize called:', {
+          items: state.items,
+          itemsLength: state.items.length,
+          itemsStringified: JSON.stringify(state.items, null, 2)
+        })
+        return { items: state.items }
+      },
+      onRehydrateStorage: () => (state) => {
+        console.log('🛒 DEBUG: Cart store rehydration completed:', {
+          state: state,
+          items: state?.items,
+          itemsLength: state?.items?.length,
+          itemsStringified: JSON.stringify(state?.items, null, 2)
+        })
+      }
     }
   )
 )

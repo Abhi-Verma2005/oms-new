@@ -43,6 +43,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     }
   }, [isOpen])
 
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
 
