@@ -69,3 +69,5 @@ echo "   - Keep your secrets secure and don't commit this file to git"
 echo ""
 echo "🔍 To check if the file was created:"
 echo "   ls -la .env.production"
+
+

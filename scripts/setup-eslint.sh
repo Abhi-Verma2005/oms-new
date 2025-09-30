@@ -26,3 +26,5 @@ npm run lint
 
 echo "✅ ESLint setup complete!"
 echo "📋 ESLint configuration created at .eslintrc.json"
+
+
