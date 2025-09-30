@@ -70,3 +70,4 @@ echo ""
 echo "🔍 To check if the file was created:"
 echo "   ls -la .env.production"
 
+

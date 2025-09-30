@@ -137,9 +137,30 @@ jobs:
           OPEN_AI_KEY=${{ secrets.OPEN_AI_KEY }}
           EOF
           
+          # Force stop any containers using port 3000
+          echo "🛑 Stopping any processes using port 3000..."
+          sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
+          
           # Stop existing containers gracefully
           echo "🛑 Stopping existing containers..."
           docker-compose down --timeout 30 || true
+          
+          # Force remove any remaining containers
+          echo "🧹 Force removing any remaining containers..."
+          docker-compose down --remove-orphans --volumes || true
+          
+          # Wait a moment for ports to be released
+          sleep 5
+          
+          # Verify port 3000 is free
+          echo "🔍 Checking if port 3000 is free..."
+          if lsof -i:3000 > /dev/null 2>&1; then
+            echo "❌ Port 3000 is still in use. Force killing processes..."
+            sudo lsof -ti:3000 | xargs -r sudo kill -9
+            sleep 3
+          else
+            echo "✅ Port 3000 is free"
+          fi
           
           # Build and start new containers
           echo "🔨 Building new containers..."
