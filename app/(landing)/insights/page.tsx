@@ -7,6 +7,7 @@ import BarChart01 from '@/components/charts/bar-chart-01'
 import DoughnutChart from '@/components/charts/doughnut-chart'
 import { chartAreaGradient } from '@/components/charts/chartjs-config'
 import { adjustColorOpacity, getCssVariable } from '@/components/utils/utils'
+import LandingFooter from '@/components/landing-footer'
 
 export default function InsightsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('6m')
@@ -596,32 +597,12 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* CTA Section */}
-            <div className="mt-16 text-center">
-              <div className="bg-gradient-to-r from-purple-600 to-violet-600 rounded-3xl p-8 text-white">
-                <h2 className="text-3xl font-bold mb-4">Ready to See These Results for Your Business?</h2>
-                <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
-                  Join 2,000+ companies already seeing real growth with our proven outreach strategies.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/publishers"
-                    className="inline-flex items-center justify-center px-8 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200"
-                  >
-                    Start Your Campaign
-                  </Link>
-                  <Link
-                    href="#contact"
-                    className="inline-flex items-center justify-center px-8 py-3 border border-white/30 text-white rounded-xl font-semibold hover:bg-white/10 transition-colors duration-200"
-                  >
-                    Book a Consultation
-                  </Link>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
       </div>
+
+      {/* Footer */}
+      <LandingFooter />
     </div>
   )
 }
