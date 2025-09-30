@@ -110,9 +110,9 @@ jobs:
           echo "📥 Pulling latest code..."
           git pull origin main
           
-          # Create environment file with secrets
-          echo "🔧 Setting up environment variables..."
-          cat > .env.production << EOF
+          # Create environment files with secrets (.env for compose)
+          echo "🔧 Setting up environment variables (.env + .env.production)..."
+          cat > .env << EOF
           NODE_ENV=production
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           AUTH_SECRET=${{ secrets.AUTH_SECRET }}
@@ -136,20 +136,32 @@ jobs:
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           OPEN_AI_KEY=${{ secrets.OPEN_AI_KEY }}
           EOF
+
+          # Also write .env.production for Next.js runtime if needed
+          cp .env .env.production
           
-          # Force stop any containers using port 3000
-          echo "🛑 Stopping any processes using port 3000..."
+          # Force stop any containers using port 3000 (network binding)
+          echo "🛑 Stopping any processes/containers using port 3000..."
           sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
+          docker ps --filter "publish=3000" -q | xargs -r docker stop || true
+          docker ps --filter "publish=3000" -q | xargs -r docker rm -f || true
           
-          # Stop existing containers gracefully (both unified and single-app)
+          # Stop existing containers gracefully (both unified and single-app, both locations)
           echo "🛑 Stopping existing containers..."
           docker-compose down --timeout 30 || true
           docker-compose -f docker-compose-unified.yml down --timeout 30 || true
+          # Also stop if unified stack lives one dir up (historical layout)
+          if [ -f "../docker-compose-unified.yml" ]; then
+            (cd .. && docker-compose -f docker-compose-unified.yml down --timeout 30) || true
+          fi
           
           # Force remove any remaining containers
           echo "🧹 Force removing any remaining containers..."
           docker-compose down --remove-orphans --volumes || true
           docker-compose -f docker-compose-unified.yml down --remove-orphans --volumes || true
+          if [ -f "../docker-compose-unified.yml" ]; then
+            (cd .. && docker-compose -f docker-compose-unified.yml down --remove-orphans --volumes) || true
+          fi
           
           # Wait a moment for ports to be released
           sleep 5
