@@ -29,7 +29,7 @@ export default function LandingLayout({
   const navItems = [
     { name: "About", link: "/about" },
     { name: "Pricing", link: "/pricing" },
-    { name: "Insights", link: "/insights" },
+    { name: "Case Studies", link: "/case-studies" },
   ];
 
   return (
@@ -72,9 +72,9 @@ export default function LandingLayout({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Show Insights shortcut on small screens */}
-              <Link href="/insights" className="lg:hidden text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md">
-                Insights
+              {/* Show Case Studies shortcut on small screens */}
+              <Link href="/case-studies" className="lg:hidden text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 px-3 py-2 rounded-md">
+                Case Studies
               </Link>
               <LandingUserMenu align="right" />
               <div className="relative">
@@ -116,8 +116,8 @@ export default function LandingLayout({
                   Pages
                 </div>
                 <div className="space-y-1">
-                  <a href="/insights" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
-                    Insights
+                  <a href="/case-studies" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+                    Case Studies
                   </a>
                   <a href="/integrations" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
                     Integrations
