@@ -4,12 +4,16 @@ import React from 'react'
 import { Elements, useElements, useStripe, PaymentElement } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { useCart } from '@/contexts/cart-context'
+import { useLayout } from '@/contexts/LayoutContext'
+import { useChat } from '@/contexts/chat-context'
 import CartItems from '../(default)/ecommerce/(cart)/cart-items'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string)
 
 export default function CheckoutClient() {
   const { state } = useCart()
+  const { openSidebar } = useLayout()
+  const { addMessage } = useChat()
   const url = typeof window !== 'undefined' ? new URL(window.location.href) : null
   const priceCentsParam = url ? Number(url.searchParams.get('priceCents') || '0') : 0
   const siteName = url ? url.searchParams.get('siteName') || '' : ''
@@ -42,6 +46,11 @@ export default function CheckoutClient() {
     observer.observe(root, { attributes: true, attributeFilter: ['class'] })
     return () => observer.disconnect()
   }, [])
+
+  // Open AI sidebar when checkout page loads
+  React.useEffect(() => {
+    openSidebar()
+  }, [openSidebar])
 
   React.useEffect(() => {
     let ignore = false
@@ -248,7 +257,60 @@ function PaymentForm() {
         console.log('Payment succeeded:', paymentIntent)
         clearCart()
         
-        // Optional: Wait a moment for webhook to process, then redirect
+        // Notify AI about payment success
+        try {
+          await fetch('/api/ai-notifications/payment-success', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: paymentIntent.id,
+              amount: paymentIntent.amount,
+              items: state.items.map(item => ({
+                id: item.kind === 'site' ? item.site?.id : item.product?.id,
+                name: item.kind === 'site' ? item.site?.name : item.product?.name,
+                quantity: item.quantity
+              }))
+            })
+          })
+        } catch (notificationError) {
+          console.warn('Failed to notify AI about payment success:', notificationError)
+        }
+
+        // Add user message to chat context immediately
+        addMessage({
+          content: "I have completed the payment successfully. Please show me my orders.",
+          role: 'user',
+          timestamp: new Date()
+        })
+
+        // Send automatic message to AI chat immediately
+        try {
+          await fetch('/api/ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: "I have completed the payment successfully. Please show me my orders.",
+              messages: [],
+              currentUrl: window.location.href,
+              autoMessage: true
+            })
+          })
+        } catch (aiError) {
+          console.warn('Failed to send automatic message to AI:', aiError)
+        }
+
+        // Store payment success in sessionStorage for orders page to detect
+        try {
+          sessionStorage.setItem('recentPaymentSuccess', JSON.stringify({
+            orderId: paymentIntent.id,
+            amount: paymentIntent.amount,
+            timestamp: Date.now()
+          }))
+        } catch (storageError) {
+          console.warn('Failed to store payment success in sessionStorage:', storageError)
+        }
+        
+        // Redirect to orders page after a short delay
         setTimeout(() => {
           window.location.href = '/orders'
         }, 2000)

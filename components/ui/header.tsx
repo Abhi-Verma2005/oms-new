@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useAppProvider } from '@/app/app-provider'
+import { useLayout } from '@/contexts/LayoutContext'
+import { useResizableLayout } from '@/components/resizable-layout'
 
 import SearchModal from '@/components/search-modal'
 import Notifications from '@/components/dropdown-notifications'
@@ -16,7 +18,7 @@ import CartModal from '@/components/cart-modal'
 import NavbarDropdown, { NavbarDropdownItem, NavbarDropdownSection } from '@/components/navbar-dropdown'
 import Logo from '@/components/ui/logo'
 import Link from 'next/link'
-import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench } from 'lucide-react'
+import { Search, ShoppingCart, LayoutDashboard, Users, ShoppingBag, Inbox, Calendar, Settings, Wrench, Coins, Phone, MessageCircle } from 'lucide-react'
 
 export default function Header({
   variant = 'default',
@@ -25,6 +27,8 @@ export default function Header({
 }) {
 
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
+  const { openSidebar } = useLayout()
+  const { toggleSidebar } = useResizableLayout()
   const { getTotalItems, toggleCart } = useCart()
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
@@ -61,18 +65,18 @@ export default function Header({
     return () => { active = false; clearInterval(id) }
   }, [])
 
-  // Keyboard shortcut for search (Cmd/Ctrl + K)
+  // Keyboard shortcut for AI sidebar (Cmd/Ctrl + K)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault()
-        setSearchModalOpen(true)
+        toggleSidebar()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [toggleSidebar])
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -92,7 +96,7 @@ export default function Header({
   }, [mobileMenuOpen, isClient])
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 before:absolute before:inset-0 before:backdrop-blur-md before:bg-white/95 dark:before:bg-gray-900/95 before:-z-10 ${variant === 'v2' || variant === 'v3' ? 'after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'shadow-sm border-b border-gray-200/50 dark:border-gray-700/50'} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 before:absolute before:inset-0 before:backdrop-blur-2xl before:backdrop-saturate-150 before:bg-white/40 dark:before:bg-gray-900/40 before:ring-1 before:ring-white/20 dark:before:ring-white/10 before:-z-10 ${variant === 'v2' || variant === 'v3' ? 'after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'shadow-sm border-b border-gray-200/50 dark:border-gray-700/50'} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className={`flex items-center justify-between h-16 ${variant === 'v2' || variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60'}`}>
 
@@ -115,10 +119,23 @@ export default function Header({
             )}
 
             {/* Logo */}
-            <Logo href='/dashboard'/>
+            <Logo href='/'/>
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
             <nav className="hidden lg:flex items-center space-x-1 ml-6 whitespace-nowrap">
+              {/* Pages dropdown (matches landing navbar style) */}
+              <div className="relative group mr-1">
+                <button className="relative px-3 py-2 text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 rounded-lg">
+                  <span className="relative z-20">Pages</span>
+                </button>
+                <div className="absolute left-0 top-full mt-2 hidden group-hover:block min-w-[220px] rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 shadow-lg shadow-purple-500/10 backdrop-blur-md p-2 z-50">
+                  <Link href="/about" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">About</Link>
+                  <Link href="/integrations" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Integrations</Link>
+                  <Link href="/pricing" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Pricing</Link>
+                  <Link href="/customers" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Customers</Link>
+                  <Link href="/changelog" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Changelog</Link>
+                </div>
+              </div>
               <NavbarDropdown
                 title="Dashboard"
                 icon={<LayoutDashboard className="w-4 h-4" />}
@@ -205,17 +222,18 @@ export default function Header({
           {/* Header: Right side */}
           <div className="flex items-center space-x-2 sm:space-x-3 relative z-30">
             {/* Credits Display */}
-            <div className="relative">
+            <div className="relative group">
               <button
                 onMouseEnter={() => setShowCreditHint(true)}
                 onMouseLeave={() => setShowCreditHint(false)}
-                className="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
                 title="Daily credits"
               >
-                Credits: {credits ?? '—'}
+                <Coins className="w-4 h-4" />
+                <span className="font-medium">{credits ?? '—'}</span>
               </button>
               {showCreditHint && (
-                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl">
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl z-50">
                   <div className="font-semibold mb-1">How credits work</div>
                   <ul className="list-disc pl-4 space-y-1">
                     <li>50 credits added daily.</li>
@@ -226,28 +244,51 @@ export default function Header({
               )}
             </div>
             {/* Book a call button (compact) */}
-            <a href="https://cal.com/emiactech/30min" target="_blank" rel="noopener noreferrer" className="hidden md:inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors" title="Book a call (coming soon)">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h4.09a1 1 0 0 1 1 .75l1 3a1 1 0 0 1-.27 1L9.91 9.09a16 16 0 0 0 5 5l1.34-1.91a1 1 0 0 1 1-.27l3 1a1 1 0 0 1 .75 1z"/>
-              </svg>
-              Book a call
-            </a>
+            <div className="relative group">
+              <a 
+                href="https://cal.com/emiactech/30min" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors"
+                title="Book a call"
+              >
+                <Phone className="w-4 h-4" />
+                <span className="font-medium">Call</span>
+              </a>
+              {/* Hover tooltip */}
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                <div className="font-semibold mb-1">Book a call</div>
+                <p>Schedule a 30-minute consultation to discuss your needs and get personalized recommendations.</p>
+              </div>
+            </div>
             <div className="relative group">
               <button
                 className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
                 onClick={() => { setSearchModalOpen(true) }}
-                title="Search (⌘K)"
+                title="Search"
               >
                 <span className="sr-only">Search</span>
                 <Search className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
+              </button>
+              
+              <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
+            </div>
+            
+            {/* AI Sidebar Button */}
+            <div className="relative group">
+              <button
+                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full"
+                onClick={toggleSidebar}
+                title="AI Assistant (⌘K)"
+              >
+                <span className="sr-only">AI Assistant</span>
+                <MessageCircle className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
               
               {/* Keyboard shortcut hint (positioned below to avoid browser chrome clipping) */}
               <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-gray-700/95 text-white dark:text-gray-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md z-40">
                 ⌘K
               </div>
-              
-              <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
             </div>
             
             {/* Cart Button */}
@@ -259,11 +300,6 @@ export default function Header({
               >
                 <span className="sr-only">Shopping Cart</span>
                 <ShoppingCart className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
-                {getTotalItems() > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-violet-600 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                    {getTotalItems()}
-                  </span>
-                )}
               </button>
               {/* Cart Modal positioned relative to this button */}
               <CartModal />

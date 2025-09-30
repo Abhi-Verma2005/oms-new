@@ -43,6 +43,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     }
   }, [isOpen])
 
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
 
@@ -67,7 +68,9 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
           message: userMessage.content,
           messages: messages,
           // Include preloaded config so the API doesn't need to fetch again
-          config: config ?? undefined
+          config: config ?? undefined,
+          // Include current URL for context-aware filtering
+          currentUrl: window.location.href
         })
       })
 
@@ -100,14 +103,37 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
           onToggle() // Close the chat modal
         }, 1000)
       } else {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.response,
-          role: 'assistant',
-          timestamp: new Date()
-        }
+        // Check if the response contains filter instruction
+        const filterMatch = data.response.match(/\[FILTER:([^\]]+)\]/)
+        if (filterMatch) {
+          const filterCommand = filterMatch[1]
+          // Remove the filter instruction from the message
+          const cleanResponse = data.response.replace(/\[FILTER:[^\]]+\]/, '').trim()
+          
+          const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            content: cleanResponse || 'Applying filters...',
+            role: 'assistant',
+            timestamp: new Date()
+          }
 
-        setMessages(prev => [...prev, assistantMessage])
+          setMessages(prev => [...prev, assistantMessage])
+          
+          // Apply filters by updating URL parameters
+          setTimeout(() => {
+            applyFilters(filterCommand)
+            onToggle() // Close the chat modal
+          }, 500)
+        } else {
+          const assistantMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            content: data.response,
+            role: 'assistant',
+            timestamp: new Date()
+          }
+
+          setMessages(prev => [...prev, assistantMessage])
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error)
@@ -132,6 +158,41 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
 
   const clearChat = () => {
     setMessages([])
+  }
+
+  const applyFilters = (filterCommand: string) => {
+    try {
+      const currentUrl = new URL(window.location.href)
+      
+      if (filterCommand === 'RESET') {
+        // Reset all filters - navigate to publishers page without any parameters
+        router.replace('/publishers')
+        return
+      }
+      
+      // Parse filter parameters
+      const filterParams = new URLSearchParams(filterCommand)
+      const newParams = new URLSearchParams(currentUrl.search)
+      
+      // Apply each filter parameter
+      for (const [key, value] of filterParams.entries()) {
+        if (value === '' || value === null || value === undefined) {
+          // Remove the parameter if value is empty
+          newParams.delete(key)
+        } else {
+          // Set the parameter
+          newParams.set(key, value)
+        }
+      }
+      
+      // Build new URL
+      const newUrl = `/publishers${newParams.toString() ? `?${newParams.toString()}` : ''}`
+      
+      // Navigate to the new URL using replace to ensure proper detection
+      router.replace(newUrl)
+    } catch (error) {
+      console.error('Error applying filters:', error)
+    }
   }
 
   return (

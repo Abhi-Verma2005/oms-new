@@ -1,7 +1,6 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { AIChatbot } from './ai-chatbot'
 
 interface NavigationItem {
   id: string
@@ -79,7 +78,6 @@ export function AIChatbotProvider({ children }: AIChatbotProviderProps) {
       configLoading
     }}>
       {children}
-      <AIChatbot isOpen={isOpen} onToggle={toggleChatbot} />
     </AIChatbotContext.Provider>
   )
 }
