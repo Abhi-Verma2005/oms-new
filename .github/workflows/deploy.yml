@@ -179,13 +179,13 @@ jobs:
           # Check if we have the unified setup or need to use single-app
           if [ -f "docker-compose-unified.yml" ] && [ -d "oms-landing" ]; then
             echo "🔨 Building unified containers (WordPress + OMS)..."
-            docker-compose -f docker-compose-unified.yml build --no-cache
+            docker-compose -f docker-compose-unified.yml build
             
             echo "🚀 Starting unified containers..."
             docker-compose -f docker-compose-unified.yml up -d
           else
             echo "🔨 Building single-app containers (OMS only)..."
-            docker-compose build --no-cache
+            docker-compose build
             
             echo "🚀 Starting single-app containers..."
             docker-compose up -d

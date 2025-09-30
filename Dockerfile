@@ -51,6 +51,9 @@ COPY package.json ./
 # Set build-time environment variables (dummy values for build)
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Reduce memory pressure during Next.js build
+ENV NODE_OPTIONS=--max-old-space-size=2048
+ENV NEXT_DISABLE_SOURCEMAPS=1
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 ENV AUTH_SECRET="dummy-secret-for-build"
 ENV AUTH_URL="http://localhost:3000"
