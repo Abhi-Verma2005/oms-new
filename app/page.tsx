@@ -20,6 +20,7 @@ import LineChart01 from "@/components/charts/line-chart-01"
 import DoughnutChart from "@/components/charts/doughnut-chart"
 import LandingUserMenu from "@/components/landing-user-menu"
 import InsightsSection from "@/components/insights-section"
+import { TestimonialCard } from "@/components/ui/testimonial-card"
 
 const testimonials = [
   {
@@ -53,6 +54,64 @@ const testimonials = [
     title: "Growth Marketing Co."
   }
 ];
+
+const clientTestimonials = [
+  {
+    id: 1,
+    name: "Nitesh",
+    role: "Sr. Marketing Manager",
+    quote:
+      "EMIAC did an amazing job creating and publishing our Wikipedia page. The research was thorough, and the process was super smooth. Felt like they really understood our brand story. Highly recommend!",
+    achievement: "Wikipedia Writing & Publishing",
+    logoSrc:
+      "https://emiactech.com/wp-content/uploads/2025/09/ACKO-DRIVE-BLACK-LOGO-1.png",
+  },
+  {
+    id: 2,
+    name: "Shailesh",
+    role: "SEO Manager",
+    quote:
+      "EMIAC’s SEO blog writing boosted our organic traffic by 35%! They really know how to craft content that connects. Our website is now performing way better, and we’ve seen tangible results.",
+    achievement: "Web Pages & SEO Blogs Writing",
+    logoSrc: "https://emiactech.com/wp-content/uploads/2025/09/17-1-1.png",
+  },
+  {
+    id: 3,
+    name: "Srashti",
+    role: "SEO Head",
+    quote:
+      "Thanks to EMIAC, our brand got massive exposure on top beauty domains! Our visibility shot up, and they kept us in the loop throughout the process. They really know how to leverage the right platforms for maximum impact. ♥",
+    achievement: "Publishing on Top Beauty Domains",
+    logoSrc: "https://emiactech.com/wp-content/uploads/2025/09/19-3-1.png",
+  },
+  {
+    id: 4,
+    name: "Nousheer",
+    role: "Sr. Director SEO",
+    quote:
+      "I was blown away by the results! Our traffic increased by 209% in just 3 months thanks to EMIAC’s SEO strategy. They really know their stuff, and they delivered exactly what they promised. Definitely worth the investment!",
+    achievement: "Off Page SEO Strategising",
+    logoSrc: "https://emiactech.com/wp-content/uploads/2025/09/7-1-1.png",
+  },
+  {
+    id: 5,
+    name: "Deepak",
+    role: "Content Head",
+    quote:
+      "I was blown away by the results! Our traffic increased by 209% in just 3 months thanks to EMIAC’s SEO strategy. They really know their stuff, and they delivered exactly what they promised. Definitely worth the investment!",
+    achievement: "Top Rankings in Google SERPs",
+    logoSrc: "https://emiactech.com/wp-content/uploads/2025/09/5-2.png",
+  },
+  {
+    id: 6,
+    name: "Sainath",
+    role: "Content Manager",
+    quote:
+      "EMIAC’s SEO blogs have been a game-changer for us. The content is spot-on and drives results. They’re thorough, creative, and really helped boost our rankings. Couldn’t be happier with the quality!",
+    achievement: "High-Quality SEO Blogs",
+    logoSrc: "https://emiactech.com/wp-content/uploads/2025/09/24.png",
+  },
+]
 
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -133,10 +192,10 @@ export default function LandingPage() {
                       Changelog
                     </Link>
                     <Link 
-                      href="/insights" 
+                      href="/case-studies" 
                       className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors duration-150"
                     >
-                      Insights
+                      Case Studies
                     </Link>
                   </div>
                 </div>
@@ -814,15 +873,19 @@ export default function LandingPage() {
           </p>
           
           <div className="h-[40rem] rounded-md flex flex-col antialiased bg-gradient-to-br from-gray-100/50 to-gray-200/50 dark:from-gray-900/50 dark:to-gray-800/50 items-center justify-center relative overflow-hidden">
-            <InfiniteMovingCards
-              items={testimonials}
+          <InfiniteMovingCards
+              items={clientTestimonials.map((t) => ({
+                quote: t.quote,
+                name: t.name,
+                title: `${t.role} • ${t.achievement}`,
+                avatarUrl: t.logoSrc,
+              }))}
               direction="right"
               speed="slow"
             />
           </div>
         </div>
       </section>
-
       {/* FAQ Section */}
       <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
