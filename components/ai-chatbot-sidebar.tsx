@@ -404,6 +404,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       const data = await response.json()
       
       // Debug AI response and cart state
+      
       console.log('🛒 DEBUG: Received AI response:', {
         response: data.response,
         cartState: data.cartState,
