@@ -1,8 +1,70 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=fallback');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css');
 
 @import 'tailwindcss';
 @import './additional-styles/utility-patterns.css' layer(components);
 @import "tw-animate-css";
+
+/* Custom syntax highlighting overrides */
+.hljs {
+  background: #0d1117 !important;
+  color: #e6edf3 !important;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #7d8590 !important;
+}
+
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attribute,
+.hljs-tag,
+.hljs-name,
+.hljs-regexp,
+.hljs-link,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: #ff7b72 !important;
+}
+
+.hljs-number,
+.hljs-meta,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params {
+  color: #79c0ff !important;
+}
+
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet {
+  color: #a5d6ff !important;
+}
+
+.hljs-title,
+.hljs-section {
+  color: #d2a8ff !important;
+}
+
+.hljs-keyword,
+.hljs-selector-tag {
+  color: #ff7b72 !important;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
 
 @keyframes scroll {
   to {

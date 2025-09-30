@@ -906,29 +906,29 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
   // Consistent width per column to align headers and data
   const columnWidthClasses: Record<ColumnKey, string> = useMemo(() => ({
-    name: 'min-w-[9rem] w-[10rem] max-w-[11rem]',
-    niche: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
-    countryLang: 'min-w-[9rem] w-[10rem] max-w-[11rem]',
-    authority: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
-    spam: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    price: 'min-w-[6rem] w-[7rem] max-w-[8rem]',
-    trend: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    cart: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
-    website: 'min-w-[8rem] w-[9rem] max-w-[10rem]',
-    traffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    organicTraffic: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    authorityScore: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    availability: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    sampleUrl: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    lastPublished: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    outboundLimit: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    backlinkNature: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    backlinksAllowed: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    wordLimit: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    tatDays: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    linkPlacement: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    permanence: 'min-w-[7rem] w-[8rem] max-w-[9rem]',
-    order: 'min-w-[5rem] w-[6rem] max-w-[7rem]'
+    name: 'min-w-[7rem] w-[8rem] sm:w-[10rem] max-w-[11rem]',
+    niche: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    countryLang: 'min-w-[7rem] w-[8rem] sm:w-[10rem] max-w-[11rem]',
+    authority: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    spam: 'min-w-[4rem] w-[5rem] sm:w-[7rem] max-w-[8rem]',
+    price: 'min-w-[4rem] w-[5rem] sm:w-[7rem] max-w-[8rem]',
+    trend: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    cart: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    website: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    traffic: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    organicTraffic: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    authorityScore: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    availability: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    sampleUrl: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    lastPublished: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    outboundLimit: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    backlinkNature: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    backlinksAllowed: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    wordLimit: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    tatDays: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    linkPlacement: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
+    permanence: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
+    order: 'min-w-[4rem] w-[5rem] sm:w-[6rem] max-w-[7rem]'
   }), [])
 
   const renderCell = (key: ColumnKey, s: Site) => {
@@ -936,7 +936,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'name':
         return (
           <div className="font-medium">
-            <div className="overflow-hidden text-ellipsis whitespace-nowrap leading-tight" title={s.name}>
+            <div className="overflow-hidden text-ellipsis whitespace-nowrap leading-tight text-sm sm:text-base" title={s.name}>
               {/* Mask the domain with stars; reveal on hover click */}
               <MaskedWebsite site={s} maxStars={rowLevel === 4 ? 18 : 14} />
             </div>
@@ -1122,7 +1122,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'price':
         return (
           <>
-            <span className="font-medium tabular-nums">{"$"}{s.publishing.price.toLocaleString()}</span>
+            <span className="font-medium tabular-nums text-sm sm:text-base">{"$"}{s.publishing.price.toLocaleString()}</span>
             {rowLevel >= 3 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">Base:</span> ${s.publishing.price}</div>)}
             {rowLevel >= 4 && (<div className="text-xs text-gray-500 mt-1"><span className="text-gray-400">With Content:</span> ${s.publishing.priceWithContent}</div>)}
           </>
@@ -1153,16 +1153,16 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           <>
             <div className="flex flex-col items-center gap-1">
               {isItemInCart(s.id) ? (
-                <div className="flex items-center gap-2">
-                  <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
+                <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 w-full">
+                  <Button size="sm" className="bg-violet-600 text-white hover:bg-violet-500 text-xs px-2 py-1 h-7 w-full sm:w-auto" onClick={(e) => { e.stopPropagation() }}>In Cart</Button>
                   {rowLevel >= 2 && (
-                    <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
+                    <Button size="sm" variant="outline" className="text-xs px-2 py-1 h-7 w-full sm:w-auto" onClick={(e) => { e.stopPropagation(); removeItem(s.id) }}>Remove</Button>
                   )}
                 </div>
               ) : (
                 <Button
                   size="sm"
-                  className="bg-emerald-600 text-white shadow-sm hover:bg-emerald-500 focus-visible:ring-4 focus-visible:ring-emerald-400/40 active:scale-[0.98] transition-all duration-150"
+                  className="bg-emerald-600 text-white shadow-sm hover:bg-emerald-500 focus-visible:ring-4 focus-visible:ring-emerald-400/40 active:scale-[0.98] transition-all duration-150 text-xs px-2 py-1 h-7 w-full sm:w-auto"
                   onClick={(e) => { e.stopPropagation(); addItem(s) }}
                 >
                   Add to Cart
@@ -1532,13 +1532,13 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       )}
       
       {/* Unified scroll container for header + body to keep horizontal sync */}
-      <div className="overflow-x-auto">
-        <Table className="dark:text-gray-300 table-fixed w-full min-w-[800px]">
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <Table className="dark:text-gray-300 w-full min-w-[600px] sm:min-w-[800px]">
           <UITableHeader>
-            <TableRow className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+            <TableRow className="text-xs sm:text-sm font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
               {columnDefs.map(col => (
                 visibleColumns.includes(col.key) ? (
-                  <TableHead key={col.key} className={`px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
+                  <TableHead key={col.key} className={`px-2 sm:px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
                     <div className="inline-flex items-center gap-2">
                       <span>{col.label}</span>
                       {col.key === 'trend' && (
@@ -1549,29 +1549,29 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 ) : null
               ))}
               {/* Cart column always visible */}
-              <TableHead className="px-5 py-3 whitespace-nowrap text-center min-w-[8rem] w-[9rem] max-w-[10rem] sticky right-0 z-20 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.06)]">
+              <TableHead className="px-2 sm:px-5 py-3 whitespace-nowrap text-center min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem] sticky right-0 z-20 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.06)]">
                 <div className="inline-flex items-center gap-2">
-                  <span>Cart</span>
+                  <span className="text-xs sm:text-sm">Cart</span>
                 </div>
               </TableHead>
             </TableRow>
           </UITableHeader>
           <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
-              <TableRow><TableCell className="px-5 py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
+              <TableRow><TableCell className="px-2 sm:px-5 py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
               <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
                   visibleColumns.includes(col.key) ? (
                     <TableCell key={col.key}
-                      className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}
+                      className={`px-2 sm:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}
                     >
                       {renderCell(col.key, s)}
                 </TableCell>
                   ) : null
                 ))}
                 {/* Cart column always visible */}
-                <TableCell className={`px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[8rem] w-[9rem] max-w-[10rem] sticky right-0 z-10 bg-gray-50 dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.04)]`}>
+                <TableCell className={`px-2 sm:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem] sticky right-0 z-10 bg-gray-50 dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.04)]`}>
                   {renderCell('cart', s)}
                 </TableCell>
                     </TableRow>
@@ -1906,6 +1906,24 @@ export default function PublishersClient() {
   }, [])
 
   useEffect(() => { fetchData() }, [])
+
+  // Monitor URL parameter changes and update filters accordingly
+  useEffect(() => {
+    const newFilters = parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || ""))
+    const newSearchQuery = searchParams?.get('q') || ""
+    
+    // Update filters if they've changed
+    setFilters(prevFilters => {
+      const hasChanged = JSON.stringify(prevFilters) !== JSON.stringify(newFilters)
+      return hasChanged ? newFilters : prevFilters
+    })
+    
+    // Update search query if it's changed
+    setSearchQuery(prevQuery => {
+      return prevQuery !== newSearchQuery ? newSearchQuery : prevQuery
+    })
+  }, [searchParams, parseFiltersFromParams])
+
   async function revealWebsite(id: string) {
     try {
       const res = await fetch('/api/publishers/reveal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })

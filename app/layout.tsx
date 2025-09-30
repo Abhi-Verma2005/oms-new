@@ -9,7 +9,9 @@ import { WishlistProvider } from '@/contexts/wishlist-context'
 import { NotificationProvider } from '@/contexts/notification-context'
 import { NotificationToastContainer } from '@/components/notification-toast'
 import { AIChatbotProvider } from '@/components/ai-chatbot-provider'
-import { AIAssistantButton } from '@/components/ai-assistant-button'
+import { LayoutProvider } from '@/contexts/LayoutContext'
+import { ChatProvider } from '@/contexts/chat-context'
+import { ResizableLayout } from '@/components/resizable-layout'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -29,7 +31,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>{/* suppressHydrationWarning: https://github.com/vercel/next.js/issues/44343 */}
-      <body className="font-inter antialiased bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
+      <body className="font-inter antialiased bg-[#1f2230] text-gray-300">
         <Theme>
           <AuthProvider>
             <AppProvider>
@@ -37,9 +39,14 @@ export default function RootLayout({
                 <WishlistProvider>
                   <NotificationProvider>
                     <AIChatbotProvider>
-                      {children}
-                      <NotificationToastContainer />
-                      <AIAssistantButton />
+                      <ChatProvider>
+                        <LayoutProvider>
+                          <ResizableLayout>
+                            {children}
+                          </ResizableLayout>
+                          <NotificationToastContainer />
+                        </LayoutProvider>
+                      </ChatProvider>
                     </AIChatbotProvider>
                   </NotificationProvider>
                 </WishlistProvider>
