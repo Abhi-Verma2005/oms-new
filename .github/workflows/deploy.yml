@@ -141,13 +141,15 @@ jobs:
           echo "🛑 Stopping any processes using port 3000..."
           sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
           
-          # Stop existing containers gracefully
+          # Stop existing containers gracefully (both unified and single-app)
           echo "🛑 Stopping existing containers..."
           docker-compose down --timeout 30 || true
+          docker-compose -f docker-compose-unified.yml down --timeout 30 || true
           
           # Force remove any remaining containers
           echo "🧹 Force removing any remaining containers..."
           docker-compose down --remove-orphans --volumes || true
+          docker-compose -f docker-compose-unified.yml down --remove-orphans --volumes || true
           
           # Wait a moment for ports to be released
           sleep 5
@@ -162,12 +164,12 @@ jobs:
             echo "✅ Port 3000 is free"
           fi
           
-          # Build and start new containers
+          # Build and start new containers (use unified setup)
           echo "🔨 Building new containers..."
-          docker-compose build --no-cache
+          docker-compose -f docker-compose-unified.yml build --no-cache
           
           echo "🚀 Starting containers..."
-          docker-compose up -d
+          docker-compose -f docker-compose-unified.yml up -d
           
           # Wait for application to be ready
           echo "⏳ Waiting for application to start..."
@@ -189,9 +191,9 @@ jobs:
           if ! curl -f http://localhost:3000/api/hello > /dev/null 2>&1; then
             echo "❌ Health check failed after 10 attempts"
             echo "📋 Container status:"
-            docker-compose ps
+            docker-compose -f docker-compose-unified.yml ps
             echo "📋 Application logs:"
-            docker-compose logs nextjs-app --tail=50
+            docker-compose -f docker-compose-unified.yml logs nextjs-app --tail=50
             exit 1
           fi
           
@@ -201,7 +203,7 @@ jobs:
           
           # Show deployment status
           echo "📊 Deployment Status:"
-          docker-compose ps
+          docker-compose -f docker-compose-unified.yml ps
           
           echo "✅ Deployment successful!"
           echo "📋 Repository: $(git config --get remote.origin.url)"
@@ -230,8 +232,8 @@ jobs:
           git reset --hard $PREVIOUS_COMMIT
           
           # Rebuild and restart
-          docker-compose build --no-cache
-          docker-compose up -d
+          docker-compose -f docker-compose-unified.yml build --no-cache
+          docker-compose -f docker-compose-unified.yml up -d
           
           # Wait and check health
           sleep 30
