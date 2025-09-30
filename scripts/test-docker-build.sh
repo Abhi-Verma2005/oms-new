@@ -49,3 +49,5 @@ echo "📋 Next steps:"
 echo "   1. Commit and push your changes: git add . && git commit -m 'Fix Docker build' && git push"
 echo "   2. Pull on your VM: git pull origin main"
 echo "   3. Run on VM: docker-compose up -d"
+
+
