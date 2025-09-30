@@ -164,12 +164,20 @@ jobs:
             echo "✅ Port 3000 is free"
           fi
           
-          # Build and start new containers (use unified setup)
-          echo "🔨 Building new containers..."
-          docker-compose -f docker-compose-unified.yml build --no-cache
-          
-          echo "🚀 Starting containers..."
-          docker-compose -f docker-compose-unified.yml up -d
+          # Check if we have the unified setup or need to use single-app
+          if [ -f "docker-compose-unified.yml" ] && [ -d "oms-landing" ]; then
+            echo "🔨 Building unified containers (WordPress + OMS)..."
+            docker-compose -f docker-compose-unified.yml build --no-cache
+            
+            echo "🚀 Starting unified containers..."
+            docker-compose -f docker-compose-unified.yml up -d
+          else
+            echo "🔨 Building single-app containers (OMS only)..."
+            docker-compose build --no-cache
+            
+            echo "🚀 Starting single-app containers..."
+            docker-compose up -d
+          fi
           
           # Wait for application to be ready
           echo "⏳ Waiting for application to start..."
@@ -191,9 +199,15 @@ jobs:
           if ! curl -f http://localhost:3000/api/hello > /dev/null 2>&1; then
             echo "❌ Health check failed after 10 attempts"
             echo "📋 Container status:"
-            docker-compose -f docker-compose-unified.yml ps
-            echo "📋 Application logs:"
-            docker-compose -f docker-compose-unified.yml logs nextjs-app --tail=50
+            if [ -f "docker-compose-unified.yml" ] && [ -d "oms-landing" ]; then
+              docker-compose -f docker-compose-unified.yml ps
+              echo "📋 Application logs:"
+              docker-compose -f docker-compose-unified.yml logs nextjs-app --tail=50
+            else
+              docker-compose ps
+              echo "📋 Application logs:"
+              docker-compose logs nextjs-app --tail=50
+            fi
             exit 1
           fi
           
@@ -203,7 +217,11 @@ jobs:
           
           # Show deployment status
           echo "📊 Deployment Status:"
-          docker-compose -f docker-compose-unified.yml ps
+          if [ -f "docker-compose-unified.yml" ] && [ -d "oms-landing" ]; then
+            docker-compose -f docker-compose-unified.yml ps
+          else
+            docker-compose ps
+          fi
           
           echo "✅ Deployment successful!"
           echo "📋 Repository: $(git config --get remote.origin.url)"
@@ -232,8 +250,13 @@ jobs:
           git reset --hard $PREVIOUS_COMMIT
           
           # Rebuild and restart
-          docker-compose -f docker-compose-unified.yml build --no-cache
-          docker-compose -f docker-compose-unified.yml up -d
+          if [ -f "docker-compose-unified.yml" ] && [ -d "oms-landing" ]; then
+            docker-compose -f docker-compose-unified.yml build --no-cache
+            docker-compose -f docker-compose-unified.yml up -d
+          else
+            docker-compose build --no-cache
+            docker-compose up -d
+          fi
           
           # Wait and check health
           sleep 30
