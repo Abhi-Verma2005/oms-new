@@ -6,12 +6,14 @@ import LineChart01 from '@/components/charts/line-chart-01'
 import BarChart01 from '@/components/charts/bar-chart-01'
 import DoughnutChart from '@/components/charts/doughnut-chart'
 import { chartAreaGradient } from '@/components/charts/chartjs-config'
+import { CaseStudiesGrid } from '@/components/insights-section'
 import { adjustColorOpacity, getCssVariable } from '@/components/utils/utils'
 import LandingFooter from '@/components/landing-footer'
 
 export default function InsightsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('6m')
   const [selectedMetric, setSelectedMetric] = useState('traffic')
+  const [activeCategory, setActiveCategory] = useState<string>('finance-case')
   const [analytics, setAnalytics] = useState<any | null>(null)
   const [analyticsError, setAnalyticsError] = useState<string | null>(null)
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
@@ -227,32 +229,40 @@ export default function InsightsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 text-gray-900 dark:text-white">
       {/* Main content with top padding to account for fixed navbar */}
+      <div
+              className="absolute inset-0 z-0"
+              style={{
+                background: "radial-gradient(125% 125% at 50% 90%, transparent 50%, #6366f1 100%)",
+              }}
+            />
       <div className="pt-20">
         {/* Hero Section */}
-        <section className="relative py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-6">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Performance Analytics
+        <section className="relative py-0">
+          <div className=" w-full relative">
+            {/* Content */}
+            <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8 pt-20 pb-20">
+              <div className="text-center mb-16">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-6">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Case Studies
+                </div>
+                <h1 className="text-5xl md:text-6xl font-bold mb-6">
+                  <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                    Case Studies
+                  </span>
+                </h1>
+                <p className="text-xl text-gray-700 dark:text-gray-200 max-w-3xl mx-auto mb-8">
+                  Explore deep-dive case studies showcasing outcomes across Finance, Insurance, Automobile, and Healthcare.
+                </p>
               </div>
-              <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                  Detailed Insights
-                </span>
-              </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
-                Comprehensive analytics and performance metrics from our outreach campaigns. 
-                Real data, real results, real impact.
-              </p>
             </div>
           </div>
         </section>
 
         {/* Analytics Dashboard */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <section className="pb-20 pt-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             {/* Controls */}
             <div className="flex flex-wrap items-center justify-between mb-12">
@@ -503,98 +513,39 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* Case Studies Section */}
+            {/* Case Studies - Tabbed */}
             <div className="mt-16">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Case Study Results</h2>
-                <p className="text-gray-600 dark:text-gray-300">Real results from our client campaigns</p>
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Explore by Industry</h2>
+                <p className="text-gray-600 dark:text-gray-300">Filter case studies by category</p>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mahindra Auto</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Automotive Industry</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Traffic Growth</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">+78%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Keywords Ranking</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">1,247</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Backlinks Acquired</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">342</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Protean eGov</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Government Services</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Traffic Growth</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">+142%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Keywords Ranking</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">892</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Backlinks Acquired</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">567</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-sky-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">UpGrad Courses</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Education Technology</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Traffic Growth</span>
-                      <span className="font-semibold text-green-600 dark:text-green-400">+95%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Keywords Ranking</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">1,156</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Backlinks Acquired</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">423</span>
-                    </div>
-                  </div>
+              <div className="mb-8 flex w-full items-center justify-center">
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200/60 bg-white/70 p-1 shadow-sm dark:border-gray-700/60 dark:bg-gray-900/40">
+                  {[
+                    { id: 'finance-case', label: 'Banking & Finance' },
+                    { id: 'insurance-case', label: 'Insurance' },
+                    { id: 'automobile-case', label: 'Automobile' },
+                    { id: 'healthcare-case', label: 'Healthcare' },
+                  ].map((t) => {
+                    const isActive = activeCategory === t.id
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setActiveCategory(t.id)}
+                        className={
+                          `px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-colors ` +
+                          (isActive
+                            ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow'
+                            : 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white')
+                        }
+                      >
+                        {t.label}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
+              <CaseStudiesGrid selectedCategoryId={activeCategory} />
             </div>
 
           </div>
