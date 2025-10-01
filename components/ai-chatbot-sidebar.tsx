@@ -62,7 +62,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     openCart,
     isItemInCart 
   } = useCart()
-  const { messages, addMessage, clearMessages, isLoading, setIsLoading } = useChat()
+  const { messages, addMessage, updateMessage, clearMessages, isLoading, setIsLoading } = useChat()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -82,51 +82,99 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   }, [])
 
   // Process AI response and handle all possible actions
-  const processAIResponse = async (response: string, apiCartState?: any) => {
+  const processAIResponse = async (
+    response: string,
+    apiCartState?: any,
+    options?: { targetMessageId?: string; userText?: string }
+  ) => {
     let cleanResponse = response
     let actions: Array<{ type: string; data: any }> = []
 
     // Extract all action commands from the response
     const actionPatterns = [
-      { pattern: /\[NAVIGATE:([^\]]+)\]/g, type: 'navigate' },
-      { pattern: /\[FILTER:([^\]]+)\]/g, type: 'filter' },
-      { pattern: /\[ADD_TO_CART:([^\]]+)\]/g, type: 'addToCart' },
-      { pattern: /\[REMOVE_FROM_CART:([^\]]+)\]/g, type: 'removeFromCart' },
-      { pattern: /\[VIEW_CART\]/g, type: 'viewCart' },
-      { pattern: /\[CLEAR_CART\]/g, type: 'clearCart' },
-      { pattern: /\[CART_SUMMARY\]/g, type: 'cartSummary' },
-      { pattern: /\[PROCEED_TO_CHECKOUT\]/g, type: 'proceedToCheckout' },
-      { pattern: /\[VIEW_ORDERS\]/g, type: 'viewOrders' },
-      { pattern: /\[PAYMENT_SUCCESS:([^\]]+)\]/g, type: 'paymentSuccess' },
-      { pattern: /\[PAYMENT_FAILED:([^\]]+)\]/g, type: 'paymentFailed' },
-      { pattern: /\[ORDER_DETAILS:([^\]]+)\]/g, type: 'orderDetails' },
-      { pattern: /\[RECOMMEND:([^\]]+)\]/g, type: 'recommend' },
-      { pattern: /\[SIMILAR_ITEMS:([^\]]+)\]/g, type: 'similarItems' },
-      { pattern: /\[BEST_DEALS\]/g, type: 'bestDeals' }
+      { pattern: /\[\s*NAVIGATE\s*:\s*([\s\S]*?)\s*\]/g, type: 'navigate' },
+      { pattern: /\[\s*FILTER\s*:\s*([\s\S]*?)\s*\]/g, type: 'filter' },
+      { pattern: /\[\s*ADD_TO_CART\s*:\s*([\s\S]*?)\s*\]/g, type: 'addToCart' },
+      { pattern: /\[\s*REMOVE_FROM_CART\s*:\s*([\s\S]*?)\s*\]/g, type: 'removeFromCart' },
+      { pattern: /\[\s*VIEW_CART\s*\]/g, type: 'viewCart' },
+      { pattern: /\[\s*CLEAR_CART\s*\]/g, type: 'clearCart' },
+      { pattern: /\[\s*CART_SUMMARY\s*\]/g, type: 'cartSummary' },
+      { pattern: /\[\s*PROCEED_TO_CHECKOUT\s*\]/g, type: 'proceedToCheckout' },
+      { pattern: /\[\s*VIEW_ORDERS\s*\]/g, type: 'viewOrders' },
+      { pattern: /\[\s*PAYMENT_SUCCESS\s*:\s*([\s\S]*?)\s*\]/g, type: 'paymentSuccess' },
+      { pattern: /\[\s*PAYMENT_FAILED\s*:\s*([\s\S]*?)\s*\]/g, type: 'paymentFailed' },
+      { pattern: /\[\s*ORDER_DETAILS\s*:\s*([\s\S]*?)\s*\]/g, type: 'orderDetails' },
+      { pattern: /\[\s*RECOMMEND\s*:\s*([\s\S]*?)\s*\]/g, type: 'recommend' },
+      { pattern: /\[\s*SIMILAR_ITEMS\s*:\s*([\s\S]*?)\s*\]/g, type: 'similarItems' },
+      { pattern: /\[\s*BEST_DEALS\s*\]/g, type: 'bestDeals' }
     ]
 
     // Extract all actions
     actionPatterns.forEach(({ pattern, type }) => {
       const matches = [...response.matchAll(pattern)]
       matches.forEach(match => {
-        actions.push({
-          type,
-          data: match[1] || true // Use the captured group or true for no-param actions
-        })
-        // Remove the action from the response text
+        const raw = match[1]
+        const data = typeof raw === 'string' ? raw.replace(/\n/g, '').trim() : true
+        actions.push({ type, data })
         cleanResponse = cleanResponse.replace(match[0], '').trim()
       })
     })
 
-    // Add the clean response message
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      content: cleanResponse || 'Processing your request...',
-      role: 'assistant',
-      timestamp: new Date()
+    // Add or update the assistant message
+    if (options?.targetMessageId) {
+      updateMessage(options.targetMessageId, { content: cleanResponse || 'Processing your request...' })
+    } else {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: cleanResponse || 'Processing your request...',
+        role: 'assistant',
+        timestamp: new Date()
+      }
+      addMessage(assistantMessage)
     }
 
-    addMessage(assistantMessage)
+    // Fallback heuristics: if no explicit tool tags, infer intent from assistant text
+    if (actions.length === 0) {
+      try {
+        const lower = (cleanResponse || '').toLowerCase()
+        if (lower.includes('checkout')) {
+          actions.push({ type: 'proceedToCheckout', data: true })
+        } else if (lower.includes('orders')) {
+          actions.push({ type: 'viewOrders', data: true })
+        } else if (lower.includes('cart summary') || lower.includes("what's in my cart") || lower.includes('what is in my cart') || lower.includes('show cart') || lower.includes('view cart')) {
+          actions.push({ type: 'cartSummary', data: true })
+        }
+      } catch {}
+    }
+
+    // Heuristic: extract priceMin/priceMax from user text when AI didn't emit [FILTER:...] tag
+    if (actions.length === 0) {
+      try {
+        const source = (options?.userText || cleanResponse || '').toLowerCase().replace(/,/g, '')
+        const numbers = Array.from(source.matchAll(/(?:\$|usd|inr|rs\.?|€)?\s*(\d{2,7})(?:\.\d+)?/g)).map(m => parseInt(m[1], 10)).filter(n => !isNaN(n))
+        let priceMin: number | undefined
+        let priceMax: number | undefined
+
+        if (/min|minimum|at least|lowest/.test(source) && numbers.length > 0) {
+          priceMin = numbers[0]
+        }
+        if (/max|maximum|at most|upto|up to/.test(source) && numbers.length > 0) {
+          priceMax = numbers[numbers.length - 1]
+        }
+        if ((/between|range|from/.test(source) || (!priceMin && !priceMax)) && numbers.length >= 2) {
+          const sorted = [...numbers].sort((a,b)=>a-b)
+          priceMin = priceMin ?? sorted[0]
+          priceMax = priceMax ?? sorted[sorted.length - 1]
+        }
+
+        if (priceMin !== undefined || priceMax !== undefined) {
+          const qp = new URLSearchParams()
+          if (priceMin !== undefined) qp.set('priceMin', String(priceMin))
+          if (priceMax !== undefined) qp.set('priceMax', String(priceMax))
+          actions.push({ type: 'filter', data: qp.toString() })
+        }
+      } catch {}
+    }
 
     // Execute actions in sequence
     for (const action of actions) {
@@ -136,17 +184,46 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
   // Execute individual actions
   const executeAction = async (action: { type: string; data: any }, apiCartState?: any) => {
+    const normalizeRoute = (input: string) => {
+      const raw = (input || '').trim().toLowerCase()
+      if (!raw) return '/'
+      if (raw === 'orders' || raw === '/orders' || raw === 'view_orders' || raw === '/view_orders') return '/orders'
+      if (raw === 'checkout' || raw === '/checkout') return '/checkout'
+      if (!raw.startsWith('/')) return `/${raw}`
+      return raw
+    }
     switch (action.type) {
       case 'navigate':
-        setTimeout(() => {
-          router.push(action.data)
-        }, 1000)
+        try {
+          // Stop streaming to avoid interference with navigation
+          try { inflightAbort?.abort() } catch {}
+          const target = normalizeRoute(action.data)
+          router.push(target)
+        } catch {
+          try { window.location.assign(normalizeRoute(action.data)) } catch {}
+        }
         break
 
       case 'filter':
-        setTimeout(() => {
+        try {
+          try { inflightAbort?.abort() } catch {}
           applyFilters(action.data)
-        }, 500)
+          // Force a refresh to ensure data & pricing are visible after URL change
+          try { (router as any).refresh?.() } catch {}
+        } catch {
+          // Fallback: build URL and replace via History API
+          try {
+            const current = new URL(window.location.href)
+            const params = new URLSearchParams(current.search)
+            const filterParams = new URLSearchParams(action.data)
+            for (const [k, v] of filterParams.entries()) {
+              if (!v) params.delete(k); else params.set(k, v)
+            }
+            const newUrl = `/publishers${params.toString() ? `?${params.toString()}` : ''}`
+            // Do full navigation to ensure server data is fetched and rendered
+            window.location.assign(newUrl)
+          } catch {}
+        }
         break
 
       case 'addToCart':
@@ -241,9 +318,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       case 'proceedToCheckout':
         const cartItemCount = apiCartState?.totalItems ?? getTotalItems()
         if (cartItemCount > 0) {
-          setTimeout(() => {
+          try {
+            try { inflightAbort?.abort() } catch {}
             router.push('/checkout')
-          }, 1000)
+          } catch {
+            try { window.location.assign('/checkout') } catch {}
+          }
         } else {
           const emptyCartMessage: Message = {
             id: (Date.now() + 2).toString(),
@@ -256,9 +336,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         break
 
       case 'viewOrders':
-        setTimeout(() => {
+        console.log('🔍 DEBUG: Executing viewOrders action, navigating to /orders')
+        try {
           router.push('/orders')
-        }, 1000)
+          console.log('✅ Navigation successful via router.push')
+        } catch (error) {
+          console.log('❌ router.push failed, trying window.location.assign:', error)
+          try { 
+            window.location.assign('/orders')
+            console.log('✅ Navigation successful via window.location.assign')
+          } catch (fallbackError) {
+            console.log('❌ Both navigation methods failed:', fallbackError)
+          }
+        }
         break
 
       case 'paymentSuccess':
@@ -269,9 +359,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           timestamp: new Date()
         }
         addMessage(successMessage)
-        setTimeout(() => {
+        try {
           router.push('/orders')
-        }, 2000)
+        } catch {
+          try { window.location.assign('/orders') } catch {}
+        }
         break
 
       case 'paymentFailed':
@@ -292,9 +384,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           timestamp: new Date()
         }
         addMessage(orderMessage)
-        setTimeout(() => {
+        try {
           router.push('/orders')
-        }, 1500)
+        } catch {
+          try { window.location.assign('/orders') } catch {}
+        }
         break
 
       case 'recommend':
@@ -333,6 +427,8 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         console.log('Unknown action type:', action.type)
     }
   }
+
+  let inflightAbort: AbortController | null = null
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return
@@ -379,11 +475,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         }))
       })
 
-      const response = await fetch('/api/ai-chat', {
+      // Abort any previous streaming request to prevent overlap
+      if (inflightAbort) {
+        try { inflightAbort.abort() } catch {}
+      }
+      inflightAbort = new AbortController()
+
+      const response = await fetch('/api/ai-chat?stream=1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        cache: 'no-store',
+        signal: inflightAbort.signal,
         body: JSON.stringify({
           message: userMessage.content,
           messages: messages,
@@ -395,29 +499,65 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           cartState: cartStateForAPI
         })
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to send message')
+      if (!response.ok || !response.body) {
+        // Try to parse JSON error, else generic
+        let errText = 'Failed to send message'
+        try { errText = await response.text() } catch {}
+        throw new Error(errText)
       }
 
-      const data = await response.json()
-      
-      // Debug AI response and cart state
-      
-      console.log('🛒 DEBUG: Received AI response:', {
-        response: data.response,
-        cartState: data.cartState,
-        cartStateType: typeof data.cartState,
-        cartStateKeys: data.cartState ? Object.keys(data.cartState) : 'null',
-        cartItems: data.cartState?.items,
-        cartItemsLength: data.cartState?.items?.length,
-        totalItems: data.cartState?.totalItems,
-        totalPrice: data.cartState?.totalPrice
-      })
-      
-      // Process the response and handle all possible actions
-      await processAIResponse(data.response, data.cartState)
+      // Create a placeholder assistant message to append chunks into
+      const assistantId = (Date.now() + 1).toString()
+      const assistantMessage: Message = {
+        id: assistantId,
+        content: '',
+        role: 'assistant',
+        timestamp: new Date()
+      }
+      addMessage(assistantMessage)
+
+      // Read streamed chunks and append to the assistant message
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let done = false
+      let accumulated = ''
+      let controlBuffer = ''
+      const toolRegex = /\[\[TOOL\]\]({[\s\S]*?})\n/g
+      const executedActions = new Set<string>()
+      while (!done) {
+        const { value, done: readerDone } = await reader.read()
+        done = readerDone
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true })
+          controlBuffer += chunk
+
+          // Execute tool events as soon as they are fully received
+          let match
+          while ((match = toolRegex.exec(controlBuffer)) !== null) {
+            try {
+              const payload = JSON.parse(match[1])
+              const key = `${payload.type}:${payload.data}`
+              if (!executedActions.has(key)) {
+                executedActions.add(key)
+                await executeAction({ type: payload.type, data: payload.data }, cartStateForAPI)
+              }
+            } catch (e) {
+              console.warn('Failed to handle tool event:', e)
+            }
+          }
+          // Remove processed tool events from buffer
+          controlBuffer = controlBuffer.replace(toolRegex, '')
+
+          // Append cleaned text (without tool markers) to the assistant message content
+          const cleaned = chunk.replace(toolRegex, '')
+          accumulated += cleaned
+          updateMessage(assistantId, { content: accumulated })
+        }
+      }
+
+      // After stream completes, parse tool tags in the final text as a safety net
+      // This ensures actions still run even if the server did not emit tool events
+      await processAIResponse(accumulated, cartStateForAPI, { targetMessageId: assistantId, userText: userMessage.content })
     } catch (error) {
       console.error('Error sending message:', error)
       const errorMessage: Message = {
