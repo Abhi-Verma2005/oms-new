@@ -149,19 +149,79 @@ export function CaseStudiesGrid({ selectedCategoryId = 'all' }: { selectedCatego
     ? caseStudiesData
     : caseStudiesData.filter(c => c.id === selectedCategoryId)
 
+  // Flatten all studies when showing "all" for a unified bento grid
+  const allStudies: Array<CaseStudyItem & { categoryId: string }> = selectedCategoryId === 'all'
+    ? caseStudiesData.flatMap(cat => cat.studies.map(s => ({ ...s, categoryId: cat.id })))
+    : []
+
+  // Compute bento spans: featured cards span 6 cols, others span 3 (on xl: 9-col grid)
+  function getBentoColSpan(index: number): string {
+    const featured = [0, 4, 9, 14] // repeatable pattern for featured positions
+    const isFeatured = featured.includes(index % 15)
+    // Base spans: xl uses 9 cols; sm uses 6 cols so proportions hold
+    return isFeatured
+      ? 'xl:col-span-3 sm:col-span-3 col-span-1'
+      : 'xl:col-span-3 sm:col-span-3 col-span-1'
+  }
+
+  function getImageHeight(index: number): string {
+    const featured = [0, 4, 9, 14]
+    const isFeatured = featured.includes(index % 15)
+    return isFeatured ? 'h-64 sm:h-72 xl:h-80' : 'h-48 sm:h-56 xl:h-56'
+  }
+
+  const isRows = selectedCategoryId === 'all'
+
+  // ALL: unified bento grid
+  if (selectedCategoryId === 'all') {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-6 xl:grid-cols-9 gap-6">
+        {allStudies.map((study, idx) => (
+          <Link
+            key={`${study.categoryId}-${study.id}`}
+            href={study.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`group bg-white/90 dark:bg-gray-900/90 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden ${getBentoColSpan(idx)}`}
+          >
+            <div className={`relative ${getImageHeight(idx)} bg-white dark:bg-gray-800/90 border-b border-gray-200/60 dark:border-gray-700/60`}
+            >
+              <img src={study.imageSrc} alt={study.title} className="absolute inset-0 w-full h-full object-contain p-6" />
+            </div>
+            <div className="p-6">
+              <div className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">{study.title}</div>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{study.subtitle}</h4>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {study.stats.map((s, sIdx) => (
+                  <div key={sIdx} className="rounded-lg border border-gray-200/60 dark:border-gray-700/60 p-3">
+                    <div className="text-base font-bold text-gray-900 dark:text-white">{s.value}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-semibold">
+                View Case Study
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    )
+  }
+
+  // FILTERED: per-category standard grid
   return (
     <div className="space-y-12">
       {categories.map((category) => (
         <div key={category.id}>
-          {selectedCategoryId === 'all' && (
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{category.name}</h3>
-            </div>
-          )}
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{category.name}</h3>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {category.studies.map((study) => (
               <Link key={study.id} href={study.link} target="_blank" rel="noopener noreferrer" className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-                <div className="aspect-[16/9] bg-gray-100 dark:bg-gray-900">
+                <div className="aspect-[16/9] bg-white dark:bg-gray-800 border-b border-gray-200/60 dark:border-gray-700/60">
                   <img src={study.imageSrc} alt={study.title} className="w-full h-full object-contain p-4" />
                 </div>
                 <div className="p-6">

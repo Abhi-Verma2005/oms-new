@@ -6,7 +6,6 @@ import PricingCards from '../../../components/pricing-cards'
 import PricingFaqs from '../../../components/pricing-faqs'
 import PricingCta from '../../../components/pricing-cta'
 import LandingFooter from '../../../components/landing-footer'
-import InsightsSection from '../../../components/insights-section'
 
 export default function PricingPage() {
   return (
@@ -38,9 +37,6 @@ export default function PricingPage() {
 
         {/* Features Section */}
         <PricingFeatures />
-
-        {/* Insights Section */}
-        <InsightsSection />
 
         {/* FAQ Section */}
         <PricingFaqs />

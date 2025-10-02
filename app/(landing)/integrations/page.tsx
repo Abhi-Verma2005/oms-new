@@ -4,7 +4,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import Particles from '../../../components/particles'
 import LandingFooter from '../../../components/landing-footer'
-import InsightsSection from '../../../components/insights-section'
 
 export default function IntegrationsPage() {
   const tools = [
@@ -125,9 +124,6 @@ export default function IntegrationsPage() {
             </div>
           </div>
         </section>
-
-        {/* Insights Section */}
-        <InsightsSection />
       </div>
 
       {/* Footer */}
