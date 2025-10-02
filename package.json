@@ -13,6 +13,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.42",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
@@ -42,6 +43,7 @@
     "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
     "@types/ws": "^8.18.1",
+    "ai": "^5.0.59",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.7",
     "chartjs-adapter-moment": "^1.0.1",
@@ -62,6 +64,7 @@
     "next-themes": "^0.4.4",
     "nodemailer": "^6.10.1",
     "react": "19.0.0",
+    "react-countup": "^6.5.3",
     "react-day-picker": "^9.5.1",
     "react-dom": "19.0.0",
     "react-hook-form": "^7.62.0",
@@ -76,9 +79,7 @@
     "typescript": "^5.7.3",
     "ws": "^8.18.3",
     "zod": "^4.1.11",
-    "zustand": "^5.0.8",
-    "ai": "^5.0.59",
-    "@ai-sdk/openai": "^2.0.42"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",

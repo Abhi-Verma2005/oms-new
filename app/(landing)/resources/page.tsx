@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'motion/react';
+import Footer from '@/components/ui/footer';
 
 // --- Data for the blog posts ---
 // In a real application, this would come from a CMS or API.
@@ -67,6 +68,28 @@ const fadeInUp = {
   },
 };
 
+const fadeInLeft = {
+  initial: { x: -40, opacity: 0 },
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.8,
+    },
+  },
+};
+
+const fadeInRight = {
+  initial: { x: 40, opacity: 0 },
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.8,
+    },
+  },
+};
+
 const staggerContainer = {
   animate: {
     transition: {
@@ -75,6 +98,76 @@ const staggerContainer = {
   },
 };
 
+const heroStaggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
+
+
+// --- Hero Section Component ---
+const HeroSection = () => {
+  return (
+    <div className="bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-20 sm:py-32">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={heroStaggerContainer}
+          className="text-center"
+        >
+          <motion.div
+            variants={fadeInUp}
+            className="mb-6"
+          >
+            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 mb-6">
+              📚 Resources & Insights
+            </span>
+          </motion.div>
+          
+          <motion.h1
+            variants={fadeInUp}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6"
+          >
+            Discover Our
+            <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Resources
+            </span>
+          </motion.h1>
+          
+          <motion.p
+            variants={fadeInUp}
+            className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8 leading-relaxed"
+          >
+            Explore our comprehensive collection of articles, guides, and insights designed to help you 
+            grow your business and stay ahead of the competition.
+          </motion.p>
+          
+          <motion.div
+            variants={fadeInUp}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span>Expert Insights</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span>Industry Trends</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>Growth Strategies</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
 
 // --- Reusable Blog Post Card Component ---
 const BlogPostCard = ({ post }) => {
@@ -117,37 +210,32 @@ const BlogPostCard = ({ post }) => {
 };
 
 
-// --- Main Blog Page Component ---
-const BlogPosts = () => {
+// --- Main Resources Page Component ---
+const ResourcesPage = () => {
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 py-16 sm:py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true, amount: 0.1 }}
-          variants={staggerContainer}
-          className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10"
-        >
-          {postsData.map((post) => (
-            <BlogPostCard key={post.id} post={post} />
-          ))}
-        </motion.div>
-
-        {/* --- Pagination --- */}
-        <nav className="mt-16 flex justify-center" aria-label="Posts pagination">
-          <div className="flex items-center space-x-2">
-            <span aria-current="page" className="bg-purple-600 text-white rounded-md w-10 h-10 flex items-center justify-center text-sm font-bold">1</span>
-            <Link href="/blog/page/2" className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md w-10 h-10 flex items-center justify-center text-sm font-bold transition-colors">2</Link>
-            <Link href="/blog/page/3" className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md w-10 h-10 flex items-center justify-center text-sm font-bold transition-colors">3</Link>
-            <span className="text-gray-500 dark:text-gray-400">…</span>
-            <Link href="/blog/page/31" className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md w-10 h-10 flex items-center justify-center text-sm font-bold transition-colors">31</Link>
-            <Link href="/blog/page/2" className="text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md w-10 h-10 flex items-center justify-center text-sm font-bold transition-colors">&gt;</Link>
-          </div>
-        </nav>
+    <>
+      {/* Hero Section */}
+      <HeroSection />
+      
+      {/* Resources Grid Section */}
+      <div className="bg-gray-50 dark:bg-gray-900 py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true, amount: 0.1 }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10"
+          >
+            {postsData.map((post) => (
+              <BlogPostCard key={post.id} post={post} />
+            ))}
+          </motion.div>
+        </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 
-export default BlogPosts;
+export default ResourcesPage;
