@@ -11,7 +11,8 @@ interface Message {
 
 interface ChatContextType {
   messages: Message[]
-  addMessage: (message: Omit<Message, 'id'>) => void
+  addMessage: (message: Message) => void
+  updateMessage: (id: string, partial: Partial<Message>) => void
   clearMessages: () => void
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
@@ -60,12 +61,12 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     }
   }, [messages])
 
-  const addMessage = (message: Omit<Message, 'id'>) => {
-    const newMessage: Message = {
-      ...message,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-    }
-    setMessages(prev => [...prev, newMessage])
+  const addMessage = (message: Message) => {
+    setMessages(prev => [...prev, message])
+  }
+
+  const updateMessage = (id: string, partial: Partial<Message>) => {
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, ...partial } : m))
   }
 
   const clearMessages = () => {
@@ -82,6 +83,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       value={{
         messages,
         addMessage,
+        updateMessage,
         clearMessages,
         isLoading,
         setIsLoading

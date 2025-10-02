@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { streamText } from 'ai'
+import { createOpenAI } from '@ai-sdk/openai'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
@@ -8,6 +10,7 @@ import { processUserContext, getComprehensiveUserContext, extractMetadataFromMes
 export async function POST(request: NextRequest) {
   try {
     const { message, messages, config: clientConfig, currentUrl, cartState, autoMessage } = await request.json()
+    const isStream = request.nextUrl?.searchParams?.get('stream') === '1'
     
     // Debug cart state received from client
     console.log('🛒 DEBUG: Received cart state in AI API:', {
@@ -31,11 +34,19 @@ export async function POST(request: NextRequest) {
     // Get session for user context
     const session = await getServerSession(authOptions)
 
-    // Get comprehensive user context (with database error handling)
+    // Helper: soft-timeout wrapper so we don't block first-token streaming
+    const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T | null> => {
+      return await Promise.race([
+        promise.then((v) => v as T).catch(() => null),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+      ])
+    }
+
+    // Get comprehensive user context (timeboxed) so we can start streaming quickly
     let finalUserContext: any = null
     if (session?.user?.id) {
       try {
-        const comprehensiveContext = await getComprehensiveUserContext(session.user.id)
+        const comprehensiveContext = await withTimeout(getComprehensiveUserContext(session.user.id), 200)
         if (comprehensiveContext) {
           finalUserContext = {
             user: comprehensiveContext.user,
@@ -219,7 +230,17 @@ Be concise, direct, and helpful. Use markdown formatting to maximize impact in m
 NAVIGATION DATA:
 ${navigationData.map((nav: any) => `- ${nav.name}: ${nav.route}`).join('\n')}
 
-When users ask to navigate to a specific page, respond with a special format: [NAVIGATE:ROUTE] where ROUTE is the actual route from the navigation data above. The frontend will handle the navigation.`
+When users ask to navigate to a specific page, respond with a special format: [NAVIGATE:ROUTE] where ROUTE is the actual route from the navigation data above. The frontend will handle the navigation.
+
+CRITICAL: When users ask to filter, search, or find items with specific criteria (price, niche, quality metrics, etc.), you MUST use the [FILTER:...] tool tag. Do not give generic responses about not having access - you have full filtering capabilities through the tool system.
+
+Examples of when to use [FILTER:...]:
+- "Filter websites with price between 500-2000" → [FILTER:priceMin=500&priceMax=2000]
+- "Find tech sites with high DA" → [FILTER:niche=technology&daMin=50]
+- "Show me sites under $1000" → [FILTER:priceMax=1000]
+- "Filter by country and language" → [FILTER:country=US&language=english]
+
+ALWAYS use tool tags for filtering requests. Never say you don't have access to filtering.`
 
     // Add comprehensive e-commerce flow context
     const ecommerceFlowContext = `
@@ -273,6 +294,9 @@ AVAILABLE TOOLS & ACTIONS:
 
 INTELLIGENT FLOW ORCHESTRATION:
 
+PRIORITY OF ACTIONS:
+When a tool action is applicable (e.g., filtering or navigation), OUTPUT THE TOOL TAG FIRST on its own line before any natural language. This allows the UI to apply the action immediately. Then provide a short confirmation line.
+
 When users express interest in items or ask about purchasing:
 
 1. FILTERING PHASE:
@@ -325,6 +349,12 @@ AI: [VIEW_ORDERS]
 "I can see your recent orders. Let me get the details for your latest order."
 [ORDER_DETAILS:orderId]
 
+Example 4 - Direct Filtering:
+User: "Filter websites with minimum price of 500 dollars and maximum budget of 2000 dollars"
+AI: "I'll filter the websites to show those between $500-$2000 for you."
+[FILTER:priceMin=500&priceMax=2000]
+"Perfect! I've applied the price filter. You should now see websites in your specified budget range."
+
 SMART PROMPTING STRATEGY:
 - Always be proactive in suggesting next steps
 - Use encouraging and helpful language
@@ -352,48 +382,8 @@ ${cartState.items.map((item: any, index: number) => `  ${index + 1}. ${item.kind
 
 Remember: Your goal is to create a smooth, intelligent shopping experience that guides users from discovery to purchase completion with minimal friction.`
 
-    // Check for recent payment success notifications (with database error handling)
+    // Skip payment success DB checks on the critical path; this will be handled in background later
     let paymentSuccessNotification = ''
-    if (session?.user?.id) {
-      try {
-        // In a real implementation, you'd check a database or cache for recent notifications
-        // For now, we'll simulate this by checking if the user just completed a payment
-        // This could be enhanced with a proper notification system
-        const recentPayment = await prisma.order.findFirst({
-          where: {
-            userId: session.user.id,
-            status: 'PAID',
-            createdAt: {
-              gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
-            }
-          },
-          orderBy: { createdAt: 'desc' },
-          include: { items: true }
-        })
-
-        if (recentPayment) {
-          const itemNames = recentPayment.items.map(item => item.siteName).join(', ')
-          paymentSuccessNotification = `
-
-🎉 RECENT PAYMENT SUCCESS DETECTED:
-- Order ID: ${recentPayment.id}
-- Amount: $${(recentPayment.totalAmount / 100).toFixed(2)}
-- Items: ${itemNames}
-- Status: Payment completed successfully
-
-The user just completed a purchase! You should:
-1. Congratulate them on their successful purchase
-2. Offer to show them their orders
-3. Provide next steps or additional recommendations
-4. Be enthusiastic and helpful about their purchase
-
-Use [PAYMENT_SUCCESS:${recentPayment.id}] to confirm the payment and [VIEW_ORDERS] to show their orders.`
-        }
-      } catch (error) {
-        console.warn('Failed to check for recent payment success (database may be unavailable):', error)
-        // Continue without payment success notification when database is unavailable
-      }
-    }
 
     // Handle automatic payment success message
     if (autoMessage && message.includes('payment successfully') && message.includes('show me my orders')) {
@@ -531,59 +521,173 @@ CONTEXT USAGE INSTRUCTIONS:
       { role: 'user', content: message },
     ]
 
-    const openAIRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPEN_AI_KEY}`,
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    if (isStream) {
+      const openai = createOpenAI({ apiKey: process.env.OPEN_AI_KEY! })
+      const result = await streamText({
+        model: openai(process.env.OPENAI_MODEL || 'gpt-4o-mini'),
         messages: chatMessages,
         temperature: 0.7,
-        top_p: 0.95,
-        max_tokens: 1024,
-      }),
-    })
+        maxTokens: 1024,
+      })
 
-    if (!openAIRes.ok) {
-      const errText = await openAIRes.text()
-      throw new Error(`OpenAI API error: ${openAIRes.status} ${errText}`)
-    }
+      const encoder = new TextEncoder()
+      const textStream = result.textStream
+      let fullText = ''
+      // Buffer for detecting tool tags reliably across chunk boundaries
+      let detectionBuffer = ''
 
-    const data = await openAIRes.json()
-    const text = data?.choices?.[0]?.message?.content || ''
+      // Tool patterns (tolerant to whitespace/newlines)
+      const actionPatterns: Array<{ pattern: RegExp; type: string }> = [
+        { pattern: /\[\s*NAVIGATE\s*:\s*([\s\S]*?)\s*\]/g, type: 'navigate' },
+        { pattern: /\[\s*FILTER\s*:\s*([\s\S]*?)\s*\]/g, type: 'filter' },
+        { pattern: /\[\s*ADD_TO_CART\s*:\s*([\s\S]*?)\s*\]/g, type: 'addToCart' },
+        { pattern: /\[\s*REMOVE_FROM_CART\s*:\s*([\s\S]*?)\s*\]/g, type: 'removeFromCart' },
+        { pattern: /\[\s*VIEW_CART\s*\]/g, type: 'viewCart' },
+        { pattern: /\[\s*CLEAR_CART\s*\]/g, type: 'clearCart' },
+        { pattern: /\[\s*CART_SUMMARY\s*\]/g, type: 'cartSummary' },
+        { pattern: /\[\s*PROCEED_TO_CHECKOUT\s*\]/g, type: 'proceedToCheckout' },
+        { pattern: /\[\s*VIEW_ORDERS\s*\]/g, type: 'viewOrders' },
+        { pattern: /\[\s*PAYMENT_SUCCESS\s*:\s*([\s\S]*?)\s*\]/g, type: 'paymentSuccess' },
+        { pattern: /\[\s*PAYMENT_FAILED\s*:\s*([\s\S]*?)\s*\]/g, type: 'paymentFailed' },
+        { pattern: /\[\s*ORDER_DETAILS\s*:\s*([\s\S]*?)\s*\]/g, type: 'orderDetails' },
+        { pattern: /\[\s*RECOMMEND\s*:\s*([\s\S]*?)\s*\]/g, type: 'recommend' },
+        { pattern: /\[\s*SIMILAR_ITEMS\s*:\s*([\s\S]*?)\s*\]/g, type: 'similarItems' },
+        { pattern: /\[\s*BEST_DEALS\s*\]/g, type: 'bestDeals' }
+      ]
 
-    // Log user interaction immediately (non-blocking, with error handling)
-    if (session?.user?.id) {
-      prisma.userInteraction.create({
-        data: {
-          userId: session.user.id,
-          interactionType: 'CHAT_MESSAGE',
-          content: message,
-          response: text,
-          context: {
-            currentUrl,
-            messageCount: messages?.length || 0,
-            userContext: finalUserContext?.profile ? {
-              company: finalUserContext.profile.company?.name,
-              role: finalUserContext.profile.company?.role,
-              experience: finalUserContext.profile.professional?.experience
-            } : null
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          controller.enqueue(encoder.encode(' '))
+          try {
+            for await (const delta of textStream) {
+              fullText += delta
+              detectionBuffer += delta
+              controller.enqueue(encoder.encode(delta))
+
+              // Detect and emit tool events as soon as tags are complete in buffer
+              for (const { pattern, type } of actionPatterns) {
+                let match: RegExpExecArray | null
+                pattern.lastIndex = 0
+                const matches: Array<{ full: string; json: string }> = []
+                while ((match = pattern.exec(detectionBuffer)) !== null) {
+                  const raw = match[1]
+                  const data = typeof raw === 'string' ? raw.replace(/\n/g, '').trim() : true
+                  const json = JSON.stringify({ type, data })
+                  const event = `\n[[TOOL]]${json}\n`
+                  controller.enqueue(encoder.encode(event))
+                  matches.push({ full: match[0], json })
+                }
+                // Remove emitted matches from buffer to avoid duplicate emissions
+                for (const m of matches) {
+                  detectionBuffer = detectionBuffer.replace(m.full, '')
+                }
+              }
+
+              // Keep detection buffer from growing unbounded. Keep last 2k chars
+              if (detectionBuffer.length > 2000) {
+                detectionBuffer = detectionBuffer.slice(-2000)
+              }
+            }
+          } catch (err) {
+            console.error('Streaming error:', err)
+            controller.error(err)
+            return
+          }
+          // After stream ends, perform logging and background processing
+          try {
+            if (session?.user?.id) {
+              prisma.userInteraction.create({
+                data: {
+                  userId: session.user.id,
+                  interactionType: 'CHAT_MESSAGE',
+                  content: message,
+                  response: fullText,
+                  context: {
+                    currentUrl,
+                    messageCount: messages?.length || 0,
+                    userContext: finalUserContext?.profile ? {
+                      company: finalUserContext.profile.company?.name,
+                      role: finalUserContext.profile.company?.role,
+                      experience: finalUserContext.profile.professional?.experience
+                    } : null
+                  }
+                }
+              }).catch(error => console.warn('Failed to log user interaction (database may be unavailable):', error))
+
+              processContextInBackground(session.user.id, message, fullText, messages || [], currentUrl, finalUserContext).catch(error => 
+                console.warn('Background context processing failed (database may be unavailable):', error)
+              )
+            }
+          } finally {
+            controller.close()
           }
         }
-      }).catch(error => console.warn('Failed to log user interaction (database may be unavailable):', error))
+      })
 
-      // Process context analysis in background (non-blocking, with error handling)
-      processContextInBackground(session.user.id, message, text, messages || [], currentUrl, finalUserContext).catch(error => 
-        console.warn('Background context processing failed (database may be unavailable):', error)
-      )
+      return new NextResponse(stream as any, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          'X-Accel-Buffering': 'no',
+          'Connection': 'keep-alive',
+          'Content-Encoding': 'identity'
+        }
+      })
+    } else {
+      // Non-streaming branch (existing behavior)
+      const openAIRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPEN_AI_KEY}`,
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: chatMessages,
+          temperature: 0.7,
+          top_p: 0.95,
+          max_tokens: 1024,
+        }),
+      })
+
+      if (!openAIRes.ok) {
+        const errText = await openAIRes.text()
+        throw new Error(`OpenAI API error: ${openAIRes.status} ${errText}`)
+      }
+
+      const data = await openAIRes.json()
+      const text = data?.choices?.[0]?.message?.content || ''
+
+      if (session?.user?.id) {
+        prisma.userInteraction.create({
+          data: {
+            userId: session.user.id,
+            interactionType: 'CHAT_MESSAGE',
+            content: message,
+            response: text,
+            context: {
+              currentUrl,
+              messageCount: messages?.length || 0,
+              userContext: finalUserContext?.profile ? {
+                company: finalUserContext.profile.company?.name,
+                role: finalUserContext.profile.company?.role,
+                experience: finalUserContext.profile.professional?.experience
+              } : null
+            }
+          }
+        }).catch(error => console.warn('Failed to log user interaction (database may be unavailable):', error))
+
+        processContextInBackground(session.user.id, message, text, messages || [], currentUrl, finalUserContext).catch(error => 
+          console.warn('Background context processing failed (database may be unavailable):', error)
+        )
+      }
+
+      return NextResponse.json({ 
+        response: text,
+        cartState: cartState
+      })
     }
-
-    return NextResponse.json({ 
-      response: text,
-      cartState: cartState // Include cart state in response for client-side actions
-    })
   } catch (error) {
     console.error('Error in AI chat API:', error)
     return NextResponse.json(

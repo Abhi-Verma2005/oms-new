@@ -230,7 +230,7 @@ export default function InsightsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 text-gray-900 dark:text-white">
       {/* Main content with top padding to account for fixed navbar */}
       <div
-              className="absolute inset-0 z-0"
+              className="absolute inset-0 z-0 pointer-events-none"
               style={{
                 background: "radial-gradient(125% 125% at 50% 90%, transparent 50%, #6366f1 100%)",
               }}

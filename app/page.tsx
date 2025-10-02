@@ -120,7 +120,7 @@ export default function LandingPage() {
 
   const navItems = [
     { name: "About", link: "/about" },
-    { name: "Contact", link: "#contact" },
+    { name: "Contact", link: "/contact" },
   ];
 
   return (
@@ -690,7 +690,7 @@ export default function LandingPage() {
                 </div>
                 
                 <Link 
-                  href="#contact" 
+                  href="/contact" 
                   className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-violet-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/25"
                 >
                   Start Building Connections
@@ -780,7 +780,7 @@ export default function LandingPage() {
                 </div>
                 
                 <Link 
-                  href="#contact" 
+                  href="/contact" 
                   className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-green-500/25"
                 >
                   Explore White Label Options
@@ -799,7 +799,7 @@ export default function LandingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-gray-700 dark:text-gray-300 font-medium">Not sure which path to choose?</span>
-              <Link href="#contact" className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold">
+              <Link href="/contact" className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold">
                 Let's discuss your needs
               </Link>
             </div>

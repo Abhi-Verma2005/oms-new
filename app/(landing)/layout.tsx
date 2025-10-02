@@ -61,6 +61,8 @@ export default function LandingLayout({
                   <NavbarDropdownItem href="/pricing">Pricing</NavbarDropdownItem>
                   <NavbarDropdownItem href="/integrations">Integrations</NavbarDropdownItem>
                   <NavbarDropdownItem href="/customers">Customers</NavbarDropdownItem>
+                  <NavbarDropdownItem href="/resources">Resources</NavbarDropdownItem>
+                  <NavbarDropdownItem href="/contact">Contact</NavbarDropdownItem>
                   <NavbarDropdownItem href="/changelog">Changelog</NavbarDropdownItem>
                   <NavbarDropdownItem href="/faq">FAQ</NavbarDropdownItem>
                   <NavbarDropdownItem href="/features">Features</NavbarDropdownItem>
@@ -124,6 +126,12 @@ export default function LandingLayout({
                   </a>
                   <a href="/customers" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
                     Customers
+                  </a>
+                  <a href="/resources" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+                    Resources
+                  </a>
+                  <a href="/contact" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+                    Contact
                   </a>
                   <a href="/changelog" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
                     Changelog
