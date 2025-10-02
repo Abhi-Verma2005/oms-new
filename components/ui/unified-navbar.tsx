@@ -75,7 +75,7 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
         <NavbarLogo />
         
         {/* Desktop Navigation */}
-        <div className="absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-sm font-medium text-zinc-600 transition duration-200 hover:text-zinc-800 lg:flex lg:space-x-2">
+        <div className="hidden lg:flex items-center justify-center space-x-2 text-sm font-medium text-zinc-600 transition duration-200 hover:text-zinc-800 flex-1">
           {mainNavItems.map((item, idx) => (
             <Link
               key={`main-nav-${idx}`}
@@ -115,7 +115,7 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           {/* Quick access links for mobile */}
           {variant === 'landing' && (
             <>
@@ -138,9 +138,6 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
             >
               {variant === 'landing' ? 'App' : variant === 'app' ? 'Dashboard' : 'Admin'}
             </NavbarButton>
-            {variant === 'landing' && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">NEW</span>
-            )}
           </div>
         </div>
       </NavBody>
@@ -194,9 +191,6 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
               >
                 {variant === 'landing' ? 'App' : variant === 'app' ? 'Dashboard' : 'Admin'}
               </NavbarButton>
-              {variant === 'landing' && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">NEW</span>
-              )}
             </div>
           </div>
         </MobileNavMenu>
