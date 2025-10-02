@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
+import Image from 'next/image';
 import Footer from '@/components/ui/footer';
 
 // --- Reusable SVG Icon Components ---
@@ -23,6 +24,173 @@ const EnvelopeIcon = (props) => (
   </svg>
 );
 
+// Animation variants
+const fadeInUp = {
+  initial: { y: 40, opacity: 0 },
+  animate: { y: 0, opacity: 1 },
+}
+
+const fadeInLeft = {
+  initial: { x: -40, opacity: 0 },
+  animate: { x: 0, opacity: 1 },
+}
+
+const fadeInRight = {
+  initial: { x: 40, opacity: 0 },
+  animate: { x: 0, opacity: 1 },
+}
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+}
+
+// Hero Section Component
+const HeroSection = () => {
+  return (
+    <section className="relative py-20 sm:py-32 overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
+      
+      {/* Decorative elements */}
+      <div className="absolute top-20 left-10 w-20 h-20 bg-purple-200 dark:bg-purple-800 rounded-full opacity-20 animate-pulse" />
+      <div className="absolute bottom-20 right-10 w-32 h-32 bg-blue-200 dark:bg-blue-800 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-violet-200 dark:bg-violet-800 rounded-full opacity-15 animate-pulse" style={{ animationDelay: '2s' }} />
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left side - Text content */}
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerContainer}
+            className="space-y-8"
+          >
+            <motion.div 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <span className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Let's Connect
+              </span>
+            </motion.div>
+
+            <motion.h1 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight"
+            >
+              Ready to
+              <span className="block bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                Transform
+              </span>
+              <span className="block text-gray-900 dark:text-white">
+                Your Business?
+              </span>
+            </motion.h1>
+
+            <motion.p 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-lg"
+            >
+              Let's discuss how we can help you achieve your digital marketing goals and drive real results for your business.
+            </motion.p>
+
+            <motion.div 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex flex-col sm:flex-row gap-4"
+            >
+              <button className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                Get Started Today
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </button>
+              <button className="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-300">
+                Schedule Call
+              </button>
+            </motion.div>
+          </motion.div>
+
+          {/* Right side - Stats and decorative elements */}
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerContainer}
+            className="relative"
+          >
+            {/* Main stats container */}
+            <motion.div 
+              variants={fadeInRight}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-gray-200/50 dark:border-gray-700/50"
+            >
+              <div className="grid grid-cols-2 gap-6">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">24/7</div>
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Support</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">48h</div>
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Response</div>
+                </div>
+                <div className="text-center col-span-2">
+                  <div className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">100+</div>
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Happy Clients</div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Floating stats cards */}
+            <motion.div 
+              variants={fadeInRight}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+              className="absolute -top-6 -right-6 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-xl border border-gray-200 dark:border-gray-700"
+            >
+              <div className="text-center">
+                <div className="text-2xl font-bold text-violet-600 dark:text-violet-400 mb-1">5+</div>
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-300">Years Experience</div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              variants={fadeInRight}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
+              className="absolute -bottom-6 -left-6 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-xl border border-gray-200 dark:border-gray-700"
+            >
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">99%</div>
+                <div className="text-xs font-medium text-gray-600 dark:text-gray-300">Success Rate</div>
+              </div>
+            </motion.div>
+
+            {/* Decorative elements */}
+            <motion.div 
+              variants={fadeInLeft}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute top-4 left-4 w-16 h-16 bg-gradient-to-br from-purple-200 to-violet-200 dark:from-purple-800 dark:to-violet-800 rounded-full opacity-60"
+            />
+            <motion.div 
+              variants={fadeInLeft}
+              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+              className="absolute bottom-4 right-4 w-12 h-12 bg-gradient-to-br from-blue-200 to-cyan-200 dark:from-blue-800 dark:to-cyan-800 rounded-full opacity-60"
+            />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 // --- Main Contact Section Component ---
 const ContactSection = () => {
@@ -48,15 +216,23 @@ const ContactSection = () => {
     },
   ];
 
-  // Animation variants
-  const fadeInLeft = {
+  // Animation variants for contact section
+  const contactFadeInLeft = {
     initial: { x: -50, opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { duration: 0.8 } },
+    animate: { x: 0, opacity: 1 },
   };
 
-  const fadeInRight = {
+  const contactFadeInRight = {
     initial: { x: 50, opacity: 0 },
-    animate: { x: 0, opacity: 1, transition: { duration: 0.8 } },
+    animate: { x: 0, opacity: 1 },
+  };
+
+  const contactStaggerContainer = {
+    animate: {
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   return (
@@ -67,7 +243,8 @@ const ContactSection = () => {
           initial="initial"
           whileInView="animate"
           viewport={{ once: true, amount: 0.3 }}
-          variants={fadeInLeft}
+          variants={contactFadeInLeft}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
             Let's Elevate Your Brand Presence!
@@ -78,19 +255,26 @@ const ContactSection = () => {
           <p className="text-lg text-gray-600 dark:text-gray-300 mb-10">
             Fill out the form or connect with us directly; let’s align strategy and execution to move your brand forward.
           </p>
-          <div className="space-y-6">
+          <motion.div 
+            variants={contactStaggerContainer}
+            className="space-y-6"
+          >
             {infoItems.map((item, index) => {
               const content = (
-                <div key={index} className="flex items-start gap-4">
+                <motion.div 
+                  key={index} 
+                  variants={fadeInUp}
+                  className="flex items-start gap-4 p-4 rounded-xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-300"
+                >
                   <div className="flex-shrink-0 w-6 h-6 text-purple-600 dark:text-purple-400 mt-1">
                     <item.Icon className="fill-current" />
                   </div>
                   <p className="text-base text-gray-700 dark:text-gray-200">{item.text}</p>
-                </div>
+                </motion.div>
               );
               return item.href ? <a href={item.href} className="hover:opacity-80 transition-opacity">{content}</a> : content;
             })}
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* Right Column: Contact Form */}
@@ -98,8 +282,9 @@ const ContactSection = () => {
           initial="initial"
           whileInView="animate"
           viewport={{ once: true, amount: 0.3 }}
-          variants={fadeInRight}
-          className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700"
+          variants={contactFadeInRight}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300"
         >
           {/* NOTE: This form is for display. You'll need to add your own submission logic
               (e.g., using a Next.js API route or a service like Formspree) and reCAPTCHA integration. */}
@@ -147,4 +332,17 @@ const ContactSection = () => {
   );
 };
 
-export default ContactSection;
+// Main Contact Page Component
+const ContactPage = () => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+      {/* Hero Section */}
+      <HeroSection />
+      
+      {/* Contact Section */}
+      <ContactSection />
+    </div>
+  );
+};
+
+export default ContactPage;
