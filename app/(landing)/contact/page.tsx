@@ -272,7 +272,7 @@ const ContactSection = () => {
                   <p className="text-base text-gray-700 dark:text-gray-200">{item.text}</p>
                 </motion.div>
               );
-              return item.href ? <a href={item.href} className="hover:opacity-80 transition-opacity">{content}</a> : content;
+              return item.href ? <a key={index} href={item.href} className="hover:opacity-80 transition-opacity">{content}</a> : content;
             })}
           </motion.div>
         </motion.div>
