@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get('q') || undefined
   const orderBy = (searchParams.get('orderBy') as any) || 'addedAt'
   const order = ((searchParams.get('order') || 'desc') as 'asc' | 'desc')
+  const projectId = searchParams.get('projectId') || undefined
 
   const wishlist = await prisma.wishlist.upsert({
     where: { userId_name: { userId, name: 'Default' } },
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
   const rl = await limiter(request)
   if (!rl.success) return NextResponse.json({ error: "Too Many Requests" }, { status: 429, headers: createRateLimitHeaders(rl.limit, rl.remaining, rl.resetTime) as any })
 
-  const { siteId, siteName, siteUrl, priceCents, notes } = await request.json()
+  const { siteId, siteName, siteUrl, priceCents, notes, projectId } = await request.json()
   if (!siteId || !siteName) return NextResponse.json({ error: 'siteId and siteName are required' }, { status: 400 })
 
   const wishlist = await prisma.wishlist.upsert({
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
   addSecurityHeaders(res)
 
   const { ipAddress, userAgent } = extractRequestInfo(request as any)
-  ActivityLogger.log({ userId, activity: 'ADD_TO_WISHLIST', category: 'WISHLIST', description: `Added ${siteName}`, metadata: { siteId }, ipAddress, userAgent } as any).catch(() => {})
+  ActivityLogger.log({ userId, activity: 'ADD_TO_WISHLIST', category: 'WISHLIST', description: `Added ${siteName}`, metadata: { siteId }, ipAddress, userAgent, projectId } as any).catch(() => {})
 
   return res
 }
@@ -81,6 +82,7 @@ export async function DELETE(request: NextRequest) {
 
   const { searchParams } = request.nextUrl
   const siteId = searchParams.get('siteId')
+  const projectId = searchParams.get('projectId') || undefined
   if (!siteId) return NextResponse.json({ error: 'siteId is required' }, { status: 400 })
 
   const wishlist = await prisma.wishlist.upsert({
@@ -95,7 +97,7 @@ export async function DELETE(request: NextRequest) {
   addSecurityHeaders(res)
 
   const { ipAddress, userAgent } = extractRequestInfo(request as any)
-  ActivityLogger.log({ userId, activity: 'REMOVE_FROM_WISHLIST', category: 'WISHLIST', description: `Removed ${siteId}`, metadata: { siteId }, ipAddress, userAgent } as any).catch(() => {})
+  ActivityLogger.log({ userId, activity: 'REMOVE_FROM_WISHLIST', category: 'WISHLIST', description: `Removed ${siteId}`, metadata: { siteId }, ipAddress, userAgent, projectId } as any).catch(() => {})
 
   return res
 }

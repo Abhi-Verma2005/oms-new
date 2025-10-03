@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { activity, category, description, metadata } = await request.json()
+  const { activity, category, description, metadata, projectId } = await request.json()
   const { ipAddress, userAgent } = extractRequestInfo(request as any)
 
   await ActivityLogger.log({
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     metadata,
     ipAddress,
     userAgent,
+    projectId,
   } as any)
 
   const res = NextResponse.json({ ok: true })

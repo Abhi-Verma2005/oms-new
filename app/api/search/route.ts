@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { searchItems, searchData } from '@/lib/search-data'
+import { ActivityLogger } from '@/lib/activity-logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,11 +9,13 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('q')
     const category = searchParams.get('category')
     const limit = parseInt(searchParams.get('limit') || '20')
+    const projectId = searchParams.get('projectId') || undefined
 
     // Get user session for role-based filtering
     const session = await auth()
     const userRoles = (session?.user as any)?.roles || []
     const isAdmin = (session?.user as any)?.isAdmin || false
+    const userId = (session?.user as any)?.id as string | undefined
 
     if (!query) {
       return NextResponse.json({ 
@@ -54,12 +57,26 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, number>)
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       results: groupedResults,
       total: results.length,
       categories: categoryCounts,
       query
     })
+
+    // Fire-and-forget logging if authenticated and query specified
+    if (userId && query) {
+      ActivityLogger.log({
+        userId,
+        activity: 'SEARCH',
+        category: 'NAVIGATION',
+        description: query,
+        metadata: { category, total: results.length },
+        projectId,
+      } as any).catch(() => {})
+    }
+
+    return res
   } catch (error) {
     console.error('Search API error:', error)
     return NextResponse.json(
@@ -72,12 +89,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { query, filters = {} } = body
+    const { query, filters = {}, projectId } = body
 
     // Get user session for role-based filtering
     const session = await auth()
     const userRoles = (session?.user as any)?.roles || []
     const isAdmin = (session?.user as any)?.isAdmin || false
+    const userId = (session?.user as any)?.id as string | undefined
 
     if (!query) {
       return NextResponse.json({ 
@@ -108,12 +126,25 @@ export async function POST(request: NextRequest) {
       return 0
     })
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       results,
       total: results.length,
       query,
       filters
     })
+
+    if (userId && query) {
+      ActivityLogger.log({
+        userId,
+        activity: 'SEARCH',
+        category: 'NAVIGATION',
+        description: query,
+        metadata: { filters, total: results.length },
+        projectId,
+      } as any).catch(() => {})
+    }
+
+    return res
   } catch (error) {
     console.error('Search API error:', error)
     return NextResponse.json(
