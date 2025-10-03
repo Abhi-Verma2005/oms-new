@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { motion } from 'motion/react'
+import CountUp from 'react-countup'
 import LineChart01 from '@/components/charts/line-chart-01'
 import BarChart01 from '@/components/charts/bar-chart-01'
 import DoughnutChart from '@/components/charts/doughnut-chart'
@@ -9,6 +12,176 @@ import { chartAreaGradient } from '@/components/charts/chartjs-config'
 import { CaseStudiesGrid } from '@/components/insights-section'
 import { adjustColorOpacity, getCssVariable } from '@/components/utils/utils'
 import LandingFooter from '@/components/landing-footer'
+
+// Animation variants for hero section
+const fadeInUp = {
+  initial: { y: 40, opacity: 0 },
+  animate: { y: 0, opacity: 1 },
+}
+
+const fadeInLeft = {
+  initial: { x: -40, opacity: 0 },
+  animate: { x: 0, opacity: 1 },
+}
+
+const fadeInRight = {
+  initial: { x: 40, opacity: 0 },
+  animate: { x: 0, opacity: 1 },
+}
+
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+}
+
+// Hero Section Component
+const HeroSection = () => {
+  return (
+    <section className="relative py-20 sm:py-32 overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
+      
+      {/* Decorative elements */}
+      <div className="absolute top-20 left-10 w-20 h-20 bg-purple-200 dark:bg-purple-800 rounded-full opacity-20 animate-pulse" />
+      <div className="absolute bottom-20 right-10 w-32 h-32 bg-blue-200 dark:bg-blue-800 rounded-full opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Left side - Text content */}
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerContainer}
+            className="space-y-8"
+          >
+            <motion.div 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <span className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Case Studies
+              </span>
+            </motion.div>
+
+            <motion.h1 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight"
+            >
+              Our Success Stories
+              <span className="block bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                Driving Revenue
+              </span>
+              <span className="block text-gray-900 dark:text-white">
+                & Growth
+              </span>
+            </motion.h1>
+
+            <motion.p 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-lg"
+            >
+              See how our proven, award-winning strategies drive real impact for businesses in every sector.
+            </motion.p>
+
+            <motion.div 
+              variants={fadeInUp}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex flex-col sm:flex-row gap-4"
+            >
+              <button className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-violet-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                Explore Case Studies
+                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </button>
+              <button className="inline-flex items-center justify-center px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-300">
+                Download Report
+              </button>
+            </motion.div>
+          </motion.div>
+
+          {/* Right side - Image and stats */}
+          <motion.div
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerContainer}
+            className="relative"
+          >
+            {/* Main image */}
+            <motion.div 
+              variants={fadeInRight}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="relative rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <Image
+                src="https://emiactech.com/wp-content/uploads/2025/09/107327.jpg"
+                alt="Team working in an office"
+                width={600}
+                height={400}
+                className="w-full h-auto object-cover"
+                priority
+              />
+              {/* Overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            </motion.div>
+
+            {/* Stats cards */}
+            <motion.div 
+              variants={fadeInRight}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute -bottom-8 -left-8 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700"
+            >
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                  <CountUp end={80} duration={2.5} suffix="M+" />
+                </div>
+                <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Organic Traffic</div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              variants={fadeInRight}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute -top-8 -right-8 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700"
+            >
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                  <CountUp end={100} duration={2.5} suffix="+" />
+                </div>
+                <div className="text-sm font-medium text-gray-600 dark:text-gray-300">Case Studies</div>
+              </div>
+            </motion.div>
+
+            {/* Decorative image */}
+            <motion.div 
+              variants={fadeInLeft}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="absolute top-4 left-4 w-20 h-20 opacity-80"
+            >
+              <Image
+                src="https://emiactech.com/wp-content/uploads/2025/09/decor-help-body.png"
+                alt="Decorative graphic"
+                width={80}
+                height={80}
+                className="w-full h-full object-contain"
+              />
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 export default function InsightsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('6m')
@@ -230,42 +403,84 @@ export default function InsightsPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 text-gray-900 dark:text-white">
       {/* Main content with top padding to account for fixed navbar */}
       <div
-              className="absolute inset-0 z-0"
+              className="absolute inset-0 z-0 pointer-events-none"
               style={{
                 background: "radial-gradient(125% 125% at 50% 90%, transparent 50%, #6366f1 100%)",
               }}
             />
-      <div className="pt-20">
+      <div className=" -mt-20">
         {/* Hero Section */}
-        <section className="relative py-0">
-          <div className=" w-full relative">
-            {/* Content */}
-            <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 lg:px-8 pt-20 pb-20">
-              <div className="text-center mb-16">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-6">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  Case Studies
+        <HeroSection />
+
+        {/* Insights Header + Columns */}
+        <section className="pt-6 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={staggerContainer}
+              className="text-center mb-10"
+            >
+              <motion.div variants={fadeInUp} className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-4">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V9a2 2 0 012-2h2a2 2 0 012 2v10"/></svg>
+                Insights Overview
+              </motion.div>
+              <motion.h2 variants={fadeInUp} className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+                Actionable SEO Insights
+              </motion.h2>
+              <motion.p variants={fadeInUp} className="mt-3 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                Understand what you are looking at: each column highlights a different lens on performance.
+              </motion.p>
+            </motion.div>
+
+            <motion.div
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={staggerContainer}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            >
+              <motion.div variants={fadeInUp} className="rounded-2xl border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 text-left shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">Traffic Growth</span>
+                  <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l6-6 4 4 7-7"/></svg>
                 </div>
-                <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                  <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                    Case Studies
-                  </span>
-                </h1>
-                <p className="text-xl text-gray-700 dark:text-gray-200 max-w-3xl mx-auto mb-8">
-                  Explore deep-dive case studies showcasing outcomes across Finance, Insurance, Automobile, and Healthcare.
-                </p>
-              </div>
-            </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Trend of organic visitors over time; helpful to spot momentum.</p>
+              </motion.div>
+
+              <motion.div variants={fadeInUp} className="rounded-2xl border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 text-left shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">Keyword Rankings</span>
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21h8M12 17V3m0 0l-3 3m3-3l3 3"/></svg>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Visibility across priority keywords; shows where we win attention.</p>
+              </motion.div>
+
+              <motion.div variants={fadeInUp} className="rounded-2xl border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 text-left shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Traffic Sources</span>
+                  <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3"/></svg>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Breakdown of where users come from: search, direct, social, and more.</p>
+              </motion.div>
+
+              <motion.div variants={fadeInUp} className="rounded-2xl border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 text-left shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-violet-600 dark:text-violet-400">Backlinks</span>
+                  <svg className="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 005.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Authority from referring domains; indicates long-term ranking power.</p>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Analytics Dashboard */}
+        {/* Case Studies Only */}
         <section className="pb-20 pt-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            {/* Controls */}
-            <div className="flex flex-wrap items-center justify-between mb-12">
+            {/* Removed controls/charts/tabs - showing all case studies */}
+            <div className="hidden">
               <div className="flex items-center gap-4 mb-4 sm:mb-0">
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                   <button
@@ -338,8 +553,8 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {/* Key Metrics Cards (removed) */}
+            <div className="hidden">
               <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center">
@@ -405,8 +620,8 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            {/* Charts Section (removed) */}
+            <div className="hidden">
               {/* Traffic Growth Chart */}
               <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
                 <div className="flex items-center justify-between mb-6">
@@ -461,8 +676,8 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* Traffic Sources & Backlinks */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Traffic Sources & Backlinks (removed) */}
+            <div className="hidden">
               {/* Traffic Sources */}
               <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Traffic Sources</h3>
@@ -513,39 +728,9 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* Case Studies - Tabbed */}
-            <div className="mt-16">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Explore by Industry</h2>
-                <p className="text-gray-600 dark:text-gray-300">Filter case studies by category</p>
-              </div>
-              <div className="mb-8 flex w-full items-center justify-center">
-                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200/60 bg-white/70 p-1 shadow-sm dark:border-gray-700/60 dark:bg-gray-900/40">
-                  {[
-                    { id: 'finance-case', label: 'Banking & Finance' },
-                    { id: 'insurance-case', label: 'Insurance' },
-                    { id: 'automobile-case', label: 'Automobile' },
-                    { id: 'healthcare-case', label: 'Healthcare' },
-                  ].map((t) => {
-                    const isActive = activeCategory === t.id
-                    return (
-                      <button
-                        key={t.id}
-                        onClick={() => setActiveCategory(t.id)}
-                        className={
-                          `px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-colors ` +
-                          (isActive
-                            ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow'
-                            : 'text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white')
-                        }
-                      >
-                        {t.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-              <CaseStudiesGrid selectedCategoryId={activeCategory} />
+            {/* Case Studies - All Rows */}
+            <div className="mt-6">
+              <CaseStudiesGrid selectedCategoryId="all" />
             </div>
 
           </div>
@@ -557,3 +742,5 @@ export default function InsightsPage() {
     </div>
   )
 }
+
+
