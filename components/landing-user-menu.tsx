@@ -3,11 +3,19 @@
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { signOut } from 'next-auth/react'
 import { useAuthStore } from '@/stores/auth-store'
 import UserAvatar from '@/public/images/user-avatar-32.png'
 
 export default function LandingUserMenu({ align }: { align?: 'left' | 'right' }) {
   const { user, isAuthenticated, logout } = useAuthStore()
+
+  const handleSignOut = async () => {
+    // Clear local state first
+    logout()
+    // Then sign out from NextAuth (handles server-side session clearing and redirect)
+    await signOut({ callbackUrl: '/' })
+  }
 
   if (!isAuthenticated || !user) {
     return (
@@ -83,7 +91,7 @@ export default function LandingUserMenu({ align }: { align?: 'left' | 'right' })
           <MenuItem as="li">
             <button 
               className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
-              onClick={() => logout()}
+              onClick={handleSignOut}
             >
               Sign Out
             </button>
