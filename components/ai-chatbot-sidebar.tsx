@@ -37,6 +37,7 @@ import { useAIChatbot } from './ai-chatbot-provider'
 import { useCart } from '@/contexts/cart-context'
 import { useChat } from '@/contexts/chat-context'
 import { MarkdownRenderer } from './markdown-renderer'
+import { useAIMessageListener } from '@/lib/ai-chat-utils'
 
 interface Message {
   id: string
@@ -66,6 +67,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const inflightAbortRef = useRef<AbortController | null>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -80,6 +82,16 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       inputRef.current.focus()
     }
   }, [])
+
+  // Cleanup: abort any pending requests when component unmounts
+  useEffect(() => {
+    return () => {
+      if (inflightAbortRef.current) {
+        try { inflightAbortRef.current.abort() } catch {}
+      }
+    }
+  }, [])
+
 
   // Process AI response and handle all possible actions
   const processAIResponse = async (
@@ -196,7 +208,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       case 'navigate':
         try {
           // Stop streaming to avoid interference with navigation
-          try { inflightAbort?.abort() } catch {}
+          try { inflightAbortRef.current?.abort() } catch {}
           const target = normalizeRoute(action.data)
           router.push(target)
         } catch {
@@ -206,7 +218,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
       case 'filter':
         try {
-          try { inflightAbort?.abort() } catch {}
+          try { inflightAbortRef.current?.abort() } catch {}
           applyFilters(action.data)
           // Force a refresh to ensure data & pricing are visible after URL change
           try { (router as any).refresh?.() } catch {}
@@ -319,7 +331,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         const cartItemCount = apiCartState?.totalItems ?? getTotalItems()
         if (cartItemCount > 0) {
           try {
-            try { inflightAbort?.abort() } catch {}
+            try { inflightAbortRef.current?.abort() } catch {}
             router.push('/checkout')
           } catch {
             try { window.location.assign('/checkout') } catch {}
@@ -428,14 +440,14 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     }
   }
 
-  let inflightAbort: AbortController | null = null
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return
+  const sendMessage = async (messageContent?: string) => {
+    const content = messageContent || input.trim()
+    if (!content || isLoading) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      content: input.trim(),
+      content: content,
       role: 'user',
       timestamp: new Date()
     }
@@ -476,10 +488,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       })
 
       // Abort any previous streaming request to prevent overlap
-      if (inflightAbort) {
-        try { inflightAbort.abort() } catch {}
+      if (inflightAbortRef.current) {
+        try { inflightAbortRef.current.abort() } catch {}
       }
-      inflightAbort = new AbortController()
+      inflightAbortRef.current = new AbortController()
 
       const response = await fetch('/api/ai-chat?stream=1', {
         method: 'POST',
@@ -487,7 +499,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           'Content-Type': 'application/json',
         },
         cache: 'no-store',
-        signal: inflightAbort.signal,
+        signal: inflightAbortRef.current.signal,
         body: JSON.stringify({
           message: userMessage.content,
           messages: messages,
@@ -559,6 +571,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       // This ensures actions still run even if the server did not emit tool events
       await processAIResponse(accumulated, cartStateForAPI, { targetMessageId: assistantId, userText: userMessage.content })
     } catch (error) {
+      // Handle AbortError gracefully - this is expected when requests are cancelled
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('Request was aborted, this is expected behavior')
+        // Don't show error message for aborted requests
+        return
+      }
+      
       console.error('Error sending message:', error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -578,6 +597,14 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       sendMessage()
     }
   }
+
+  // Listen for programmatic message sending from search bar
+  useAIMessageListener((message) => {
+    if (message && !isLoading) {
+      // Pass the message directly to sendMessage
+      sendMessage(message)
+    }
+  })
 
   const clearChat = () => {
     clearMessages()
@@ -787,7 +814,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                     <Mic className="h-3 w-3 text-white/60" />
                   </button>
                   <Button
-                    onClick={sendMessage}
+                    onClick={() => sendMessage()}
                     disabled={!input.trim() || isLoading}
                     size="sm"
                     className="bg-violet-600/90 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg backdrop-blur-sm border border-violet-500/30"

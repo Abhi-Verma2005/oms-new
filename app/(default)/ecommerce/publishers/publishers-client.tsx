@@ -35,6 +35,8 @@ import {
 import { fetchSitesWithFilters, transformAPISiteToSite, type APIFilters, type Site, fetchCategoryRecommendations, type CategoryRecommendation } from "@/lib/sample-sites"
 import { useCart } from "@/contexts/cart-context"
 import { useWishlist } from "@/contexts/wishlist-context"
+import { useSearchToChatStore } from '@/stores/search-to-chat-store'
+import { useAIChatUtils } from '@/lib/ai-chat-utils'
 import { Flag } from "@/components/ui/flag"
 import { AhrefsIcon, SemrushIcon, MozIcon } from "@/components/ui/brand-icons"
 import dynamic from "next/dynamic"
@@ -1797,10 +1799,25 @@ function WishlistInlineButton({ site }: { site: Site }) {
 
 export default function PublishersClient() {
   const router = useRouter()
+  const { shouldAutoSendQuery, autoSendQuery, clearAutoSend } = useSearchToChatStore()
+  const { sendMessage } = useAIChatUtils()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
+
+  // Handle auto-send query when sidebar opens
+  useEffect(() => {
+    if (shouldAutoSendQuery() && autoSendQuery) {
+      // Small delay to ensure sidebar is fully opened
+      const timer = setTimeout(async () => {
+        await sendMessage(autoSendQuery)
+        clearAutoSend()
+      }, 500)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [shouldAutoSendQuery, autoSendQuery, sendMessage, clearAutoSend])
   function HeaderCheckout() {
     const { getTotalItems } = useCart()
     const count = getTotalItems()
