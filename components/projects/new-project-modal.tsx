@@ -25,12 +25,23 @@ export function NewProjectModal({ open, onOpenChange, onCreated }: { open: boole
         body: JSON.stringify({ domain, description, defaultUrl, defaultAnchor })
       })
       if (!res.ok) throw new Error("Failed to create project")
+      const { data } = await res.json()
       onOpenChange(false)
       setDomain("")
       setDescription("")
       setDefaultUrl("")
       setDefaultAnchor("")
+      try {
+        window.dispatchEvent(new Event('project:created'))
+      } catch {}
       onCreated?.()
+      // Optionally auto-select the newly created project
+      try {
+        if (data?.id) {
+          const { useProjectStore } = await import('@/stores/project-store')
+          useProjectStore.getState().setSelectedProject({ id: data.id, name: data.name, domain: data.domain })
+        }
+      } catch {}
     } catch (e: any) {
       setError(e.message || "Failed to create project")
     } finally {

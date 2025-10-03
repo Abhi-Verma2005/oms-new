@@ -18,8 +18,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Too Many Requests" }, { status: 429, headers: createRateLimitHeaders(rl.limit, rl.remaining, rl.resetTime) as any })
   }
 
+  const projectId = request.nextUrl.searchParams.get('projectId') || undefined
+
   const orders = await prisma.order.findMany({
-    where: { userId },
+    where: { userId, ...(projectId ? { projectId } : {}) },
     include: { items: true, transactions: true },
     orderBy: { createdAt: "desc" },
   })
@@ -44,10 +46,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { items, currency = 'USD', status } = body as {
+    const { items, currency = 'USD', status, projectId } = body as {
       items: Array<{ siteId: string; siteName: string; priceCents: number; withContent?: boolean; quantity?: number }>
       currency?: string
       status: 'PAID' | 'FAILED' | 'CANCELLED' // Explicit status required
+      projectId?: string
     }
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -66,6 +69,7 @@ export async function POST(req: NextRequest) {
         totalAmount,
         currency,
         status, // Use explicit status instead of default PENDING
+        projectId: projectId ?? null,
         items: {
           create: items.map((it) => ({
             siteId: it.siteId,

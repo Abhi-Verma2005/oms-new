@@ -105,10 +105,78 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem('cart', JSON.stringify(state.items)) } catch {}
   }, [state.items])
 
-  const addItem = (site: Site) => dispatch({ type: 'ADD_ITEM', payload: { site } })
-  const addProduct = (product: CartProductItemData) => dispatch({ type: 'ADD_PRODUCT', payload: { product } })
-  const removeItem = (siteId: string) => dispatch({ type: 'REMOVE_ITEM', payload: { siteId } })
-  const clearCart = () => dispatch({ type: 'CLEAR_CART' })
+  const addItem = (site: Site) => {
+    dispatch({ type: 'ADD_ITEM', payload: { site } })
+    // Log activity asynchronously
+    setTimeout(() => {
+      try {
+        fetch('/api/activity/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            activity: 'ADD_TO_CART',
+            category: 'CART',
+            description: `Added ${site.name}`,
+            metadata: { siteId: site.id, siteName: site.name, priceCents: site.publishing?.price ?? undefined }
+          })
+        }).catch(() => {})
+      } catch {}
+    }, 0)
+  }
+  const addProduct = (product: CartProductItemData) => {
+    dispatch({ type: 'ADD_PRODUCT', payload: { product } })
+    // Log activity asynchronously
+    setTimeout(() => {
+      try {
+        fetch('/api/activity/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            activity: 'ADD_TO_CART',
+            category: 'CART',
+            description: `Added ${product.name}`,
+            metadata: { productId: product.id, priceDollars: product.priceDollars }
+          })
+        }).catch(() => {})
+      } catch {}
+    }, 0)
+  }
+  const removeItem = (siteId: string) => {
+    dispatch({ type: 'REMOVE_ITEM', payload: { siteId } })
+    // Log activity asynchronously
+    setTimeout(() => {
+      try {
+        fetch('/api/activity/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            activity: 'REMOVE_FROM_CART',
+            category: 'CART',
+            description: `Removed ${siteId}`,
+            metadata: { siteId }
+          })
+        }).catch(() => {})
+      } catch {}
+    }, 0)
+  }
+  const clearCart = () => {
+    dispatch({ type: 'CLEAR_CART' })
+    // Log activity asynchronously
+    setTimeout(() => {
+      try {
+        fetch('/api/activity/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            activity: 'CLEAR_CART',
+            category: 'CART',
+            description: 'Cleared cart',
+            metadata: { itemCount: state.items.length }
+          })
+        }).catch(() => {})
+      } catch {}
+    }, 0)
+  }
   const toggleCart = () => dispatch({ type: 'SET_OPEN', payload: !state.isOpen })
   const openCart = () => dispatch({ type: 'SET_OPEN', payload: true })
   const closeCart = () => dispatch({ type: 'SET_OPEN', payload: false })
