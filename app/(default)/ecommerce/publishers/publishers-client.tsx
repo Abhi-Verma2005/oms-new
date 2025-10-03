@@ -39,6 +39,8 @@ import { Flag } from "@/components/ui/flag"
 import { AhrefsIcon, SemrushIcon, MozIcon } from "@/components/ui/brand-icons"
 import dynamic from "next/dynamic"
 const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-help-carousel"), { ssr: false })
+import { ProjectSelector } from '@/components/projects/project-selector'
+import { useActivityLogger } from '@/lib/user-activity-client'
 
 type Trend = "increasing" | "decreasing" | "stable"
 type BacklinkNature = "do-follow" | "no-follow" | "sponsored"
@@ -105,6 +107,23 @@ function convertFiltersToAPI(f: Filters, searchQuery: string): APIFilters {
 
 
 function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilters: React.Dispatch<React.SetStateAction<Filters>>; loading: boolean }) {
+  const { log } = useActivityLogger()
+  const [lastLogged, setLastLogged] = useState<any>(null)
+  // debounce logging of filter changes
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try {
+        const payload = summarizeFilters(filters)
+        const asString = JSON.stringify(payload)
+        if (asString !== lastLogged) {
+          log('APPLY_FILTERS', 'NAVIGATION', 'Updated publishers filters', payload)
+          setLastLogged(asString)
+        }
+      } catch {}
+    }, 600)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
   // Saved views (localStorage)
   const [views, setViews] = useState<Array<{ id: string; name: string; filters: any }>>([])
   const [viewName, setViewName] = useState("")
@@ -799,6 +818,16 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       </ModalBasic>
     </>
   )
+}
+
+function summarizeFilters(f: Filters) {
+  const keys = ['niche','language','country','daMin','daMax','paMin','paMax','drMin','drMax','spamMin','spamMax','semrushOverallTrafficMin','semrushOrganicTrafficMin','priceMin','priceMax','tatDaysMin','tatDaysMax','trend','availability','backlinkNature','linkPlacement','permanence','tool']
+  const out: Record<string, any> = {}
+  for (const k of keys) {
+    const v = (f as any)[k]
+    if (v !== undefined && v !== null && v !== '') out[k] = v
+  }
+  return out
 }
 
 function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void }) {
@@ -2123,6 +2152,19 @@ export default function PublishersClient() {
               <Button variant="outline" className="h-8 text-xs px-3 flex-1 sm:flex-none" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
               <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname || '/publishers', { scroll: false }) }}>Reset</Button>
               {hasCheckoutFab && <HeaderCheckout />}
+            </div>
+          </div>
+        </div>
+
+        {/* Project Context Section - Above filters */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Project Context</div>
+              <ProjectSelector />
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              Track your searches, cart additions, and purchases per project
             </div>
           </div>
         </div>

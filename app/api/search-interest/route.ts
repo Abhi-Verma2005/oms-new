@@ -18,20 +18,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => null)
     const query = (body?.query || '').trim()
     const filters = body?.filters ?? null
+    const projectId = (body?.projectId || null) as string | null
     if (!query) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 })
     }
 
     // Upsert-like behavior: avoid duplicates for same user/query if not yet notified
     const existing = await prisma.searchInterest.findFirst({
-      where: { userId, query, notified: false },
+      where: { userId, query, notified: false, projectId: projectId ?? undefined },
     })
     if (existing) {
       return NextResponse.json({ ok: true, id: existing.id })
     }
 
     const created = await prisma.searchInterest.create({
-      data: { userId, email, query, filters },
+      data: { userId, email, query, filters, projectId },
     })
     return NextResponse.json({ ok: true, id: created.id })
   } catch (e) {

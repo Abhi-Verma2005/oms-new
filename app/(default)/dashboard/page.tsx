@@ -23,6 +23,8 @@ import TrafficSourcesCard from './analytics/traffic-sources-card'
 import BacklinksPerformanceCard from './analytics/backlinks-performance-card'
 import SerpFeaturesCard from './analytics/serp-features-card'
 import PersonalAnalytics from './personal-analytics'
+import ActivityFeed from '@/app/(default)/dashboard/user-activity-feed'
+import { ProjectSelector } from '@/components/projects/project-selector'
 
 export default function Dashboard() {
   return (
@@ -49,6 +51,20 @@ export default function Dashboard() {
       {/* Personal Analytics Section */}
       <div className="mb-8">
         <PersonalAnalytics />
+      </div>
+
+      {/* Activity Feed */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl md:text-2xl text-gray-800 dark:text-gray-100 font-semibold">Project Activity</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Track your searches, cart additions, purchases, and filters per project
+            </p>
+          </div>
+          <ProjectSelector />
+        </div>
+        <ActivityFeed />
       </div>
 
       {/* EMIAC Case Studies Section */}
