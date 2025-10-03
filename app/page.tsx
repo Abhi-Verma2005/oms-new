@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import UnifiedNavbar from "@/components/ui/unified-navbar"
+import { useSearchToChatStore } from '@/stores/search-to-chat-store'
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards"
 import { Spotlight } from "@/components/ui/spotlight"
 import BarChart01 from "@/components/charts/bar-chart-01"
@@ -105,6 +108,38 @@ const clientTestimonials = [
 
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const { setPendingQuery, setAutoSend, setRedirecting, isRedirecting } = useSearchToChatStore();
+
+  const handleSearchSubmit = async () => {
+    if (!searchQuery.trim()) return;
+
+    // Set loading state
+    setRedirecting(true);
+
+    try {
+      if (status === 'loading') {
+        // Still loading, wait a bit
+        setTimeout(() => handleSearchSubmit(), 500);
+        return;
+      }
+
+      if (!session) {
+        // User not authenticated, store query and redirect to signin
+        setPendingQuery(searchQuery.trim());
+        router.push('/signin');
+        return;
+      }
+
+      // User is authenticated, redirect to publishers with sidebar open
+      setAutoSend(true, searchQuery.trim());
+      router.push('/publishers?sidebar=open');
+    } catch (error) {
+      console.error('Error handling search submit:', error);
+      setRedirecting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 text-gray-900 dark:text-white">
@@ -292,20 +327,27 @@ export default function LandingPage() {
                   }}
                 />
                 {/* Textarea input */}
-                <textarea
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="What do you want to know?"
-                  className="w-full bg-transparent text-gray-900 dark:text-white text-base font-medium placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none outline-none focus:outline-none focus:ring-0 border-0 min-h-[40px] flex-1"
-                  rows={1}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      // Handle search submission here
-                      console.log('Search query:', searchQuery);
-                    }
-                  }}
-                />
+                <div className="relative flex-1">
+                  <textarea
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={isRedirecting ? "Processing your request..." : "What do you want to know?"}
+                    disabled={isRedirecting}
+                    className="w-full bg-transparent text-gray-900 dark:text-white text-base font-medium placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none outline-none focus:outline-none focus:ring-0 border-0 min-h-[40px] disabled:opacity-50"
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && !isRedirecting) {
+                        e.preventDefault();
+                        handleSearchSubmit();
+                      }
+                    }}
+                  />
+                  {isRedirecting && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-purple-600"></div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* Bottom row with interactive elements */}
                 <div className="flex items-center justify-between mt-4">

@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import AuthHeader from '../auth-header'
 import AuthFeatures, { AuthFeaturesMobile } from '../auth-features'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
+import { useSearchToChatStore } from '@/stores/search-to-chat-store'
+import { useRouter } from 'next/navigation'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -12,6 +14,24 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showResetOption, setShowResetOption] = useState(false)
+  const { pendingQuery, clearPendingQuery, setAutoSend } = useSearchToChatStore()
+  const router = useRouter()
+
+  // Handle Google signin callback for pending queries
+  useEffect(() => {
+    const handleGoogleCallback = () => {
+      if (pendingQuery) {
+        setAutoSend(true, pendingQuery)
+        clearPendingQuery()
+        router.push('/publishers?sidebar=open')
+      }
+    }
+
+    // Check if we're coming back from Google signin
+    if (window.location.search.includes('callbackUrl=/publishers')) {
+      handleGoogleCallback()
+    }
+  }, [pendingQuery, setAutoSend, clearPendingQuery, router])
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -30,7 +50,14 @@ export default function SignIn() {
         setShowResetOption(true)
         setLoading(false)
       } else if (res?.ok) {
-        window.location.href = '/dashboard'
+        // Check if there's a pending query to redirect to publishers
+        if (pendingQuery) {
+          setAutoSend(true, pendingQuery)
+          clearPendingQuery()
+          router.push('/publishers?sidebar=open')
+        } else {
+          window.location.href = '/dashboard'
+        }
       }
     } catch (err: any) {
       setError('Sign in failed. Please try again.')
@@ -98,7 +125,10 @@ export default function SignIn() {
               </form>
               {/* Social providers */}
               <div className="mt-6 space-y-2">
-                <button onClick={() => signIn('google', { callbackUrl: '/dashboard' })} className="btn w-full bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 cursor-pointer">Continue with Google</button>
+                <button onClick={() => {
+                  const callbackUrl = pendingQuery ? '/publishers?sidebar=open' : '/dashboard'
+                  signIn('google', { callbackUrl })
+                }} className="btn w-full bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 cursor-pointer">Continue with Google</button>
               </div>
               {/* Footer */}
               <div className="pt-5 mt-6 border-t border-gray-100 dark:border-gray-700/60">
