@@ -9,6 +9,7 @@ export interface ActivityLogData {
   metadata?: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
+  projectId?: string | null;
 }
 
 export class ActivityLogger {
@@ -24,6 +25,8 @@ export class ActivityLogger {
           metadata: data.metadata ? (data.metadata as any) : undefined,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
+          // Note: projectId will be available after database migration
+          // projectId: data.projectId ?? undefined,
         },
       });
     } catch (error) {

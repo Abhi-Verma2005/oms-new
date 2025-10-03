@@ -8,11 +8,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Copied from OMS schema (unchanged)
 model Account {
   id                String   @id @default(cuid())
   userId            String   @map("user_id")
-  type              String  
+  type              String
   provider          String
   providerAccountId String   @map("provider_account_id")
   refresh_token     String?
@@ -42,39 +41,39 @@ model Session {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  name           String?
-  email          String          @unique
-  emailVerified  DateTime?       @map("email_verified")
-  image          String?
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-  mfaEnabled     Boolean         @default(false) @map("mfa_enabled")
-  mfaSecret      String?         @map("mfa_secret")
-  backupCodes    String[]        @map("backup_codes")
-  password       String?
+  id                String                 @id @default(cuid())
+  name              String?
+  email             String                 @unique
+  emailVerified     DateTime?              @map("email_verified")
+  image             String?
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+  mfaEnabled        Boolean                @default(false) @map("mfa_enabled")
+  mfaSecret         String?                @map("mfa_secret")
+  backupCodes       String[]               @map("backup_codes")
+  password          String?
   // Credits: resets daily to 50; tracked per user
-  dailyCredits   Int             @default(50) @map("daily_credits")
-  lastCreditReset DateTime?      @map("last_credit_reset")
-  accounts       Account[]
-  authenticators Authenticator[]
-  orders         Order[]
-  savedViews     SavedView[]
-  sessions       Session[]
-  userRoles      UserRole[]
-  activities     UserActivity[]
+  dailyCredits      Int                    @default(50) @map("daily_credits")
+  lastCreditReset   DateTime?              @map("last_credit_reset")
+  accounts          Account[]
+  authenticators    Authenticator[]
+  orders            Order[]
+  savedViews        SavedView[]
+  sessions          Session[]
+  userRoles         UserRole[]
+  activities        UserActivity[]
   notificationReads UserNotificationRead[]
   onboardingProfile OnboardingProfile?
-  searchInterests SearchInterest[]
-  feedbacks      Feedback[]
-  wishlists      Wishlist[]
-  projects       Project[]
-  
+  searchInterests   SearchInterest[]
+  feedbacks         Feedback[]
+  wishlists         Wishlist[]
+  projects          Project[]
+
   // Tag and Bonus System Relations
-  userTags       UserTag[]
-  orderFilters   OrderFilter[]
-  bonusGrants    BonusGrant[]
-  
+  userTags     UserTag[]
+  orderFilters OrderFilter[]
+  bonusGrants  BonusGrant[]
+
   // Enhanced User Context Relations
   userContext    UserContext?
   userProfile    UserProfile?
@@ -171,20 +170,26 @@ model RolePermission {
 }
 
 model Order {
-  id           String        @id @default(cuid())
-  userId       String        @map("user_id")
-  status       OrderStatus
-  totalAmount  Int           @map("total_amount")
-  currency     String        @default("USD")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+  status      OrderStatus
+  totalAmount Int         @map("total_amount")
+  currency    String      @default("USD")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Project scoping (nullable for backward compatibility)
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
   items        OrderItem[]
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
-  
-  // Tag System Relations
-  orderTags    OrderTag[]
 
+  // Tag System Relations
+  orderTags OrderTag[]
+
+  @@index([userId, projectId, createdAt])
   @@map("orders")
 }
 
@@ -229,20 +234,26 @@ model SavedView {
 }
 
 model UserActivity {
-  id          String            @id @default(cuid())
-  userId      String            @map("user_id")
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
   activity    String
   category    ActivityCategory
   description String?
   metadata    Json?
-  ipAddress   String?           @map("ip_address")
-  userAgent   String?           @map("user_agent")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress   String?          @map("ip_address")
+  userAgent   String?          @map("user_agent")
+  createdAt   DateTime         @default(now()) @map("created_at")
 
-  @@map("user_activities")
+  // Project scoping (nullable for backward compatibility)
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, createdAt])
   @@index([category, createdAt])
+  @@index([userId, projectId, createdAt])
+  @@map("user_activities")
 }
 
 enum ActivityCategory {
@@ -274,145 +285,145 @@ enum TransactionStatus {
 
 // Case Studies Models for EMIAC Dashboard
 model CaseStudy {
-  id                String   @id @default(cuid())
-  clientName        String   @map("client_name")
-  industry          String
-  campaignDuration  String   @map("campaign_duration")
-  startDate         DateTime @map("start_date")
-  endDate           DateTime? @map("end_date")
-  isActive          Boolean  @default(true) @map("is_active")
-  
+  id               String    @id @default(cuid())
+  clientName       String    @map("client_name")
+  industry         String
+  campaignDuration String    @map("campaign_duration")
+  startDate        DateTime  @map("start_date")
+  endDate          DateTime? @map("end_date")
+  isActive         Boolean   @default(true) @map("is_active")
+
   // Key Results
-  trafficGrowth     Float    @map("traffic_growth") // Percentage growth
-  initialTraffic    Float    @map("initial_traffic") // In lacs
-  finalTraffic      Float    @map("final_traffic") // In lacs
-  keywordsRanked    Int      @map("keywords_ranked")
-  backlinksPerMonth Int      @map("backlinks_per_month")
-  domainRatingStart Int?     @map("domain_rating_start")
-  domainRatingEnd   Int?     @map("domain_rating_end")
-  
+  trafficGrowth     Float @map("traffic_growth") // Percentage growth
+  initialTraffic    Float @map("initial_traffic") // In lacs
+  finalTraffic      Float @map("final_traffic") // In lacs
+  keywordsRanked    Int   @map("keywords_ranked")
+  backlinksPerMonth Int   @map("backlinks_per_month")
+  domainRatingStart Int?  @map("domain_rating_start")
+  domainRatingEnd   Int?  @map("domain_rating_end")
+
   // Content
-  objective         String
-  challenge         String
-  solution          String
-  finalOutcomes     String   @map("final_outcomes")
-  
+  objective     String
+  challenge     String
+  solution      String
+  finalOutcomes String @map("final_outcomes")
+
   // SEO Features
-  serpFeatures      Boolean  @default(false) @map("serp_features")
-  aiOverview        Boolean  @default(false) @map("ai_overview")
-  
+  serpFeatures Boolean @default(false) @map("serp_features")
+  aiOverview   Boolean @default(false) @map("ai_overview")
+
   // Metadata
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-  createdBy         String?  @map("created_by")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+
   // Relations
-  monthlyData       MonthlyData[]
-  keywordData       KeywordData[]
-  serpFeaturesList      SerpFeature[]
-  
+  monthlyData      MonthlyData[]
+  keywordData      KeywordData[]
+  serpFeaturesList SerpFeature[]
+
   @@map("case_studies")
 }
 
 model MonthlyData {
-  id           String    @id @default(cuid())
-  caseStudyId  String    @map("case_study_id")
-  month        String    // e.g., "Feb 2025"
-  traffic      Float     // Traffic in lacs
-  keywords     Int       // Number of keywords ranked
-  backlinks    Int       // Backlinks generated
-  createdAt    DateTime  @default(now()) @map("created_at")
-  
-  caseStudy    CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
-  
+  id          String   @id @default(cuid())
+  caseStudyId String   @map("case_study_id")
+  month       String // e.g., "Feb 2025"
+  traffic     Float // Traffic in lacs
+  keywords    Int // Number of keywords ranked
+  backlinks   Int // Backlinks generated
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+
   @@unique([caseStudyId, month])
   @@map("monthly_data")
 }
 
 model KeywordData {
-  id           String    @id @default(cuid())
-  caseStudyId  String    @map("case_study_id")
-  keyword      String
-  jan2025      Int?      @map("jan_2025")
-  feb2025      Int?      @map("feb_2025")
-  mar2025      Int?      @map("mar_2025")
-  apr2025      Int?      @map("apr_2025")
-  may2025      Int?      @map("may_2025")
-  jun2025      Int?      @map("jun_2025")
-  jul2025      Int?      @map("jul_2025")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  
-  caseStudy    CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
-  
+  id          String   @id @default(cuid())
+  caseStudyId String   @map("case_study_id")
+  keyword     String
+  jan2025     Int?     @map("jan_2025")
+  feb2025     Int?     @map("feb_2025")
+  mar2025     Int?     @map("mar_2025")
+  apr2025     Int?     @map("apr_2025")
+  may2025     Int?     @map("may_2025")
+  jun2025     Int?     @map("jun_2025")
+  jul2025     Int?     @map("jul_2025")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+
   @@map("keyword_data")
 }
 
 model SerpFeature {
-  id           String    @id @default(cuid())
-  caseStudyId  String    @map("case_study_id")
-  featureType  String    @map("feature_type") // "AI Overview", "Featured Snippet", etc.
-  keyword      String
-  url          String
-  position     Int?      // Position in SERP
-  createdAt    DateTime  @default(now()) @map("created_at")
-  
-  caseStudy    CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
-  
+  id          String   @id @default(cuid())
+  caseStudyId String   @map("case_study_id")
+  featureType String   @map("feature_type") // "AI Overview", "Featured Snippet", etc.
+  keyword     String
+  url         String
+  position    Int? // Position in SERP
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  caseStudy CaseStudy @relation(fields: [caseStudyId], references: [id], onDelete: Cascade)
+
   @@map("serp_features")
 }
 
 // Notification System Models
 model NotificationType {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  displayName String        @map("display_name")
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String   @map("display_name")
   description String?
-  icon        String?       // Icon name or emoji for the notification type
-  color       String?       // Color theme for the notification type
-  isActive    Boolean       @default(true) @map("is_active")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  
+  icon        String? // Icon name or emoji for the notification type
+  color       String? // Color theme for the notification type
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
   // Relations
   notifications Notification[]
-  
+
   @@map("notification_types")
 }
 
 model Notification {
-  id               String           @id @default(cuid())
-  title            String
-  body             String
-  imageUrl         String?          @map("image_url") // Banner image URL
-  typeId           String           @map("type_id")
-  isActive         Boolean          @default(true) @map("is_active")
-  isGlobal         Boolean          @default(true) @map("is_global") // If true, shows to all users
-  targetUserIds    String[]         @map("target_user_ids") // Specific user IDs if not global
-  priority         NotificationPriority @default(NORMAL)
-  expiresAt        DateTime?        @map("expires_at")
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
-  createdBy        String?          @map("created_by") // Admin user who created this notification
-  
+  id            String               @id @default(cuid())
+  title         String
+  body          String
+  imageUrl      String?              @map("image_url") // Banner image URL
+  typeId        String               @map("type_id")
+  isActive      Boolean              @default(true) @map("is_active")
+  isGlobal      Boolean              @default(true) @map("is_global") // If true, shows to all users
+  targetUserIds String[]             @map("target_user_ids") // Specific user IDs if not global
+  priority      NotificationPriority @default(NORMAL)
+  expiresAt     DateTime?            @map("expires_at")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  createdBy     String?              @map("created_by") // Admin user who created this notification
+
   // Relations
-  type             NotificationType @relation(fields: [typeId], references: [id], onDelete: Cascade)
-  userReads        UserNotificationRead[]
-  
-  @@map("notifications")
+  type      NotificationType       @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  userReads UserNotificationRead[]
+
   @@index([isActive, isGlobal, createdAt])
   @@index([expiresAt])
+  @@map("notifications")
 }
 
 model UserNotificationRead {
-  id             String       @id @default(cuid())
-  userId         String       @map("user_id")
-  notificationId String       @map("notification_id")
-  readAt         DateTime     @default(now()) @map("read_at")
-  
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  notificationId String   @map("notification_id")
+  readAt         DateTime @default(now()) @map("read_at")
+
   // Relations
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
   @@unique([userId, notificationId])
   @@map("user_notification_reads")
 }
@@ -424,59 +435,56 @@ enum NotificationPriority {
   URGENT
 }
 
-
 /// Optional, progressive onboarding data captured post-signup
 model OnboardingProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique @map("user_id")
+  id          String @id @default(cuid())
+  userId      String @unique @map("user_id")
   // Step tracking
-  currentStep   Int      @default(1) @map("current_step")
+  currentStep Int    @default(1) @map("current_step")
 
   // Step 1 - situation
-  situation     String?  // "company" | "freelancer" | "getting_started"
+  situation String? // "company" | "freelancer" | "getting_started"
 
   // Step 2 - company type and preferences
-  companyType   String?  @map("company_type") // "individual" | "organization"
+  companyType    String?  @map("company_type") // "individual" | "organization"
   marketingOptIn Boolean? @map("marketing_opt_in")
 
   // Step 3 - company information
-  companyName   String?  @map("company_name")
-  city          String?
-  postalCode    String?  @map("postal_code")
-  street        String?
-  country       String?
+  companyName String? @map("company_name")
+  city        String?
+  postalCode  String? @map("postal_code")
+  street      String?
+  country     String?
 
   // Step 4 - campaign preferences (optional)
-  monthlyBudget String?  @map("monthly_budget")
-  promotedUrl   String?  @map("promoted_url")
-  competitorUrl String?  @map("competitor_url")
+  monthlyBudget String? @map("monthly_budget")
+  promotedUrl   String? @map("promoted_url")
+  competitorUrl String? @map("competitor_url")
 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("onboarding_profiles")
 }
-
 
 // Changelog entries, manageable from Admin panel
 model ChangelogEntry {
   id          String   @id @default(cuid())
   title       String
   body        String
-  category    String   // Announcement | Bug Fix | Product | Exciting News
+  category    String // Announcement | Bug Fix | Product | Exciting News
   isPublished Boolean  @default(true) @map("is_published")
   publishedAt DateTime @default(now()) @map("published_at")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   authorId    String?  @map("author_id")
 
-  @@map("changelog_entries")
   @@index([isPublished, publishedAt])
   @@index([category])
+  @@map("changelog_entries")
 }
-
 
 // Save user search interests when no publishers matched
 model SearchInterest {
@@ -488,25 +496,29 @@ model SearchInterest {
   notified  Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Project scoping (nullable for backward compatibility)
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, query])
   @@index([notified, createdAt])
+  @@index([userId, projectId, createdAt])
   @@map("search_interests")
 }
-
 
 // Collect user feedback (UI: Settings → Feedback)
 model Feedback {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
-  rating    Int      // 1-5 likelihood
-  category  String?  // optional category/type
+  rating    Int // 1-5 likelihood
+  category  String? // optional category/type
   comment   String?
   createdAt DateTime @default(now()) @map("created_at")
   metadata  Json?
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([rating])
@@ -515,29 +527,35 @@ model Feedback {
 
 // Wishlist feature
 model Wishlist {
-  id        String        @id @default(cuid())
-  userId    String        @map("user_id")
-  name      String        @default("Default")
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     WishlistItem[]
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String   @default("Default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Project scoping (nullable for backward compatibility)
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
 
   @@unique([userId, name])
+  @@index([userId, projectId, createdAt])
   @@map("wishlists")
 }
 
 model WishlistItem {
-  id          String   @id @default(cuid())
-  wishlistId  String   @map("wishlist_id")
-  siteId      String   @map("site_id")
-  siteName    String   @map("site_name")
-  siteUrl     String?  @map("site_url")
-  priceCents  Int?     @map("price_cents")
-  currency    String   @default("USD")
-  addedAt     DateTime @default(now()) @map("added_at")
-  notes       String?
-  wishlist    Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  wishlistId String   @map("wishlist_id")
+  siteId     String   @map("site_id")
+  siteName   String   @map("site_name")
+  siteUrl    String?  @map("site_url")
+  priceCents Int?     @map("price_cents")
+  currency   String   @default("USD")
+  addedAt    DateTime @default(now()) @map("added_at")
+  notes      String?
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
 
   @@unique([wishlistId, siteId])
   @@index([siteId, addedAt])
@@ -545,12 +563,12 @@ model WishlistItem {
 }
 
 model AIChatbotConfig {
-  id            String   @id @default(cuid())
-  systemPrompt  String   @map("system_prompt")
-  navigationData Json    @map("navigation_data")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(cuid())
+  systemPrompt   String   @map("system_prompt")
+  navigationData Json     @map("navigation_data")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("ai_chatbot_config")
 }
@@ -570,15 +588,15 @@ model AIChatbotNavigation {
 
 // Tag System Models
 model Tag {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  color       String    @default("#3B82F6") // Hex color for badge UI
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String   @default("#3B82F6") // Hex color for badge UI
   description String?
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  createdBy   String?   @map("created_by") // Admin user who created this tag
-  
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @map("created_by") // Admin user who created this tag
+
   // Relations
   userTags    UserTag[]
   orderTags   OrderTag[]
@@ -591,34 +609,34 @@ model Tag {
 }
 
 model UserTag {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  tagId     String   @map("tag_id")
-  assignedBy String  @map("assigned_by") // Admin user who assigned this tag
-  assignedAt DateTime @default(now()) @map("assigned_at")
-  expiresAt DateTime? @map("expires_at") // Optional expiration date
-  notes     String?  // Optional notes about why this tag was assigned
-  
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  tagId      String    @map("tag_id")
+  assignedBy String    @map("assigned_by") // Admin user who assigned this tag
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+  expiresAt  DateTime? @map("expires_at") // Optional expiration date
+  notes      String? // Optional notes about why this tag was assigned
+
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
   @@unique([userId, tagId])
   @@map("user_tags")
 }
 
 model OrderTag {
-  id        String   @id @default(cuid())
-  orderId   String   @map("order_id")
-  tagId     String   @map("tag_id")
-  assignedBy String  @map("assigned_by") // Admin user who assigned this tag
+  id         String   @id @default(cuid())
+  orderId    String   @map("order_id")
+  tagId      String   @map("tag_id")
+  assignedBy String   @map("assigned_by") // Admin user who assigned this tag
   assignedAt DateTime @default(now()) @map("assigned_at")
-  notes     String?  // Optional notes about why this tag was assigned
-  
+  notes      String? // Optional notes about why this tag was assigned
+
   // Relations
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
   @@unique([orderId, tagId])
   @@map("order_tags")
 }
@@ -628,141 +646,145 @@ model OrderFilter {
   id        String   @id @default(cuid())
   userId    String   @map("user_id") // Admin user who created this filter
   name      String
-  filters   Json     // Store all filter criteria as JSON
+  filters   Json // Store all filter criteria as JSON
   isPublic  Boolean  @default(false) @map("is_public") // Whether other admins can see this filter
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, name])
   @@map("order_filters")
 }
 
 // Bonus System Models
 model BonusRule {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   name        String
   description String?
-  tagId       String?    @map("tag_id") // Optional: bonus based on specific tag
-  filters     Json       // Store filter criteria as JSON (similar to order filters)
-  bonusAmount Int        @map("bonus_amount") // Bonus amount in credits
-  maxUsers    Int?       @map("max_users") // Optional: limit number of users who can receive this bonus
-  isActive    Boolean    @default(true) @map("is_active")
-  startsAt    DateTime?  @map("starts_at") // Optional: when this rule becomes active
-  expiresAt   DateTime?  @map("expires_at") // Optional: when this rule expires
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
-  createdBy   String     @map("created_by") // Admin user who created this rule
-  
+  tagId       String?   @map("tag_id") // Optional: bonus based on specific tag
+  filters     Json // Store filter criteria as JSON (similar to order filters)
+  bonusAmount Int       @map("bonus_amount") // Bonus amount in credits
+  maxUsers    Int?      @map("max_users") // Optional: limit number of users who can receive this bonus
+  isActive    Boolean   @default(true) @map("is_active")
+  startsAt    DateTime? @map("starts_at") // Optional: when this rule becomes active
+  expiresAt   DateTime? @map("expires_at") // Optional: when this rule expires
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdBy   String    @map("created_by") // Admin user who created this rule
+
   // Relations
-  tag         Tag?       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tag         Tag?         @relation(fields: [tagId], references: [id], onDelete: Cascade)
   bonusGrants BonusGrant[]
-  
+
   @@map("bonus_rules")
 }
 
 model BonusGrant {
-  id          String     @id @default(cuid())
-  bonusRuleId String     @map("bonus_rule_id")
-  userId      String     @map("user_id")
-  amount      Int        // Actual amount granted (might differ from rule amount if max users reached)
-  grantedAt   DateTime   @default(now()) @map("granted_at")
-  grantedBy   String     @map("granted_by") // Admin user who granted this bonus
-  notes       String?    // Optional notes about this specific grant
-  
+  id          String   @id @default(cuid())
+  bonusRuleId String   @map("bonus_rule_id")
+  userId      String   @map("user_id")
+  amount      Int // Actual amount granted (might differ from rule amount if max users reached)
+  grantedAt   DateTime @default(now()) @map("granted_at")
+  grantedBy   String   @map("granted_by") // Admin user who granted this bonus
+  notes       String? // Optional notes about this specific grant
+
   // Relations
-  bonusRule   BonusRule  @relation(fields: [bonusRuleId], references: [id], onDelete: Cascade)
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  bonusRule BonusRule @relation(fields: [bonusRuleId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([bonusRuleId, userId]) // Prevent duplicate grants for same rule and user
   @@map("bonus_grants")
 }
 
-
 // Projects & Competitors
 model Project {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  name         String
-  domain       String   @unique
-  description  String?
-  defaultUrl   String?  @map("default_url")
-  defaultAnchor String? @map("default_anchor")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  name          String
+  domain        String   @unique
+  description   String?
+  defaultUrl    String?  @map("default_url")
+  defaultAnchor String?  @map("default_anchor")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Optional quick metrics
-  avgTraffic   Int?     @map("avg_traffic")
-  domainRating Int?     @map("domain_rating")
+  avgTraffic   Int? @map("avg_traffic")
+  domainRating Int? @map("domain_rating")
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  competitors  ProjectCompetitor[]
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competitors ProjectCompetitor[]
 
-  @@map("projects")
+  // Back-relations (added)
+  activities      UserActivity[]
+  orders          Order[]
+  wishlists       Wishlist[]
+  searchInterests SearchInterest[]
+
   @@index([userId, createdAt])
+  @@map("projects")
 }
 
 model ProjectCompetitor {
-  id           String   @id @default(cuid())
-  projectId    String   @map("project_id")
-  name         String
-  domain       String
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  projectId String   @map("project_id")
+  name      String
+  domain    String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Optional metrics snapshot
   traffic      Int?
   domainRating Int?
 
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, domain])
   @@map("project_competitors")
 }
 
-
 // Commerce: Products, Reviews, and Package configuration
 model Product {
-  id                   String        @id @default(cuid())
-  slug                 String        @unique
-  header               String        // Primary heading (e.g., package name)
-  subheader            String?       // Secondary heading (e.g., pricing badge text)
-  imageUrl             String?
-  descriptionMarkdown  String?
+  id                      String   @id @default(cuid())
+  slug                    String   @unique
+  header                  String // Primary heading (e.g., package name)
+  subheader               String? // Secondary heading (e.g., pricing badge text)
+  imageUrl                String?
+  descriptionMarkdown     String?
   // Pricing (in cents to avoid float)
-  pricePerMonthCents   Int?          @map("price_per_month_cents")
-  discountPercent      Int?          @map("discount_percent") // 0-100
-  finalPricePerMonthCents Int?       @map("final_price_per_month_cents")
-  currency             String        @default("USD")
-  badge                String?
+  pricePerMonthCents      Int?     @map("price_per_month_cents")
+  discountPercent         Int?     @map("discount_percent") // 0-100
+  finalPricePerMonthCents Int?     @map("final_price_per_month_cents")
+  currency                String   @default("USD")
+  badge                   String?
   // Visibility flags
-  showOnShop2          Boolean       @default(false) @map("show_on_shop2")
-  showOnLinkBuilding   Boolean       @default(false) @map("show_on_link_building")
-  isActive             Boolean       @default(true)  @map("is_active")
-  sortOrder            Int           @default(0)     @map("sort_order")
-  createdAt            DateTime      @default(now()) @map("created_at")
-  updatedAt            DateTime      @updatedAt      @map("updated_at")
+  showOnShop2             Boolean  @default(false) @map("show_on_shop2")
+  showOnLinkBuilding      Boolean  @default(false) @map("show_on_link_building")
+  isActive                Boolean  @default(true) @map("is_active")
+  sortOrder               Int      @default(0) @map("sort_order")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   // Relations
-  features             ProductFeature[]
-  productTags          ProductTag[]
-  reviewProducts       ReviewProduct[]
+  features       ProductFeature[]
+  productTags    ProductTag[]
+  reviewProducts ReviewProduct[]
 
   @@index([showOnShop2, showOnLinkBuilding, isActive, sortOrder])
   @@map("products")
 }
 
 model ProductFeature {
-  id          String   @id @default(cuid())
-  productId   String   @map("product_id")
-  title       String   // e.g., "Guest Posts"
-  value       String?  // e.g., "4 Links"
-  icon        String?  // optional icon name
-  sortOrder   Int      @default(0) @map("sort_order")
+  id        String  @id @default(cuid())
+  productId String  @map("product_id")
+  title     String // e.g., "Guest Posts"
+  value     String? // e.g., "4 Links"
+  icon      String? // optional icon name
+  sortOrder Int     @default(0) @map("sort_order")
 
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, sortOrder])
   @@map("product_features")
@@ -770,30 +792,30 @@ model ProductFeature {
 
 // Many-to-many between Product and Tag
 model ProductTag {
-  id        String  @id @default(cuid())
-  productId String  @map("product_id")
-  tagId     String  @map("tag_id")
+  id         String   @id @default(cuid())
+  productId  String   @map("product_id")
+  tagId      String   @map("tag_id")
   assignedAt DateTime @default(now()) @map("assigned_at")
 
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([productId, tagId])
   @@map("product_tags")
 }
 
 model Review {
-  id              String   @id @default(cuid())
-  authorName      String   @map("author_name")
-  rating          Int
-  bodyMarkdown    String   @map("body_markdown")
-  isApproved      Boolean  @default(true) @map("is_approved")
-  displayOrder    Int      @default(0)     @map("display_order")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt      @map("updated_at")
+  id           String   @id @default(cuid())
+  authorName   String   @map("author_name")
+  rating       Int
+  bodyMarkdown String   @map("body_markdown")
+  isApproved   Boolean  @default(true) @map("is_approved")
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  reviewTags      ReviewTag[]
-  reviewProducts  ReviewProduct[]
+  reviewTags     ReviewTag[]
+  reviewProducts ReviewProduct[]
 
   @@index([isApproved, displayOrder])
   @@map("reviews")
@@ -801,13 +823,13 @@ model Review {
 
 // Many-to-many between Review and Tag
 model ReviewTag {
-  id        String  @id @default(cuid())
-  reviewId  String  @map("review_id")
-  tagId     String  @map("tag_id")
+  id         String   @id @default(cuid())
+  reviewId   String   @map("review_id")
+  tagId      String   @map("tag_id")
   assignedAt DateTime @default(now()) @map("assigned_at")
 
-  review    Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([reviewId, tagId])
   @@map("review_tags")
@@ -820,8 +842,8 @@ model ReviewProduct {
   productId  String   @map("product_id")
   assignedAt DateTime @default(now()) @map("assigned_at")
 
-  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  review  Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([reviewId, productId])
   @@map("review_products")
@@ -829,204 +851,204 @@ model ReviewProduct {
 
 // User Profile Data (User-provided with consent - stable, structured data)
 model UserProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id")
-  
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
   // Company Information (User-provided)
-  companyName     String?  @map("company_name")
-  companySize     String?  @map("company_size") // "startup", "small", "medium", "enterprise"
-  industry        String?
-  role            String?  // User's role in company
-  department      String?
-  website         String?  // Company website
-  
+  companyName String? @map("company_name")
+  companySize String? @map("company_size") // "startup", "small", "medium", "enterprise"
+  industry    String?
+  role        String? // User's role in company
+  department  String?
+  website     String? // Company website
+
   // Professional Context (User-provided)
-  experience      String?  // "beginner", "intermediate", "advanced", "expert"
+  experience      String? // "beginner", "intermediate", "advanced", "expert"
   primaryGoals    String[] @map("primary_goals") // ["seo", "content", "link-building", etc.]
   currentProjects String[] @map("current_projects") // Active project domains/names
-  budget          String?  // Monthly budget range
-  teamSize        String?  // Team size
-  
+  budget          String? // Monthly budget range
+  teamSize        String? // Team size
+
   // Preferences (User-provided)
-  communicationStyle String? @map("communication_style") // "formal", "casual", "technical", "brief"
+  communicationStyle   String?  @map("communication_style") // "formal", "casual", "technical", "brief"
   preferredContentType String[] @map("preferred_content_type") // ["video", "text", "infographics", etc.]
-  timezone         String?
-  workingHours     Json?    @map("working_hours") // Store working hours as JSON
-  language         String?  @default("en")
-  
+  timezone             String?
+  workingHours         Json?    @map("working_hours") // Store working hours as JSON
+  language             String?  @default("en")
+
   // Marketing & Lead Data (User-provided with consent)
-  leadSource      String?  @map("lead_source") // How they found us
-  leadScore       Int?     @map("lead_score") // 1-100 lead quality score
-  marketingOptIn  Boolean  @default(false) @map("marketing_opt_in")
-  newsletterOptIn Boolean  @default(false) @map("newsletter_opt_in")
-  
+  leadSource      String? @map("lead_source") // How they found us
+  leadScore       Int?    @map("lead_score") // 1-100 lead quality score
+  marketingOptIn  Boolean @default(false) @map("marketing_opt_in")
+  newsletterOptIn Boolean @default(false) @map("newsletter_opt_in")
+
   // Timestamps
-  lastUpdated     DateTime @updatedAt @map("last_updated")
-  createdAt       DateTime @default(now()) @map("created_at")
-  
+  lastUpdated DateTime @updatedAt @map("last_updated")
+  createdAt   DateTime @default(now()) @map("created_at")
+
   // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("user_profiles")
 }
 
 // AI-Generated User Insights (AI-only writes here - dynamic, rapidly updated)
 model UserAIInsights {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id")
-  
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
   // AI-Generated Personality & Behavior Analysis
-  personalityTraits Json?  @map("personality_traits") // ["analytical", "creative", "detail-oriented"]
-  behaviorPatterns  Json?  @map("behavior_patterns") // Usage patterns, preferences
+  personalityTraits Json?   @map("personality_traits") // ["analytical", "creative", "detail-oriented"]
+  behaviorPatterns  Json?   @map("behavior_patterns") // Usage patterns, preferences
   learningStyle     String? @map("learning_style") // "visual", "auditory", "kinesthetic", "reading"
-  expertiseLevel    Json?  @map("expertise_level") // Dynamic expertise tracking per topic
-  
+  expertiseLevel    Json?   @map("expertise_level") // Dynamic expertise tracking per topic
+
   // AI Conversation Analysis
-  conversationTone  String? @map("conversation_tone") // "professional", "casual", "technical"
-  communicationPatterns Json? @map("communication_patterns") // How they communicate
-  topicInterests    String[] @map("topic_interests") // Topics they're interested in
-  painPoints        String[] @map("pain_points") // Problems they mention
-  
+  conversationTone      String?  @map("conversation_tone") // "professional", "casual", "technical"
+  communicationPatterns Json?    @map("communication_patterns") // How they communicate
+  topicInterests        String[] @map("topic_interests") // Topics they're interested in
+  painPoints            String[] @map("pain_points") // Problems they mention
+
   // Dynamic AI Metadata (arbitrary, namespaced keys for marketing/leads)
-  aiMetadata      Json?    @map("ai_metadata") // Flexible field for any AI insights
+  aiMetadata Json? @map("ai_metadata") // Flexible field for any AI insights
   // Examples: {"company:budget": "high", "project:deadline": "urgent", "tools:favorite-seo-tool": "ahrefs"}
-  
+
   // AI Confidence & Reasoning
   confidenceScore Float?   @map("confidence_score") // 0-1 overall confidence in insights
   lastAnalysisAt  DateTime @map("last_analysis_at")
-  
+
   // Timestamps
-  lastUpdated     DateTime @updatedAt @map("last_updated")
-  createdAt       DateTime @default(now()) @map("created_at")
-  
+  lastUpdated DateTime @updatedAt @map("last_updated")
+  createdAt   DateTime @default(now()) @map("created_at")
+
   // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  insightUpdates  AIInsightUpdate[]
-  
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  insightUpdates AIInsightUpdate[]
+
   @@map("user_ai_insights")
 }
 
 // AI Insight Updates (Track what AI learns over time)
 model AIInsightUpdate {
-  id              String   @id @default(cuid())
-  userAIInsightsId String  @map("user_ai_insights_id")
-  
+  id               String @id @default(cuid())
+  userAIInsightsId String @map("user_ai_insights_id")
+
   // Update Details
-  updateType      AIInsightUpdateType @map("update_type")
-  field           String?  // Which field was updated
-  oldValue        Json?    @map("old_value")
-  newValue        Json?    @map("new_value")
-  
+  updateType AIInsightUpdateType @map("update_type")
+  field      String? // Which field was updated
+  oldValue   Json?               @map("old_value")
+  newValue   Json?               @map("new_value")
+
   // AI Context
-  aiConfidence    Float?   @map("ai_confidence") // 0-1 confidence score
-  aiReasoning     String?  @map("ai_reasoning") // Why AI made this update
-  source          String?  // "chat_interaction", "behavior_analysis", "pattern_recognition"
-  
+  aiConfidence Float?  @map("ai_confidence") // 0-1 confidence score
+  aiReasoning  String? @map("ai_reasoning") // Why AI made this update
+  source       String? // "chat_interaction", "behavior_analysis", "pattern_recognition"
+
   // Metadata
-  createdAt       DateTime @default(now()) @map("created_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+
   // Relations
-  userAIInsights  UserAIInsights @relation(fields: [userAIInsightsId], references: [id], onDelete: Cascade)
-  
-  @@map("ai_insight_updates")
+  userAIInsights UserAIInsights @relation(fields: [userAIInsightsId], references: [id], onDelete: Cascade)
+
   @@index([userAIInsightsId, createdAt])
   @@index([updateType, createdAt])
+  @@map("ai_insight_updates")
 }
 
 // Legacy UserContext model (for backward compatibility - will be deprecated)
 model UserContext {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id")
-  
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+
   // Company Information
-  companyName     String?  @map("company_name")
-  companySize     String?  @map("company_size") // "startup", "small", "medium", "enterprise"
-  industry        String?
-  role            String?  // User's role in company
-  department      String?
-  
+  companyName String? @map("company_name")
+  companySize String? @map("company_size") // "startup", "small", "medium", "enterprise"
+  industry    String?
+  role        String? // User's role in company
+  department  String?
+
   // Professional Context
-  experience      String?  // "beginner", "intermediate", "advanced", "expert"
+  experience      String? // "beginner", "intermediate", "advanced", "expert"
   primaryGoals    String[] @map("primary_goals") // ["seo", "content", "link-building", etc.]
   currentProjects String[] @map("current_projects") // Active project domains/names
-  
+
   // Preferences & Behavior
-  communicationStyle String? @map("communication_style") // "formal", "casual", "technical", "brief"
+  communicationStyle   String?  @map("communication_style") // "formal", "casual", "technical", "brief"
   preferredContentType String[] @map("preferred_content_type") // ["video", "text", "infographics", etc.]
-  timezone         String?
-  workingHours     Json?    @map("working_hours") // Store working hours as JSON
-  
+  timezone             String?
+  workingHours         Json?    @map("working_hours") // Store working hours as JSON
+
   // AI Insights & Learning
-  aiInsights      Json?    @map("ai_insights") // Store AI-generated insights about user
-  learningStyle   String?  @map("learning_style") // "visual", "auditory", "kinesthetic", "reading"
-  expertiseLevel  Json?    @map("expertise_level") // Store expertise levels for different topics
+  aiInsights     Json?   @map("ai_insights") // Store AI-generated insights about user
+  learningStyle  String? @map("learning_style") // "visual", "auditory", "kinesthetic", "reading"
+  expertiseLevel Json?   @map("expertise_level") // Store expertise levels for different topics
   // Flexible AI-captured metadata from conversations (arbitrary, namespaced keys)
-  aiMetadata      Json?    @map("ai_metadata")
-  
+  aiMetadata     Json?   @map("ai_metadata")
+
   // Context History
-  lastUpdated     DateTime @updatedAt @map("last_updated")
-  createdAt       DateTime @default(now()) @map("created_at")
-  
+  lastUpdated DateTime @updatedAt @map("last_updated")
+  createdAt   DateTime @default(now()) @map("created_at")
+
   // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contextUpdates  ContextUpdate[]
-  
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contextUpdates ContextUpdate[]
+
   @@map("user_context")
 }
 
 model ContextUpdate {
-  id              String   @id @default(cuid())
-  userContextId   String   @map("user_context_id")
-  
+  id            String @id @default(cuid())
+  userContextId String @map("user_context_id")
+
   // Update Details
-  updateType      ContextUpdateType @map("update_type")
-  field           String?  // Which field was updated
-  oldValue        Json?    @map("old_value")
-  newValue        Json?    @map("new_value")
-  
+  updateType ContextUpdateType @map("update_type")
+  field      String? // Which field was updated
+  oldValue   Json?             @map("old_value")
+  newValue   Json?             @map("new_value")
+
   // AI Context
-  aiConfidence    Float?   @map("ai_confidence") // 0-1 confidence score
-  aiReasoning     String?  @map("ai_reasoning") // Why AI made this update
-  source          String?  // "chat_interaction", "behavior_analysis", "explicit_update"
-  
+  aiConfidence Float?  @map("ai_confidence") // 0-1 confidence score
+  aiReasoning  String? @map("ai_reasoning") // Why AI made this update
+  source       String? // "chat_interaction", "behavior_analysis", "explicit_update"
+
   // Metadata
-  createdAt       DateTime @default(now()) @map("created_at")
-  
+  createdAt DateTime @default(now()) @map("created_at")
+
   // Relations
-  userContext     UserContext @relation(fields: [userContextId], references: [id], onDelete: Cascade)
-  
-  @@map("context_updates")
+  userContext UserContext @relation(fields: [userContextId], references: [id], onDelete: Cascade)
+
   @@index([userContextId, createdAt])
   @@index([updateType, createdAt])
+  @@map("context_updates")
 }
 
 model UserInteraction {
-  id              String   @id @default(cuid())
-  userId          String   @map("user_id")
-  
+  id     String @id @default(cuid())
+  userId String @map("user_id")
+
   // Interaction Details
   interactionType InteractionType @map("interaction_type")
-  content         String?  // What the user said/did
-  response        String?  // AI/system response
-  context         Json?    // Additional context about the interaction
-  
+  content         String? // What the user said/did
+  response        String? // AI/system response
+  context         Json? // Additional context about the interaction
+
   // AI Analysis
-  sentiment       String?  // "positive", "negative", "neutral"
-  intent          String?  // Detected user intent
-  topics          String[] // Extracted topics
-  preferences     Json?    // Inferred preferences from this interaction
-  
+  sentiment   String? // "positive", "negative", "neutral"
+  intent      String? // Detected user intent
+  topics      String[] // Extracted topics
+  preferences Json? // Inferred preferences from this interaction
+
   // Metadata
-  timestamp       DateTime @default(now())
-  sessionId       String?  @map("session_id")
-  pageUrl         String?  @map("page_url")
-  
+  timestamp DateTime @default(now())
+  sessionId String?  @map("session_id")
+  pageUrl   String?  @map("page_url")
+
   // Relations
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("user_interactions")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, timestamp])
   @@index([interactionType, timestamp])
+  @@map("user_interactions")
 }
 
 enum ContextUpdateType {
@@ -1068,4 +1090,3 @@ enum InteractionType {
   PREFERENCE_CHANGE
   OTHER
 }
-
