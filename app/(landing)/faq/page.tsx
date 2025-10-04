@@ -39,15 +39,15 @@ export default function FaqPage() {
       questions: [
         {
           question: "What is Mosaic Next?",
-          answer: "Mosaic Next is a comprehensive outreach and content placement platform that helps businesses build authority and drive growth through strategic content placement on high-authority platforms. We connect you with the right people and platforms to amplify your message."
+          answer: "Mosaic Next is a comprehensive outreach and content placement platform that helps businesses build authority and drive growth through strategic content placement on high-authority platforms.\n\nWe connect you with the right people and platforms to amplify your message and establish your brand as a thought leader in your industry."
         },
         {
           question: "How does the outreach process work?",
-          answer: "Our process is simple: 1) We analyze your brand and goals, 2) Create high-quality content tailored to your needs, 3) Reach out to relevant platforms and contacts, 4) Secure placements and monitor results. We handle everything from strategy to execution."
+          answer: "Our process is simple and effective:\n\n1) We analyze your brand and goals\n2) Create high-quality content tailored to your needs\n3) Reach out to relevant platforms and contacts\n4) Secure placements and monitor results\n\nWe handle everything from strategy to execution, ensuring your message reaches the right audience."
         },
         {
           question: "Do you offer a free consultation?",
-          answer: "Yes! We offer free consultations to discuss your specific needs and goals. During the consultation, we'll analyze your current situation and provide recommendations on how our services can help you achieve your objectives."
+          answer: "Yes! We offer free consultations to discuss your specific needs and goals.\n\nDuring the consultation, we'll analyze your current situation and provide recommendations on how our services can help you achieve your objectives. No commitment required."
         }
       ]
     },
@@ -56,15 +56,15 @@ export default function FaqPage() {
       questions: [
         {
           question: "What services do you offer?",
-          answer: "We offer content creation, strategic outreach, platform placement, and ongoing relationship management. Our services include SEO content writing, Wikipedia page creation, backlink building, and comprehensive reporting on all activities and results."
+          answer: "We offer comprehensive content and outreach services:\n\n• Content creation and SEO writing\n• Strategic outreach and platform placement\n• Wikipedia page creation and management\n• Backlink building and relationship management\n• Comprehensive reporting and analytics\n\nOur services are designed to build your authority and drive measurable results."
         },
         {
           question: "How do you price your services?",
-          answer: "Our pricing is based on the scope of work, target platforms, and campaign duration. We offer flexible packages for different business sizes, from startups to enterprise clients. Contact us for a customized quote based on your specific needs."
+          answer: "Our pricing is flexible and based on several factors:\n\n• Scope of work and content requirements\n• Target platforms and outreach complexity\n• Campaign duration and ongoing management\n\nWe offer packages for different business sizes, from startups to enterprise clients. Contact us for a customized quote that fits your budget and goals."
         },
         {
           question: "Can I submit my own content?",
-          answer: "Absolutely! We welcome your content submissions and can work with your existing materials. Our team will review and optimize your content for maximum impact across our network of platforms."
+          answer: "Absolutely! We welcome your content submissions and can work with your existing materials.\n\nOur team will review and optimize your content for maximum impact across our network of platforms. We can also provide suggestions for improvement to ensure the best possible results."
         }
       ]
     },
@@ -73,15 +73,15 @@ export default function FaqPage() {
       questions: [
         {
           question: "What's the typical turnaround time?",
-          answer: "Our standard turnaround is 7-14 days for content creation and placement. Rush orders can be accommodated with 3-5 day delivery. We provide detailed timelines during the consultation phase and keep you updated throughout the process."
+          answer: "Our standard turnaround is 7-14 days for content creation and placement.\n\nRush orders can be accommodated with 3-5 day delivery for urgent projects. We provide detailed timelines during the consultation phase and keep you updated throughout the entire process."
         },
         {
           question: "How do you measure success?",
-          answer: "We track placements, engagement metrics, traffic increases, and brand mentions. You'll receive detailed reports showing reach, impressions, and the impact of our outreach efforts on your business goals."
+          answer: "We track comprehensive metrics to measure your success:\n\n• Content placements and reach\n• Engagement metrics and audience growth\n• Traffic increases and organic growth\n• Brand mentions and authority building\n\nYou'll receive detailed reports showing the impact of our outreach efforts on your business goals."
         },
         {
           question: "Do you provide white label services?",
-          answer: "Yes! We offer comprehensive white label services for agencies and partners. This includes custom branding, dedicated support, and flexible pricing models to help you scale your business and serve your clients better."
+          answer: "Yes! We offer comprehensive white label services for agencies and partners.\n\nThis includes:\n• Custom branding and client management\n• Dedicated support and account management\n• Flexible pricing models for scalability\n\nPerfect for agencies looking to expand their service offerings."
         }
       ]
     },
@@ -90,15 +90,15 @@ export default function FaqPage() {
       questions: [
         {
           question: "What support options are available?",
-          answer: "We offer multiple support channels including email support, live chat, and dedicated account managers. Our team is available to help you throughout the entire process, from initial consultation to ongoing campaign management."
+          answer: "We offer comprehensive support through multiple channels:\n\n• Email support for detailed inquiries\n• Live chat for quick questions\n• Dedicated account managers for enterprise clients\n• Phone support for urgent matters\n\nOur team is available throughout the entire process, from initial consultation to ongoing campaign management."
         },
         {
           question: "Do you offer guarantees?",
-          answer: "We guarantee quality content and professional service delivery. If you're not satisfied with our work, we offer revisions and in some cases, partial refunds based on our satisfaction policy. We're committed to your success."
+          answer: "We guarantee quality content and professional service delivery.\n\nIf you're not satisfied with our work:\n• Free revisions until you're happy\n• Partial refunds based on our satisfaction policy\n• No questions asked refund policy\n\nWe're committed to your success and stand behind our work."
         },
         {
           question: "How quickly do you respond to support requests?",
-          answer: "Our support team typically responds within 2-4 hours during business hours. We maintain a dedicated support team to ensure you get the help you need when you need it."
+          answer: "Our support team typically responds within 2-4 hours during business hours.\n\nFor urgent matters:\n• Priority support for enterprise clients\n• 24/7 support for critical issues\n• Dedicated support team always available\n\nWe ensure you get the help you need when you need it."
         }
       ]
     }
@@ -299,9 +299,11 @@ export default function FaqPage() {
                             >
                               <div className="px-8 pb-6">
                                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-lg">
-                                    {faq.answer}
-                                  </p>
+                                  <div className="max-w-4xl">
+                                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-base break-words whitespace-pre-line">
+                                      {faq.answer}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
                             </motion.div>
