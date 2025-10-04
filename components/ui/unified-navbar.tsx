@@ -99,7 +99,7 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
               icon={<span className="sr-only">dropdown</span>}
               className="relative px-4 py-2 text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 rounded-lg"
             >
-              <NavbarDropdownSection title={variant === 'landing' ? 'Pages' : variant === 'app' ? 'App' : 'Admin'}>
+              <NavbarDropdownSection>
                 {dropdownItems.map((item, idx) => (
                   <NavbarDropdownItem key={`dropdown-${idx}`} href={item.link}>
                     {item.name}

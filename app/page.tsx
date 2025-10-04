@@ -12,7 +12,7 @@ import BarChart01 from "@/components/charts/bar-chart-01"
 import LineChart01 from "@/components/charts/line-chart-01"
 import DoughnutChart from "@/components/charts/doughnut-chart"
 import LandingUserMenu from "@/components/landing-user-menu"
-import InsightsSection from "@/components/insights-section"
+import { DynamicInsightsSection } from "@/components/dynamic-insights-section"
 import { TestimonialCard } from "@/components/ui/testimonial-card"
 
 const testimonials = [
@@ -488,7 +488,7 @@ export default function LandingPage() {
       </section>
 
       {/* Insights Section */}
-      <InsightsSection />
+      <DynamicInsightsSection />
 
       {/* Goal Selection Section */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
@@ -752,69 +752,496 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-100 dark:bg-gray-900/30">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="text-purple-600 dark:text-purple-400 text-sm font-medium mb-2">Testimonials</div>
-          <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">What people are saying</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-12">
-            We've received 200+ 5-star reviews. In fact, we've only ever received one review that was less than 5-stars. (It was 4 stars 😉)
-          </p>
-          
-          <div className="h-[40rem] rounded-md flex flex-col antialiased bg-gradient-to-br from-gray-100/50 to-gray-200/50 dark:from-gray-900/50 dark:to-gray-800/50 items-center justify-center relative overflow-hidden">
-          <InfiniteMovingCards
-              items={clientTestimonials.map((t) => ({
-                quote: t.quote,
-                name: t.name,
-                title: `${t.role} • ${t.achievement}`,
-                avatarUrl: t.logoSrc,
-              }))}
-              direction="right"
-              speed="slow"
-            />
+      <section id="testimonials" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-6">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              Client Success Stories
+            </div>
+            <h2 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
+              What our <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">clients</span> are saying
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Join 2,000+ companies who trust us to build their authority and drive real results. 
+              Here's what they have to say about their experience.
+            </p>
+          </div>
+
+          {/* Featured Testimonials Grid */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-16">
+            {/* Featured Testimonial 1 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-6">
+                  <img 
+                    src="https://emiactech.com/wp-content/uploads/2025/09/ACKO-DRIVE-BLACK-LOGO-1.png" 
+                    alt="Acko Logo" 
+                    className="w-12 h-12 rounded-xl object-contain"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-white">Nitesh</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Sr. Marketing Manager</div>
+                  </div>
+                  <div className="ml-auto flex text-yellow-400">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                
+                <blockquote className="text-lg text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+                  "EMIAC did an amazing job creating and publishing our Wikipedia page. The research was thorough, and the process was super smooth. Felt like they really understood our brand story. Highly recommend!"
+                </blockquote>
+                
+                <div className="flex items-center justify-between">
+                  <div className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 px-4 py-2 rounded-full">
+                    <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Wikipedia Writing & Publishing</span>
+                  </div>
+                  <div className="text-2xl">✨</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Featured Testimonial 2 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-6">
+                  <img 
+                    src="https://emiactech.com/wp-content/uploads/2025/09/7-1-1.png" 
+                    alt="Company Logo" 
+                    className="w-12 h-12 rounded-xl object-contain"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900 dark:text-white">Nousheer</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Sr. Director SEO</div>
+                  </div>
+                  <div className="ml-auto flex text-yellow-400">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                
+                <blockquote className="text-lg text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+                  "I was blown away by the results! Our traffic increased by 209% in just 3 months thanks to EMIAC's SEO strategy. They really know their stuff, and they delivered exactly what they promised. Definitely worth the investment!"
+                </blockquote>
+                
+                <div className="flex items-center justify-between">
+                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 px-4 py-2 rounded-full">
+                    <span className="text-sm font-medium text-green-700 dark:text-green-300">209% Traffic Increase</span>
+                  </div>
+                  <div className="text-2xl">🚀</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">200+</div>
+              <div className="text-gray-600 dark:text-gray-400 text-sm">5-Star Reviews</div>
+            </div>
+            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">96.8%</div>
+              <div className="text-gray-600 dark:text-gray-400 text-sm">Repeat Rate</div>
+            </div>
+            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">50K+</div>
+              <div className="text-gray-600 dark:text-gray-400 text-sm">Connections Made</div>
+            </div>
+            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">3 Days</div>
+              <div className="text-gray-600 dark:text-gray-400 text-sm">Avg. Response</div>
+            </div>
+          </div>
+
+          {/* Moving Testimonials */}
+          <div className="relative">
+            <div className="h-[32rem] rounded-2xl flex flex-col antialiased bg-gradient-to-br from-gray-100/80 to-gray-200/80 dark:from-gray-900/80 dark:to-gray-800/80 items-center justify-center relative overflow-hidden border border-gray-200/50 dark:border-gray-700/50">
+              <InfiniteMovingCards
+                items={clientTestimonials.map((t) => ({
+                  quote: t.quote,
+                  name: t.name,
+                  title: `${t.role} • ${t.achievement}`,
+                  avatarUrl: t.logoSrc,
+                }))}
+                direction="right"
+                speed="slow"
+              />
+            </div>
           </div>
         </div>
       </section>
-      {/* FAQ Section */}
-      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8">
+
+      {/* Process Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">FAQs</h2>
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-full text-sm font-medium border border-blue-200 dark:border-blue-800 mb-6">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              How It Works
+            </div>
+            <h2 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
+              Our <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">proven process</span> in action
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              From initial consultation to final results, we follow a systematic approach that ensures 
+              maximum impact for your brand and business goals.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-8 mb-16">
+            {/* Step 1 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">1</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Strategy & Research</h3>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Days 1-3</div>
+                  </div>
+                </div>
+                
+                <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+                  We analyze your brand, target audience, and goals to create a customized outreach strategy. 
+                  Our team researches the best platforms and contacts for maximum impact.
+                </p>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Brand analysis & positioning</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Target audience research</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Platform selection & mapping</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">2</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Content Creation</h3>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Days 4-7</div>
+                  </div>
+                </div>
+                
+                <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+                  Our expert writers create high-quality, engaging content tailored to each platform. 
+                  We ensure every piece aligns with your brand voice and objectives.
+                </p>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Expert content writing</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Platform-specific optimization</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Quality assurance & review</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">3</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Publishing & Outreach</h3>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Days 8-14</div>
+                  </div>
+                </div>
+                
+                <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+                  We execute the outreach campaign across selected platforms, building genuine connections 
+                  and securing high-quality placements for your content.
+                </p>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Strategic platform outreach</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Relationship building</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">Content placement & monitoring</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Timeline */}
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Expected Timeline & Results</h3>
+              <p className="text-gray-600 dark:text-gray-300">What you can expect at each stage of the process</p>
+            </div>
+            
+            <div className="grid md:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Week 1</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Strategy & Research Complete</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Week 2</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Content Creation & Review</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Week 3-4</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Outreach & Publishing</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Ongoing</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Results & Reporting</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-full text-sm font-medium border border-indigo-200 dark:border-indigo-800 mb-6">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Frequently Asked Questions
+            </div>
+            <h2 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
+              Got <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">questions</span>? We've got answers
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Everything you need to know about our services, process, and how we can help 
+              your business grow through strategic outreach and content placement.
+            </p>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="bg-gray-50/90 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-300 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-900 dark:text-white font-medium">Can I submit my own content?</span>
-                <svg className="w-5 h-5 text-gray-600 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+          <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {/* FAQ Item 1 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Can I submit my own content?</h3>
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  Absolutely! We welcome your content submissions and can work with your existing materials. 
+                  Our team will review and optimize your content for maximum impact across our network of platforms.
+                </p>
               </div>
             </div>
-            
-            <div className="bg-gray-50/90 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-300 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-900 dark:text-white font-medium">I work at a digital agency, do you provide white label services?</span>
-                <svg className="w-5 h-5 text-gray-600 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+
+            {/* FAQ Item 2 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Do you provide white label services?</h3>
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  Yes! We offer comprehensive white label services for agencies and partners. 
+                  This includes custom branding, dedicated support, and flexible pricing models 
+                  to help you scale your business.
+                </p>
               </div>
             </div>
-            
-            <div className="bg-gray-50/90 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-300 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-900 dark:text-white font-medium">How long is the turnaround time for getting my content published?</span>
-                <svg className="w-5 h-5 text-gray-600 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+
+            {/* FAQ Item 3 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">What's the typical turnaround time?</h3>
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  Our standard turnaround is 7-14 days for content creation and placement. 
+                  Rush orders can be accommodated with 3-5 day delivery. 
+                  We provide detailed timelines during the consultation phase.
+                </p>
               </div>
             </div>
-            
-            <div className="bg-gray-50/90 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-300 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-900 dark:text-white font-medium">Which payment methods do you accept?</span>
-                <svg className="w-5 h-5 text-gray-600 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+
+            {/* FAQ Item 4 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Which payment methods do you accept?</h3>
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  We accept all major credit cards, PayPal, bank transfers, and cryptocurrency. 
+                  Enterprise clients can arrange custom payment terms including monthly billing 
+                  and milestone-based payments.
+                </p>
+              </div>
+            </div>
+
+            {/* FAQ Item 5 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Do you offer guarantees?</h3>
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  We guarantee quality content and professional service delivery. 
+                  If you're not satisfied with our work, we offer revisions and 
+                  in some cases, partial refunds based on our satisfaction policy.
+                </p>
+              </div>
+            </div>
+
+            {/* FAQ Item 6 */}
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-teal-500/10 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-cyan-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">How do you measure success?</h3>
+                  <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  We track placements, engagement metrics, traffic increases, and brand mentions. 
+                  You'll receive detailed reports showing reach, impressions, and the impact 
+                  of our outreach efforts on your business goals.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact CTA */}
+          <div className="text-center mt-16">
+            <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl p-8 border border-indigo-200/50 dark:border-indigo-700/50">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Still have questions?</h3>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+                Our team is here to help! Schedule a free consultation to discuss your specific needs 
+                and get personalized answers to all your questions.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link 
+                  href="/contact" 
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-indigo-500/25"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Schedule Free Consultation
+                </Link>
+                <Link 
+                  href="mailto:hello@mosaicnext.com" 
+                  className="inline-flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 text-gray-900 dark:text-white px-8 py-4 rounded-xl font-semibold hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 border border-gray-200 dark:border-gray-700"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Email Us Directly
+                </Link>
               </div>
             </div>
           </div>
