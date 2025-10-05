@@ -9,7 +9,11 @@
  */
 export function getWebSocketUrl(): string {
   if (process.env.NEXT_PUBLIC_WEBSOCKET_URL) {
-    return process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+    const raw = process.env.NEXT_PUBLIC_WEBSOCKET_URL;
+    // Normalize http/https to ws/wss if needed
+    if (raw.startsWith('http://')) return raw.replace('http://', 'ws://');
+    if (raw.startsWith('https://')) return raw.replace('https://', 'wss://');
+    return raw;
   }
   
   // Default to production URL if in production, localhost for development
@@ -28,6 +32,8 @@ export function getClientWebSocketUrl(): string {
   // Check for client-side environment variable first (NEXT_PUBLIC_ prefix required)
   const clientWsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL;
   if (clientWsUrl) {
+    if (clientWsUrl.startsWith('http://')) return clientWsUrl.replace('http://', 'ws://');
+    if (clientWsUrl.startsWith('https://')) return clientWsUrl.replace('https://', 'wss://');
     return clientWsUrl;
   }
   
