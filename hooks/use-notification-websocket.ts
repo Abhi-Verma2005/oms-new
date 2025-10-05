@@ -167,10 +167,22 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+      ws.onerror = (event: Event) => {
+        const readyState = ws.readyState;
+        const stateText = readyState === WebSocket.CONNECTING ? 'CONNECTING' :
+                          readyState === WebSocket.OPEN ? 'OPEN' :
+                          readyState === WebSocket.CLOSING ? 'CLOSING' :
+                          readyState === WebSocket.CLOSED ? 'CLOSED' : 'UNKNOWN';
+        console.error('WebSocket error: diagnostic', {
+          url: wsUrl,
+          readyState,
+          stateText,
+          eventType: event.type
+        });
         setError('WebSocket connection error');
         setIsConnecting(false);
+        // Proactively close to trigger onclose (and reconnect logic)
+        try { ws.close(1011, 'Transport error'); } catch {}
       };
 
     } catch (error) {

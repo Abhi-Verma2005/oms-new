@@ -219,6 +219,30 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       case 'filter':
         try {
           try { inflightAbortRef.current?.abort() } catch {}
+          // Build a short, human-friendly confirmation message for the applied filters
+          const fp = new URLSearchParams(action.data)
+          const parts: string[] = []
+          const priceMin = fp.get('priceMin')
+          const priceMax = fp.get('priceMax')
+          const niche = fp.get('niche')
+          const language = fp.get('language')
+          const country = fp.get('country')
+          if (priceMin) parts.push(`min price $${priceMin}`)
+          if (priceMax) parts.push(`max price $${priceMax}`)
+          if (niche) parts.push(`niche ${niche}`)
+          if (language) parts.push(`language ${language}`)
+          if (country) parts.push(`country ${country}`)
+
+          const confirmation: Message = {
+            id: (Date.now() + 2).toString(),
+            content: parts.length > 0
+              ? `Okay — I’ve applied ${parts.join(', ')}. Showing updated results.`
+              : `Okay — I’ve applied your filters. Showing updated results.`,
+            role: 'assistant',
+            timestamp: new Date()
+          }
+          addMessage(confirmation)
+
           applyFilters(action.data)
           // Force a refresh to ensure data & pricing are visible after URL change
           try { (router as any).refresh?.() } catch {}
@@ -561,7 +585,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           controlBuffer = controlBuffer.replace(toolRegex, '')
 
           // Append cleaned text (without tool markers) to the assistant message content
-          const cleaned = chunk.replace(toolRegex, '')
+          const cleanedToolEventsRemoved = chunk.replace(toolRegex, '')
+          // Also strip bracketed tool tags like [FILTER:...], [PROCEED_TO_CHECKOUT], etc. from visible text
+          const bracketToolTagRegex = /\[\s*(NAVIGATE|FILTER|ADD_TO_CART|REMOVE_FROM_CART|VIEW_CART|CLEAR_CART|CART_SUMMARY|PROCEED_TO_CHECKOUT|VIEW_ORDERS|PAYMENT_SUCCESS\s*:[^\]]*|PAYMENT_FAILED\s*:[^\]]*|ORDER_DETAILS\s*:[^\]]*|RECOMMEND\s*:[^\]]*|SIMILAR_ITEMS\s*:[^\]]*|BEST_DEALS)\s*:?[\s\S]*?\]/gi
+          const cleaned = cleanedToolEventsRemoved.replace(bracketToolTagRegex, '')
           accumulated += cleaned
           updateMessage(assistantId, { content: accumulated })
         }
