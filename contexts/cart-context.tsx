@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react'
 import type { Site } from '@/lib/sample-sites'
+import { useProjectStore } from '@/stores/project-store'
 
 export interface CartProductItemData { id: string; name: string; priceDollars: number }
 export interface CartItem {
@@ -90,20 +91,30 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
+  const { selectedProjectId } = useProjectStore()
+  const storageKey = `cart:${selectedProjectId || 'default'}`
 
+  // Load cart for the current project on mount and whenever project changes
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('cart')
+      const saved = localStorage.getItem(storageKey)
       if (saved) {
         const parsed = JSON.parse(saved).map((item: any) => ({ ...item, addedAt: new Date(item.addedAt) }))
         dispatch({ type: 'LOAD_CART', payload: parsed })
+      } else {
+        dispatch({ type: 'LOAD_CART', payload: [] })
       }
-    } catch {}
-  }, [])
+    } catch {
+      // noop
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProjectId])
 
+  // Persist cart scoped to current project
   useEffect(() => {
-    try { localStorage.setItem('cart', JSON.stringify(state.items)) } catch {}
-  }, [state.items])
+    try { localStorage.setItem(storageKey, JSON.stringify(state.items)) } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.items, selectedProjectId])
 
   const addItem = (site: Site) => {
     dispatch({ type: 'ADD_ITEM', payload: { site } })
