@@ -2173,18 +2173,7 @@ export default function PublishersClient() {
           </div>
         </div>
 
-        {/* Project Context Section - Above filters */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Project Context</div>
-              <ProjectSelector />
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              Track your searches, cart additions, and purchases per project
-            </div>
-          </div>
-        </div>
+        {/* Project Context moved into sidebar (PublishersHelpCarousel) */}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-8 items-start">
           <div className="lg:col-span-7 xl:col-span-7">

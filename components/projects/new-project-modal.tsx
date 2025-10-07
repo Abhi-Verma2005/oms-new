@@ -51,29 +51,29 @@ export function NewProjectModal({ open, onOpenChange, onCreated }: { open: boole
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Create project</DialogTitle>
+      <DialogContent className="sm:max-w-lg rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-2xl p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800/60">
+          <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create project</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Domain *</label>
-            <input className="form-input w-full" placeholder="myproject.com" value={domain} onChange={(e) => setDomain(e.target.value)} />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Domain *</label>
+            <input className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500" placeholder="myproject.com" value={domain} onChange={(e) => setDomain(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <input className="form-input w-full" placeholder="Short description of the project" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+            <input className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500" placeholder="Short description of the project" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Default Target URL</label>
-            <input className="form-input w-full" placeholder="https://example.com" value={defaultUrl} onChange={(e) => setDefaultUrl(e.target.value)} />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Target URL</label>
+            <input className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500" placeholder="https://example.com" value={defaultUrl} onChange={(e) => setDefaultUrl(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Default Anchor Text</label>
-            <input className="form-input w-full" placeholder="Words that win the click" value={defaultAnchor} onChange={(e) => setDefaultAnchor(e.target.value)} />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Anchor Text</label>
+            <input className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500" placeholder="Words that win the click" value={defaultAnchor} onChange={(e) => setDefaultAnchor(e.target.value)} />
           </div>
-          {error && <div className="text-sm text-red-600">{error}</div>}
-          <button onClick={handleCreate} disabled={loading} className="btn w-full bg-gray-900 text-white dark:bg-white dark:text-gray-900">
+          {error && <div className="text-sm text-red-600 dark:text-red-400">{error}</div>}
+          <button onClick={handleCreate} disabled={loading} className="w-full h-10 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors disabled:opacity-50">
             {loading ? 'Creating…' : 'Create Project'}
           </button>
         </div>
