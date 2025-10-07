@@ -38,12 +38,21 @@ import { useCart } from '@/contexts/cart-context'
 import { useChat } from '@/contexts/chat-context'
 import { MarkdownRenderer } from './markdown-renderer'
 import { useAIMessageListener } from '@/lib/ai-chat-utils'
+import { useResizableLayout } from './resizable-layout'
+import ChatActionCard from '@/components/chat/ChatActionCard'
+import type { ChatActionCardModel } from '@/components/chat/ChatActionCard'
 
 interface Message {
   id: string
   content: string
   role: 'user' | 'assistant'
   timestamp: Date
+}
+
+type ActionKind = 'cart' | 'checkout' | 'orders' | 'filter' | 'payment'
+
+interface ActionCard extends ChatActionCardModel {
+  afterMessageId?: string
 }
 
 interface AIChatbotSidebarProps {
@@ -53,6 +62,7 @@ interface AIChatbotSidebarProps {
 export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const router = useRouter()
   const { config, configLoading } = useAIChatbot()
+  const { toggleSidebar } = useResizableLayout()
   const { 
     state: cartState,
     addItem, 
@@ -68,6 +78,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inflightAbortRef = useRef<AbortController | null>(null)
+  const [actionCards, setActionCards] = useState<ActionCard[]>([])
+  const prevCartCountRef = useRef<number>(cartState.items.length)
+  const didMountRef = useRef<boolean>(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -90,6 +103,99 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         try { inflightAbortRef.current.abort() } catch {}
       }
     }
+  }, [])
+
+  // Detect cart additions and open cart modal + show action card
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      prevCartCountRef.current = cartState.items.length
+      return
+    }
+    const previous = prevCartCountRef.current
+    const current = cartState.items.length
+    if (current > previous) {
+      // Item(s) added (do not auto-open cart; only via action)
+      prevCartCountRef.current = current
+      const totalItems = getTotalItems()
+      const totalPrice = getTotalPrice()
+      const attachToId = (() => {
+        const last = messages[messages.length - 1]
+        if (last && last.role === 'assistant') return last.id
+        // Create a lightweight assistant confirmation to anchor the card
+        const assistantMessage: Message = {
+          id: (Date.now() + 3).toString(),
+          content: `Item added to cart.`,
+          role: 'assistant',
+          timestamp: new Date()
+        }
+        addMessage(assistantMessage)
+        return assistantMessage.id
+      })()
+      const cardId = `${Date.now()}-added-card`
+      const dismissCard = () => dismissActionCard(cardId)
+      queueActionCard({
+        id: cardId,
+        type: 'cart',
+        title: 'Item Added to Cart',
+        message: `You now have ${totalItems} item${totalItems !== 1 ? 's' : ''} • $${totalPrice.toFixed(2)}`,
+        icon: <ShoppingCart className="h-4 w-4" />,
+        actions: [
+          { label: 'View Cart', variant: 'primary', onClick: () => openCart() },
+          { label: 'Checkout', variant: 'secondary', onClick: () => goToCheckout() },
+          { label: 'Continue Shopping', variant: 'tertiary', onClick: dismissCard },
+        ],
+        dismissible: true,
+        timestamp: new Date(),
+        afterMessageId: attachToId,
+      })
+      return
+    }
+    // Update previous when not increased (removed/cleared also updates elsewhere)
+    prevCartCountRef.current = current
+  }, [cartState.items.length])
+
+  // Listen for refine modal apply event from ChatActionCard
+  useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent<string>).detail || ''
+        const fp = new URLSearchParams(detail)
+        const priceMin = fp.get('priceMin')
+        const priceMax = fp.get('priceMax')
+        const parts: string[] = []
+        if (priceMin) parts.push(`min price $${priceMin}`)
+        if (priceMax) parts.push(`max price $${priceMax}`)
+
+        const confirmation: Message = {
+          id: (Date.now() + 2).toString(),
+          content: parts.length > 0
+            ? `Okay — I’ve applied ${parts.join(', ')}. Showing updated results.`
+            : `Okay — I’ve applied your filters. Showing updated results.`,
+          role: 'assistant',
+          timestamp: new Date()
+        }
+        addMessage(confirmation)
+        applyFilters(detail)
+
+        queueActionCard({
+          id: `${Date.now()}-refine-applied`,
+          type: 'filter',
+          title: 'Filters Applied',
+          message: parts.join(' • '),
+          icon: <Filter className="h-4 w-4" />,
+          actions: [
+            { label: 'Clear Filters', variant: 'secondary', onClick: () => clearFilters() },
+            { label: 'Refine', variant: 'tertiary', onClick: () => openFilterDialog() },
+          ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: confirmation.id,
+        })
+      } catch {}
+    }
+    window.addEventListener('AI_CHAT_REFINE_FILTERS', handler as EventListener)
+    return () => window.removeEventListener('AI_CHAT_REFINE_FILTERS', handler as EventListener)
   }, [])
 
 
@@ -246,6 +352,22 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           applyFilters(action.data)
           // Force a refresh to ensure data & pricing are visible after URL change
           try { (router as any).refresh?.() } catch {}
+          // Show Filter Applied action card after confirmation
+          const cardId = `${Date.now()}-filter`;
+          queueActionCard({
+            id: cardId,
+            type: 'filter',
+            title: 'Filters Applied',
+            message: parts.length ? parts.join(' • ') : undefined,
+            icon: <Filter className="h-4 w-4" />,
+            actions: [
+              { label: 'Clear Filters', variant: 'secondary', onClick: () => clearFilters() },
+              { label: 'Refine', variant: 'tertiary', onClick: () => openFilterDialog() },
+            ],
+            dismissible: true,
+            timestamp: new Date(),
+            afterMessageId: confirmation.id,
+          })
         } catch {
           // Fallback: build URL and replace via History API
           try {
@@ -284,6 +406,29 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             timestamp: new Date()
           }
           addMessage(removeMessage)
+          // Show updated cart/checkout prompt
+          const totalItemsNow = apiCartState?.totalItems ?? getTotalItems()
+          const totalPriceNow = apiCartState?.totalPrice ?? getTotalPrice()
+          const hasItemsNow = (totalItemsNow ?? 0) > 0
+          queueActionCard({
+            id: `${Date.now()}-post-remove`,
+            type: hasItemsNow ? 'checkout' : 'cart',
+            title: hasItemsNow ? 'Updated Cart' : 'Cart is now empty',
+            message: hasItemsNow ? `${totalItemsNow} items • $${totalPriceNow.toFixed(2)}` : 'Browse products to continue',
+            icon: hasItemsNow ? <ShoppingCart className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />,
+            actions: hasItemsNow
+              ? [
+                  { label: 'Proceed to Checkout', variant: 'primary', onClick: () => goToCheckout() },
+                  { label: 'Review Cart', variant: 'secondary', onClick: () => openCart() },
+                  { label: 'Remove All Items', variant: 'tertiary', onClick: () => clearCart() },
+                ]
+              : [
+                  { label: 'Browse Products', variant: 'primary', onClick: () => goToPublishers() },
+                ],
+            dismissible: true,
+            timestamp: new Date(),
+            afterMessageId: removeMessage.id,
+          })
         }
         break
 
@@ -300,6 +445,20 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           timestamp: new Date()
         }
         addMessage(clearMessage)
+        // Offer browsing after clearing
+        queueActionCard({
+          id: `${Date.now()}-post-clear`,
+          type: 'cart',
+          title: 'Cart Cleared',
+          message: 'Find products to add',
+          icon: <ShoppingCart className="h-4 w-4" />,
+          actions: [
+            { label: 'Browse Products', variant: 'primary', onClick: () => goToPublishers() },
+          ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: clearMessage.id,
+        })
         break
 
       case 'cartSummary':
@@ -349,6 +508,27 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           timestamp: new Date()
         }
         addMessage(cartSummaryMessage)
+        // Show Checkout Ready or Empty Cart card
+        const hasItems = (totalItems ?? 0) > 0
+        const checkoutCardId = `${Date.now()}-checkout`;
+        queueActionCard({
+          id: checkoutCardId,
+          type: hasItems ? 'checkout' : 'cart',
+          title: hasItems ? 'Ready to Checkout?' : 'Your cart is empty',
+          message: hasItems ? `${totalItems} items • $${totalPrice.toFixed(2)}` : 'Browse products to get started',
+          icon: hasItems ? <CreditCard className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />,
+          actions: hasItems
+            ? [
+                { label: 'Proceed to Checkout', variant: 'primary', onClick: () => goToCheckout() },
+                { label: 'Review Cart', variant: 'secondary', onClick: () => openCart() },
+              ]
+            : [
+                { label: 'Browse Products', variant: 'primary', onClick: () => goToPublishers() },
+              ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: cartSummaryMessage.id,
+        })
         break
 
       case 'proceedToCheckout':
@@ -368,6 +548,21 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             timestamp: new Date()
           }
           addMessage(emptyCartMessage)
+          // Show empty cart actions
+          const emptyCardId = `${Date.now()}-empty-cart`;
+          queueActionCard({
+            id: emptyCardId,
+            type: 'cart',
+            title: 'Empty Cart',
+            message: 'Browse products or view recommendations',
+            icon: <ShoppingCart className="h-4 w-4" />,
+            actions: [
+              { label: 'Browse Products', variant: 'primary', onClick: () => goToPublishers() },
+            ],
+            dismissible: true,
+            timestamp: new Date(),
+            afterMessageId: emptyCartMessage.id,
+          })
         }
         break
 
@@ -390,16 +585,26 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       case 'paymentSuccess':
         const successMessage: Message = {
           id: (Date.now() + 2).toString(),
-          content: `🎉 Payment successful! Your order has been confirmed. Let me show you your orders.`,
+          content: `🎉 Payment successful! Your order has been confirmed.`,
           role: 'assistant',
           timestamp: new Date()
         }
         addMessage(successMessage)
-        try {
-          router.push('/orders')
-        } catch {
-          try { window.location.assign('/orders') } catch {}
-        }
+        // Show order placed card
+        queueActionCard({
+          id: `${Date.now()}-order-success`,
+          type: 'orders',
+          title: 'Order Placed Successfully! 🎉',
+          message: undefined,
+          icon: <CheckCircle className="h-4 w-4" />,
+          actions: [
+            { label: 'View Orders', variant: 'primary', onClick: () => goToOrders() },
+            { label: 'Continue Shopping', variant: 'secondary', onClick: () => goToPublishers() },
+          ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: successMessage.id,
+        })
         break
 
       case 'paymentFailed':
@@ -410,6 +615,21 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           timestamp: new Date()
         }
         addMessage(failedMessage)
+        // Show payment retry
+        queueActionCard({
+          id: `${Date.now()}-payment-failed`,
+          type: 'payment',
+          title: 'Payment Failed',
+          message: String(action.data || ''),
+          icon: <CreditCard className="h-4 w-4" />,
+          actions: [
+            { label: 'Try Again', variant: 'primary', onClick: () => goToCheckout() },
+            { label: 'View Order', variant: 'secondary', onClick: () => goToOrders() },
+          ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: failedMessage.id,
+        })
         break
 
       case 'orderDetails':
@@ -425,6 +645,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         } catch {
           try { window.location.assign('/orders') } catch {}
         }
+        queueActionCard({
+          id: `${Date.now()}-order-details`,
+          type: 'orders',
+          title: 'Go to Order Details',
+          message: `Order ${action.data}`,
+          icon: <Package className="h-4 w-4" />,
+          actions: [
+            { label: 'View Orders', variant: 'primary', onClick: () => goToOrders() },
+          ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: orderMessage.id,
+        })
         break
 
       case 'recommend':
@@ -436,6 +669,20 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         }
         addMessage(recommendMessage)
         // In a real implementation, you'd apply filters based on the criteria
+        queueActionCard({
+          id: `${Date.now()}-recommend`,
+          type: 'filter',
+          title: 'Explore Recommendations',
+          message: 'Refine or browse matches',
+          icon: <Filter className="h-4 w-4" />,
+          actions: [
+            { label: 'Refine', variant: 'tertiary', onClick: () => openFilterDialog() },
+            { label: 'Clear Filters', variant: 'secondary', onClick: () => clearFilters() },
+          ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: recommendMessage.id,
+        })
         break
 
       case 'similarItems':
@@ -462,6 +709,45 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       default:
         console.log('Unknown action type:', action.type)
     }
+  }
+
+  // Helper: enqueue a card and limit concurrent visible cards
+  const queueActionCard = (card: ActionCard) => {
+    setActionCards((prev) => {
+      const next = [...prev, card]
+      // keep at most 2 latest
+      const trimmed = next.slice(-2)
+      return trimmed
+    })
+  }
+
+  const dismissActionCard = (id: string) => {
+    setActionCards((prev) => prev.filter((c) => c.id !== id))
+  }
+
+  const getActionCardsForMessage = (messageId: string) => {
+    return actionCards.filter((c) => c.afterMessageId === messageId)
+  }
+
+  const goToCheckout = () => {
+    try { router.push('/checkout') } catch { try { window.location.assign('/checkout') } catch {} }
+  }
+
+  const goToOrders = () => {
+    try { router.push('/orders') } catch { try { window.location.assign('/orders') } catch {} }
+  }
+
+  const goToPublishers = () => {
+    try { router.push('/publishers') } catch { try { window.location.assign('/publishers') } catch {} }
+  }
+
+  const clearFilters = () => {
+    applyFilters('RESET')
+  }
+
+  const openFilterDialog = () => {
+    // Placeholder: navigate to publishers where filters are available
+    goToPublishers()
   }
 
 
@@ -689,16 +975,20 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full"></div>
             </div>
           </div>
-          {onClose && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (onClose) {
+                try { onClose() } catch {}
+                return
+              }
+              try { toggleSidebar() } catch {}
+            }}
+            className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Welcome Section - Only show when no messages */}
@@ -748,35 +1038,41 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           )}
           
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex gap-3",
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              )}
-            >
-              {message.role === 'user' ? (
-                <div className="max-w-[85%] rounded-xl px-3 py-2 select-text backdrop-blur-sm bg-violet-600/90 text-white selection:bg-violet-400 selection:text-white border border-violet-500/30">
-                  <MarkdownRenderer content={message.content} variant="chatbot" />
-                </div>
-              ) : (
-                <div className="w-full flex items-start gap-2">
-                  <div className="flex-shrink-0 mt-0.5">
-                    <svg
-                      className="fill-violet-500"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width={16}
-                      height={16}
-                      viewBox="0 0 32 32"
-                    >
-                      <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 select-text selection:bg-violet-500/20 selection:text-white">
+            <div key={message.id} className="space-y-2">
+              <div
+                className={cn(
+                  "flex gap-3",
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                )}
+              >
+                {message.role === 'user' ? (
+                  <div className="max-w-[85%] rounded-xl px-3 py-2 select-text backdrop-blur-sm bg-violet-600/90 text-white selection:bg-violet-400 selection:text-white border border-violet-500/30">
                     <MarkdownRenderer content={message.content} variant="chatbot" />
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="w-full flex items-start gap-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg
+                        className="fill-violet-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={16}
+                        height={16}
+                        viewBox="0 0 32 32"
+                      >
+                        <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 select-text selection:bg-violet-500/20 selection:text-white">
+                      <MarkdownRenderer content={message.content} variant="chatbot" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Render contextual action cards after assistant messages */}
+              {message.role === 'assistant' && getActionCardsForMessage(message.id).map((card) => (
+                <ChatActionCard key={card.id} card={card} onDismiss={() => dismissActionCard(card.id)} />
+              ))}
             </div>
           ))}
           
