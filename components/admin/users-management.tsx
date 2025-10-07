@@ -319,8 +319,8 @@ export function UsersManagement() {
       </div>
 
       {/* Filters */}
-      <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
-        <CardHeader className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
+        <CardHeader className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <CardTitle className="flex items-center font-semibold text-gray-800 dark:text-gray-100">
             <Filter className="w-5 h-5 mr-2" />
             Filters
@@ -341,7 +341,7 @@ export function UsersManagement() {
               </div>
             </div>
             <Select value={filters.hasRoles} onValueChange={setHasRoles}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-48 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -354,7 +354,7 @@ export function UsersManagement() {
               const [sortBy, sortOrder] = value.split('-');
               setSorting(sortBy, sortOrder);
             }}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-48 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -430,8 +430,8 @@ export function UsersManagement() {
       </Card>
 
       {/* Users Table */}
-      <Card className="bg-white dark:bg-gray-800 shadow-sm rounded-xl">
-        <CardHeader className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
+        <CardHeader className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <CardTitle className="flex items-center justify-between font-semibold text-gray-800 dark:text-gray-100">
             <div className="flex items-center">
               <Users className="h-5 w-5 mr-2" />
@@ -442,7 +442,7 @@ export function UsersManagement() {
         <CardContent className="p-5">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-white dark:bg-gray-900">
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Email</TableHead>
@@ -454,7 +454,7 @@ export function UsersManagement() {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id} className="group">
+                  <TableRow key={user.id} className="group hover:bg-gray-50 dark:hover:bg-gray-800/40">
                     <TableCell>
                       <div className="flex items-center">
                         <div className="w-10 h-10 shrink-0 mr-3">
@@ -523,10 +523,10 @@ export function UsersManagement() {
                           <MoreHorizontal className="w-5 h-5" />
                           <span className="sr-only">Actions</span>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                        <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                           <DropdownMenuItem 
                             onClick={() => openIndividualTagModal(user)}
-                            className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                           >
                             <TagIcon className="w-4 h-4 mr-2" />
                             Assign Tag
@@ -534,7 +534,7 @@ export function UsersManagement() {
                           <DropdownMenuItem asChild>
                             <Link 
                               href={`/admin/users/${user.id}/search-interests`}
-                              className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              className="text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
                               View Search Interests
                             </Link>
@@ -542,7 +542,7 @@ export function UsersManagement() {
                           <DropdownMenuItem asChild>
                             <Link 
                               href={`/admin/users/${user.id}/feedback`}
-                              className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              className="text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
                               View Feedback
                             </Link>
@@ -592,7 +592,7 @@ export function UsersManagement() {
 
       {/* Bulk Tag Assignment Modal */}
       <Dialog open={isBulkTagOpen} onOpenChange={setIsBulkTagOpen}>
-        <DialogContent>
+        <DialogContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
           <DialogHeader>
             <DialogTitle>Assign Tag to All Filtered Users</DialogTitle>
           </DialogHeader>
@@ -668,7 +668,7 @@ export function UsersManagement() {
 
       {/* Individual Tag Assignment Modal */}
       <Dialog open={isIndividualTagOpen} onOpenChange={setIsIndividualTagOpen}>
-        <DialogContent>
+        <DialogContent className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
           <DialogHeader>
             <DialogTitle>Assign Tag to {selectedUser?.name || selectedUser?.email}</DialogTitle>
           </DialogHeader>
