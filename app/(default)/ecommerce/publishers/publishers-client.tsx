@@ -43,6 +43,7 @@ import dynamic from "next/dynamic"
 const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-help-carousel"), { ssr: false })
 import { ProjectSelector } from '@/components/projects/project-selector'
 import { useActivityLogger } from '@/lib/user-activity-client'
+import { useProjectStore } from '@/stores/project-store'
 
 type Trend = "increasing" | "decreasing" | "stable"
 type BacklinkNature = "do-follow" | "no-follow" | "sponsored"
@@ -1834,6 +1835,7 @@ export default function PublishersClient() {
   const searchParams = useSearchParams()
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
+  const { selectedProjectId } = useProjectStore()
 
   // Handle auto-send query when sidebar opens
   useEffect(() => {
@@ -1952,6 +1954,33 @@ export default function PublishersClient() {
   }, [])
 
   useEffect(() => { fetchData() }, [])
+
+  // Load last-used filters for the selected project (if any)
+  useEffect(() => {
+    if (!selectedProjectId) return
+    try {
+      const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
+      if (!raw) return
+      const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
+      if (saved && typeof saved === 'object') {
+        if (saved.filters && Object.keys(saved.filters).length > 0) {
+          setFilters({ ...defaultFilters, ...saved.filters })
+        }
+        if (typeof saved.q === 'string') {
+          setSearchQuery(saved.q)
+        }
+      }
+    } catch {}
+  }, [selectedProjectId])
+
+  // Persist last-used filters per project whenever filters/query change
+  useEffect(() => {
+    if (!selectedProjectId) return
+    try {
+      const payload = { filters, q: searchQuery }
+      localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(payload))
+    } catch {}
+  }, [filters, searchQuery, selectedProjectId])
 
   // Monitor URL parameter changes and update filters accordingly
   useEffect(() => {
