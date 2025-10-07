@@ -1309,7 +1309,39 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
     }
   }
 
-  if (loading) return <Card className="p-6 bg-white dark:bg-gray-800">Loading…</Card>
+  if (loading) return (
+    <Card className="bg-white dark:bg-gray-800">
+      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+        </header>
+      </div>
+      <div className="overflow-x-auto -mx-4 sm:mx-0">
+        <div className="min-w-[600px] sm:min-w-[800px]">
+          {/* Table header skeleton */}
+          <div className="px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+            <div className="h-4 w-1/2 sm:w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </div>
+          {/* Rows skeleton */}
+          <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
+            {Array.from({ length: 10 }).map((_, idx) => (
+              <div key={idx} className="px-4 sm:px-5 py-3 grid grid-cols-6 gap-3 sm:gap-5 items-center">
+                <div className="col-span-2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="col-span-1 h-7 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
   return (
     <Card className="bg-white dark:bg-gray-800">
       {/* Sticky Header Container */}
