@@ -17,10 +17,10 @@ export function AdminHeader() {
   const { data: session } = useSession();
 
   return (
-    <header className="bg-card border-b border-black/5 dark:border-white/10 px-4 py-3">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
         </div>
         
         <div className="flex items-center space-x-4">

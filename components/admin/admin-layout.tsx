@@ -46,17 +46,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-900">
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex">
+      <div className="hidden md:flex md:sticky md:top-0 md:h-screen md:shrink-0">
         <Sidebar />
       </div>
       
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden border-l border-gray-200 dark:border-gray-800">
         <AdminHeader />
         <AdminBreadcrumbs />
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto space-y-6 text-gray-900 dark:text-gray-100">
             {children}
           </div>
         </main>

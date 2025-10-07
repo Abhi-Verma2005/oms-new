@@ -273,7 +273,7 @@ export function AdminDashboard() {
         {/* Cards */}
         <div className="grid grid-cols-12 gap-6">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl animate-pulse">
+            <div key={i} className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl animate-pulse">
               <div className="px-5 pt-5">
                 <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
                 <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
@@ -323,7 +323,7 @@ export function AdminDashboard() {
       <div className="grid grid-cols-12 gap-6">
         
         {/* Key Metrics - Top Row */}
-        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="px-6 pt-6 pb-6">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Total Users</h2>
@@ -337,7 +337,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="px-6 pt-6 pb-6">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Total Revenue</h2>
@@ -351,7 +351,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="px-6 pt-6 pb-6">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Total Orders</h2>
@@ -365,7 +365,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm rounded-xl">
           <div className="px-6 pt-6 pb-6">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Conversion Rate</h2>
@@ -380,7 +380,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Main Charts - Second Row */}
-        <div className="flex flex-col col-span-full xl:col-span-8 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="flex flex-col col-span-full xl:col-span-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="px-6 pt-6 pb-2">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">User Growth & Revenue</h2>
@@ -394,7 +394,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Quick Actions - Compact */}
-        <div className="flex flex-col col-span-full xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="flex flex-col col-span-full xl:col-span-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="px-6 pt-6 pb-6">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Quick Actions</h2>
@@ -454,7 +454,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Analytics Charts - Third Row */}
-        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-h-[320px]">
+        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl min-h-[320px]">
           <div className="px-6 pt-6 pb-2">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Order Status</h2>
@@ -467,7 +467,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-h-[320px]">
+        <div className="flex flex-col col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl min-h-[320px]">
           <div className="px-6 pt-6 pb-2">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">User Roles</h2>
@@ -480,7 +480,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="flex flex-col col-span-full xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-h-[320px]">
+        <div className="flex flex-col col-span-full xl:col-span-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl min-h-[320px]">
           <div className="px-6 pt-6 pb-2">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Monthly Orders</h2>
@@ -494,7 +494,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Recent Activity - Bottom Row */}
-        <div className="flex flex-col col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+        <div className="flex flex-col col-span-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-xl">
           <div className="px-6 pt-6 pb-2">
             <header className="flex justify-between items-start mb-3">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Recent Activity</h2>

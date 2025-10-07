@@ -34,10 +34,10 @@ function DialogOverlay({ className, ...props }: React.ComponentProps<typeof Dial
 function DialogContent({ className, children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content>) {
   return (
     <DialogPortal>
-      <DialogOverlay className="bg-black/60" />
+      <DialogOverlay className="bg-black/50" />
       <DialogPrimitive.Content
         data-slot="dialog-content"
-        className={cn("fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-2xl sm:max-w-4xl", className)}
+        className={cn("fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-2xl sm:max-w-4xl", className)}
         {...props}
       >
         {children}

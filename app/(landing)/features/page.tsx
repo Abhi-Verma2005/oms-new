@@ -99,7 +99,7 @@ export default function FeaturesPage() {
               className="text-center pb-12"
             >
               <motion.h1 variants={containerFade} className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
-                <span className="bg-gradient-to-r from-violet-600 to-violet-800 bg-clip-text text-transparent">
+                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #755FF8, #5d47e2)' }}>
                   Powerful Features
                 </span>
               </motion.h1>
@@ -109,13 +109,13 @@ export default function FeaturesPage() {
               <motion.div variants={itemFade} className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/publishers"
-                  className="inline-flex items-center justify-center px-7 md:px-8 py-3 rounded-md text-sm md:text-base font-medium text-white bg-violet-700 hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60 transition-colors shadow-sm"
+                  className="inline-flex items-center justify-center px-7 md:px-8 py-3 rounded-md text-sm md:text-base font-medium text-white bg-[#755FF8] hover:bg-[#6a54ee] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#755FF8]/60 transition-colors shadow-sm"
                 >
                   Explore Features
                 </Link>
                 <Link
                   href="/pricing"
-                  className="inline-flex items-center justify-center px-7 md:px-8 py-3 rounded-md text-sm md:text-base font-medium text-gray-800 dark:text-gray-200 bg-white/80 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 transition-colors shadow-sm backdrop-blur-sm"
+                  className="inline-flex items-center justify-center px-7 md:px-8 py-3 rounded-md text-sm md:text-base font-medium text-gray-800 dark:text-gray-200 bg-white/80 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#755FF8]/50 transition-colors shadow-sm backdrop-blur-sm"
                 >
                   View Pricing
                 </Link>
@@ -130,7 +130,7 @@ export default function FeaturesPage() {
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
               className="absolute left-1/2 top-[10%] -translate-x-1/2 -translate-y-1/2 w-[44rem] h-[44rem] blur-3xl opacity-70 dark:opacity-60"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
+              style={{ background: 'radial-gradient(ellipse at center, rgba(117,95,248,0.12), transparent 60%)' }}
             />
           </div>
           <div className="max-w-6xl mx-auto">
@@ -149,8 +149,8 @@ export default function FeaturesPage() {
                   transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   className="group relative rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm hover:shadow md:hover:shadow-md transition-all"
                 >
-                  <div className="absolute inset-0 rounded-xl ring-1 ring-transparent group-hover:ring-violet-600/20 transition"></div>
-                  <div className="w-14 h-14 md:w-16 md:h-16 bg-violet-100/80 dark:bg-violet-900/40 rounded-full flex items-center justify-center mb-4 text-violet-700 dark:text-violet-300">
+                  <div className="absolute inset-0 rounded-xl ring-1 ring-transparent group-hover:ring-[#755FF8]/20 transition"></div>
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-[#755FF8]/10 dark:bg-[#755FF8]/20 rounded-full flex items-center justify-center mb-4 text-[#755FF8] dark:text-[#755FF8]">
                     {feature.icon}
                   </div>
                   <h3 className="text-lg md:text-xl font-semibold mb-2 text-gray-900 dark:text-white tracking-tight">
@@ -177,7 +177,7 @@ export default function FeaturesPage() {
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
               className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[46rem] h-[46rem] blur-3xl opacity-70 dark:opacity-60"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
+              style={{ background: 'radial-gradient(ellipse at center, rgba(117,95,248,0.12), transparent 60%)' }}
             />
           </div>
           <Features02 />
@@ -193,7 +193,7 @@ export default function FeaturesPage() {
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
               className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[46rem] h-[46rem] blur-3xl opacity-70 dark:opacity-60"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
+              style={{ background: 'radial-gradient(ellipse at center, rgba(117,95,248,0.12), transparent 60%)' }}
             />
           </div>
           <Features03 />
@@ -209,7 +209,7 @@ export default function FeaturesPage() {
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
               className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[46rem] h-[46rem] blur-3xl opacity-70 dark:opacity-60"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
+              style={{ background: 'radial-gradient(ellipse at center, rgba(117,95,248,0.12), transparent 60%)' }}
             />
           </div>
           <Features04 />
@@ -243,7 +243,7 @@ export default function FeaturesPage() {
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
               className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[42rem] h-[42rem] blur-3xl opacity-70 dark:opacity-60"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
+              style={{ background: 'radial-gradient(ellipse at center, rgba(117,95,248,0.12), transparent 60%)' }}
             />
           </div>
           <Cta />

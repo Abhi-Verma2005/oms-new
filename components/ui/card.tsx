@@ -10,8 +10,8 @@ const Card = React.forwardRef<
     ref={ref}
     className={cn(
       "rounded-xl border border-border/40 bg-card text-card-foreground shadow-sm",
-      // Thin, subtle borders in dark mode
-      "dark:border-white/10 border-[0.5px]",
+      // Subtle, lighter dark theme for admin and app-wide
+      "dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 border-[0.5px]",
       className
     )}
     {...props}
