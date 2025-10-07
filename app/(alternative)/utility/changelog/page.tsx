@@ -8,12 +8,24 @@ type Entry = { id: string; title: string; body: string; category: string; publis
 export default function Roadmap() {
   const [entries, setEntries] = useState<Entry[]>([])
   const [category, setCategory] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(true)
   useEffect(() => {
+    let isMounted = true
     ;(async () => {
-      const res = await fetch(`/api/changelog${category ? `?category=${encodeURIComponent(category)}` : ''}`, { cache: 'no-store' })
-      const data = await res.json()
-      setEntries(data)
+      try {
+        setLoading(true)
+        const res = await fetch(`/api/changelog${category ? `?category=${encodeURIComponent(category)}` : ''}`, { cache: 'no-store' })
+        const data = await res.json()
+        if (!isMounted) return
+        setEntries(data)
+      } catch (e) {
+        if (!isMounted) return
+        setEntries([])
+      } finally {
+        if (isMounted) setLoading(false)
+      }
     })()
+    return () => { isMounted = false }
   }, [category])
   return (
     <div className="relative bg-white dark:bg-gray-900 h-full">
@@ -55,7 +67,29 @@ export default function Roadmap() {
 
           {/* Posts */}
           <div className="xl:-translate-x-16">
-            {entries.map((e) => (
+            {loading && (
+              <div className="space-y-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="pt-6">
+                    <div className="xl:flex">
+                      <div className="w-32 shrink-0">
+                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      </div>
+                      <div className="grow pb-6 border-b border-gray-200 dark:border-gray-700/60">
+                        <div className="h-7 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3" />
+                        <div className="h-6 w-28 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse mb-4" />
+                        <div className="space-y-2">
+                          <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-4 w-11/12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-4 w-10/12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!loading && entries.map((e) => (
               <article key={e.id} className="pt-6">
                 <div className="xl:flex">
                   <div className="w-32 shrink-0">
@@ -75,7 +109,7 @@ export default function Roadmap() {
                 </div>
               </article>
             ))}
-            {!entries.length && (
+            {!loading && !entries.length && (
               <div className="text-sm text-gray-500 dark:text-gray-400">No entries yet.</div>
             )}
           </div>

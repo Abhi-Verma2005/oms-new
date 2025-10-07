@@ -1,383 +1,273 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
 import { motion } from 'framer-motion'
-import Particles from '../../../components/particles'
 import LandingFooter from '../../../components/landing-footer'
 
 export default function FaqPage() {
-  const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>({})
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const toggleItem = (categoryIndex: number, questionIndex: number) => {
-    const key = `${categoryIndex}-${questionIndex}`
-    setOpenItems(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }))
-  }
-
-  // Lightweight animation variants
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.3, ease: "easeOut" }
-  }
-
-  const staggerContainer = {
-    animate: {
-      transition: {
-        staggerChildren: 0.05
-      }
-    }
-  }
-
-  const faqs = [
-    {
-      category: "General",
-      questions: [
-        {
-          question: "What is Mosaic Next?",
-          answer: "Mosaic Next is a comprehensive outreach and content placement platform that helps businesses build authority and drive growth through strategic content placement on high-authority platforms.\n\nWe connect you with the right people and platforms to amplify your message and establish your brand as a thought leader in your industry."
-        },
-        {
-          question: "How does the outreach process work?",
-          answer: "Our process is simple and effective:\n\n1) We analyze your brand and goals\n2) Create high-quality content tailored to your needs\n3) Reach out to relevant platforms and contacts\n4) Secure placements and monitor results\n\nWe handle everything from strategy to execution, ensuring your message reaches the right audience."
-        },
-        {
-          question: "Do you offer a free consultation?",
-          answer: "Yes! We offer free consultations to discuss your specific needs and goals.\n\nDuring the consultation, we'll analyze your current situation and provide recommendations on how our services can help you achieve your objectives. No commitment required."
-        }
-      ]
-    },
-    {
-      category: "Services & Pricing",
-      questions: [
-        {
-          question: "What services do you offer?",
-          answer: "We offer comprehensive content and outreach services:\n\n• Content creation and SEO writing\n• Strategic outreach and platform placement\n• Wikipedia page creation and management\n• Backlink building and relationship management\n• Comprehensive reporting and analytics\n\nOur services are designed to build your authority and drive measurable results."
-        },
-        {
-          question: "How do you price your services?",
-          answer: "Our pricing is flexible and based on several factors:\n\n• Scope of work and content requirements\n• Target platforms and outreach complexity\n• Campaign duration and ongoing management\n\nWe offer packages for different business sizes, from startups to enterprise clients. Contact us for a customized quote that fits your budget and goals."
-        },
-        {
-          question: "Can I submit my own content?",
-          answer: "Absolutely! We welcome your content submissions and can work with your existing materials.\n\nOur team will review and optimize your content for maximum impact across our network of platforms. We can also provide suggestions for improvement to ensure the best possible results."
-        }
-      ]
-    },
-    {
-      category: "Process & Timeline",
-      questions: [
-        {
-          question: "What's the typical turnaround time?",
-          answer: "Our standard turnaround is 7-14 days for content creation and placement.\n\nRush orders can be accommodated with 3-5 day delivery for urgent projects. We provide detailed timelines during the consultation phase and keep you updated throughout the entire process."
-        },
-        {
-          question: "How do you measure success?",
-          answer: "We track comprehensive metrics to measure your success:\n\n• Content placements and reach\n• Engagement metrics and audience growth\n• Traffic increases and organic growth\n• Brand mentions and authority building\n\nYou'll receive detailed reports showing the impact of our outreach efforts on your business goals."
-        },
-        {
-          question: "Do you provide white label services?",
-          answer: "Yes! We offer comprehensive white label services for agencies and partners.\n\nThis includes:\n• Custom branding and client management\n• Dedicated support and account management\n• Flexible pricing models for scalability\n\nPerfect for agencies looking to expand their service offerings."
-        }
-      ]
-    },
-    {
-      category: "Support & Guarantees",
-      questions: [
-        {
-          question: "What support options are available?",
-          answer: "We offer comprehensive support through multiple channels:\n\n• Email support for detailed inquiries\n• Live chat for quick questions\n• Dedicated account managers for enterprise clients\n• Phone support for urgent matters\n\nOur team is available throughout the entire process, from initial consultation to ongoing campaign management."
-        },
-        {
-          question: "Do you offer guarantees?",
-          answer: "We guarantee quality content and professional service delivery.\n\nIf you're not satisfied with our work:\n• Free revisions until you're happy\n• Partial refunds based on our satisfaction policy\n• No questions asked refund policy\n\nWe're committed to your success and stand behind our work."
-        },
-        {
-          question: "How quickly do you respond to support requests?",
-          answer: "Our support team typically responds within 2-4 hours during business hours.\n\nFor urgent matters:\n• Priority support for enterprise clients\n• 24/7 support for critical issues\n• Dedicated support team always available\n\nWe ensure you get the help you need when you need it."
-        }
-      ]
-    }
-  ]
-
-  // Filter FAQs based on search query
-  const filteredFaqs = faqs.map(category => ({
-    ...category,
-    questions: category.questions.filter(faq => 
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(category => category.questions.length > 0)
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Main content with top padding to account for fixed navbar */}
-      <div className="pt-16">
-        {/* Hero Section */}
-        <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-          {/* Particles animation */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-64 h-64 -mt-24">
-            <Particles className="absolute inset-0 -z-10" quantity={6} staticity={30} />
-          </div>
-
-          {/* Decorative elements */}
-          <div className="absolute top-20 left-10 w-20 h-20 bg-indigo-500/10 rounded-full blur-xl"></div>
-          <div className="absolute top-40 right-20 w-32 h-32 bg-purple-600/10 rounded-full blur-xl"></div>
-          <div className="absolute bottom-20 left-1/4 w-24 h-24 bg-blue-700/10 rounded-full blur-xl"></div>
-
-          <div className="max-w-6xl mx-auto">
-            <motion.div 
-              className="text-center pb-12"
-              initial="initial"
-              animate="animate"
-              variants={staggerContainer}
-            >
-              <motion.div variants={fadeInUp} className="mb-8">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-full text-sm font-medium border border-indigo-200 dark:border-indigo-800 mb-6">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Frequently Asked Questions
-                </div>
-                <h1 className="text-6xl md:text-7xl font-bold mb-6">
-                  <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    Got Questions?
-                  </span>
-                </h1>
-                <motion.h2 
-                  className="text-3xl md:text-4xl font-semibold text-gray-700 dark:text-gray-300"
-                  variants={fadeInUp}
-                >
-                  We've got the answers
-                </motion.h2>
-              </motion.div>
-              
-              <motion.p 
-                className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-12"
-                variants={fadeInUp}
-              >
-                Everything you need to know about our outreach and content placement services. 
-                Can't find what you're looking for? We're here to help.
-              </motion.p>
-              
-              {/* Search Bar */}
-              <motion.div 
-                className="mb-12"
-                variants={fadeInUp}
-              >
-                <div className="relative max-w-lg mx-auto">
-                  <input
-                    type="text"
-                    placeholder="Search FAQs..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-4 pl-12 pr-6 text-gray-900 dark:text-white bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 shadow-lg hover:shadow-xl"
-                  />
-                  <svg 
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-4 justify-center"
-                variants={fadeInUp}
-              >
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Get Started Free
-                </Link>
-                <Link
-                  href="/publishers"
-                  className="inline-flex items-center justify-center px-8 py-4 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                >
-                  View Publishers
-                </Link>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* FAQ Sections */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
-            {filteredFaqs.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-8xl mb-6">🔍</div>
-                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                  No FAQs found
-                </h3>
-                <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                  Try searching with different keywords or browse all categories.
-                </p>
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Clear search
-                </button>
-              </div>
-            ) : (
-              <motion.div
-                initial="initial"
-                whileInView="animate"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={staggerContainer}
-              >
-                {filteredFaqs.map((category, categoryIndex) => (
-                  <motion.div 
-                    key={categoryIndex} 
-                    className="mb-20"
-                    variants={fadeInUp}
-                  >
-                    <motion.h2 
-                      className="text-4xl font-bold text-gray-900 dark:text-white mb-12 text-center"
-                      variants={fadeInUp}
-                    >
-                      <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                        {category.category}
-                      </span>
-                    </motion.h2>
-                    
-                    <div className="grid gap-6">
-                      {category.questions.map((faq, faqIndex) => {
-                        const key = `${categoryIndex}-${faqIndex}`
-                        const isOpen = openItems[key]
-                        
-                        return (
-                          <motion.div 
-                            key={faqIndex}
-                            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow duration-200"
-                            variants={fadeInUp}
-                          >
-                            <button
-                              className="w-full px-8 py-6 text-left flex items-center justify-between hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-gray-700/50 dark:hover:to-gray-600/50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset"
-                              onClick={() => toggleItem(categoryIndex, faqIndex)}
-                              aria-expanded={isOpen}
-                              aria-controls={`faq-${key}`}
-                            >
-                              <h3 className="text-xl font-semibold text-gray-900 dark:text-white pr-4">
-                                {faq.question}
-                              </h3>
-                              <motion.div
-                                animate={{ rotate: isOpen ? 180 : 0 }}
-                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="flex-shrink-0"
-                              >
-                                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                                  <svg 
-                                    className="w-4 h-4 text-white" 
-                                    fill="none" 
-                                    stroke="currentColor" 
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
-                                </div>
-                              </motion.div>
-                            </button>
-                            
-                            <motion.div
-                              initial={false}
-                              animate={{ 
-                                height: isOpen ? "auto" : 0,
-                                opacity: isOpen ? 1 : 0
-                              }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
-                              className="overflow-hidden"
-                            >
-                              <div className="px-8 pb-6">
-                                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                                  <div className="max-w-4xl">
-                                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-base break-words whitespace-pre-line">
-                                      {faq.answer}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          </motion.div>
-                        )
-                      })}
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute top-10 left-10 w-20 h-20 bg-indigo-500/10 rounded-full blur-xl"></div>
-          <div className="absolute bottom-10 right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-xl"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-blue-500/5 rounded-full blur-2xl"></div>
-          
-          <div className="max-w-6xl mx-auto text-center relative">
-            <motion.div
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={staggerContainer}
-            >
-              <motion.h2 
-                className="text-5xl font-bold text-gray-900 dark:text-white mb-6"
-                variants={fadeInUp}
-              >
-                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Still have questions?
-                </span>
-              </motion.h2>
-              
-              <motion.p 
-                className="text-xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto"
-                variants={fadeInUp}
-              >
-                Can't find what you're looking for? Our support team is here to help you succeed. 
-                Get personalized assistance and discover how we can help your business grow.
-              </motion.p>
-              
-              <motion.div 
-                className="flex flex-col sm:flex-row gap-6 justify-center"
-                variants={fadeInUp}
-              >
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center justify-center px-10 py-5 border border-transparent text-lg font-semibold rounded-2xl text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  Contact Support
-                </Link>
-                <Link
-                  href="/publishers"
-                  className="inline-flex items-center justify-center px-10 py-5 border border-gray-300 dark:border-gray-600 text-lg font-semibold rounded-2xl text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                  View Publishers
-                </Link>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
+    <div className="relative bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen">
+      {/* Decorative background accents */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-20 h-72 w-72 rounded-full bg-purple-600/10 blur-3xl" />
       </div>
 
-      {/* Footer */}
+      <div className="px-4 sm:px-6 lg:px-8 py-12 w-full max-w-[96rem] mx-auto">
+
+        <motion.div
+          className="max-w-3xl m-auto"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+        >
+
+          {/* Page title */}
+          <div className="mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              FAQs
+            </div>
+            <h1 className="mt-3 text-3xl md:text-4xl text-gray-900 dark:text-white font-extrabold tracking-tight">
+              How we can help you today?
+            </h1>
+            <p className="mt-2 text-gray-600 dark:text-gray-300">
+              Browse common questions, or use search to quickly find answers.
+            </p>
+          </div>
+
+          {/* Search form */}
+          <div className="mb-8">
+            <form className="relative">
+              <label htmlFor="action-search" className="sr-only">Search</label>
+              <input
+                id="action-search"
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                type="search"
+                placeholder="Search questions..."
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </form>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-10">
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {['Popular', 'Accessibility', 'Marketing', 'Development', 'Account'].map((label, idx) => (
+                <motion.a
+                  key={label}
+                  href="#0"
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                    idx === 0
+                      ? 'bg-[#755FF8] text-white border-transparent hover:bg-[#6a54ee]'
+                      : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                  }`}
+                >
+                  {label}
+                </motion.a>
+              ))}
+            </div>
+          </div>
+
+          {/* Posts */}
+          <div>
+            <h2 className="text-2xl text-gray-900 dark:text-white font-bold mb-6">Popular Questions</h2>
+            {/* Post */}
+            <motion.article
+              className="p-5 mb-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            >
+              <header className="flex items-start mb-2">
+                <div className="mt-2 mr-3">
+                  <svg className="shrink-0" width="20" height="20" viewBox="0 0 16 16">
+                    <path className="text-violet-300" d="M4 8H0v4.9c0 1 .7 1.9 1.7 2.1 1.2.2 2.3-.8 2.3-2V8z" />
+                    <path className="text-violet-500" d="M15 1H7c-.6 0-1 .4-1 1v11c0 .7-.2 1.4-.6 2H13c1.7 0 3-1.3 3-3V2c0-.6-.4-1-1-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl leading-snug text-gray-900 dark:text-white font-semibold">How can the widget to my website?</h3>
+              </header>
+              <div className="pl-7">
+                <div className="mb-3 text-gray-600 dark:text-gray-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam, quis nostrud exercitation ullamco.</div>
+                <ul className="flex flex-wrap">
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">General</a>
+                  </li>
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Marketing</a>
+                  </li>
+                </ul>
+              </div>
+            </motion.article>
+            {/* Post */}
+            <motion.article
+              className="p-5 mb-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            >
+              <header className="flex items-start mb-2">
+                <div className="mt-2 mr-3">
+                  <svg className="shrink-0" width="20" height="20" viewBox="0 0 16 16">
+                    <path className="text-violet-300" d="M4 8H0v4.9c0 1 .7 1.9 1.7 2.1 1.2.2 2.3-.8 2.3-2V8z" />
+                    <path className="text-violet-500" d="M15 1H7c-.6 0-1 .4-1 1v11c0 .7-.2 1.4-.6 2H13c1.7 0 3-1.3 3-3V2c0-.6-.4-1-1-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl leading-snug text-gray-900 dark:text-white font-semibold">What would happen if I choose not to pay after the usage?</h3>
+              </header>
+              <div className="pl-7">
+                <div className="mb-3 text-gray-600 dark:text-gray-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam, quis nostrud exercitation ullamco.</div>
+                <ul className="flex flex-wrap">
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Development</a>
+                  </li>
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Acessibility</a>
+                  </li>
+                </ul>
+              </div>
+            </motion.article>
+            {/* Post */}
+            <motion.article
+              className="p-5 mb-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <header className="flex items-start mb-2">
+                <div className="mt-2 mr-3">
+                  <svg className="shrink-0" width="20" height="20" viewBox="0 0 16 16">
+                    <path className="text-violet-300" d="M4 8H0v4.9c0 1 .7 1.9 1.7 2.1 1.2.2 2.3-.8 2.3-2V8z" />
+                    <path className="text-violet-500" d="M15 1H7c-.6 0-1 .4-1 1v11c0 .7-.2 1.4-.6 2H13c1.7 0 3-1.3 3-3V2c0-.6-.4-1-1-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl leading-snug text-gray-900 dark:text-white font-semibold">What limitations do trial accounts have?</h3>
+              </header>
+              <div className="pl-7">
+                <div className="mb-3 text-gray-600 dark:text-gray-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam, quis nostrud exercitation ullamco.</div>
+                <ul className="flex flex-wrap">
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Development</a>
+                  </li>
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Plans</a>
+                  </li>
+                </ul>
+              </div>
+            </motion.article>
+            {/* Post */}
+            <motion.article
+              className="p-5 mb-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
+            >
+              <header className="flex items-start mb-2">
+                <div className="mt-2 mr-3">
+                  <svg className="shrink-0" width="20" height="20" viewBox="0 0 16 16">
+                    <path className="text-violet-300" d="M4 8H0v4.9c0 1 .7 1.9 1.7 2.1 1.2.2 2.3-.8 2.3-2V8z" />
+                    <path className="text-violet-500" d="M15 1H7c-.6 0-1 .4-1 1v11c0 .7-.2 1.4-.6 2H13c1.7 0 3-1.3 3-3V2c0-.6-.4-1-1-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl leading-snug text-gray-900 dark:text-white font-semibold">Is there any difference between Standard and Plus licenses?</h3>
+              </header>
+              <div className="pl-7">
+                <div className="mb-3 text-gray-600 dark:text-gray-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam, quis nostrud exercitation ullamco.</div>
+                <ul className="flex flex-wrap">
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Development</a>
+                  </li>
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Account</a>
+                  </li>
+                </ul>
+              </div>
+            </motion.article>
+            {/* Post */}
+            <motion.article
+              className="p-5 mb-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            >
+              <header className="flex items-start mb-2">
+                <div className="mt-2 mr-3">
+                  <svg className="shrink-0" width="20" height="20" viewBox="0 0 16 16">
+                    <path className="text-violet-300" d="M4 8H0v4.9c0 1 .7 1.9 1.7 2.1 1.2.2 2.3-.8 2.3-2V8z" />
+                    <path className="text-violet-500" d="M15 1H7c-.6 0-1 .4-1 1v11c0 .7-.2 1.4-.6 2H13c1.7 0 3-1.3 3-3V2c0-.6-.4-1-1-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl leading-snug text-gray-900 dark:text-white font-semibold">Is my personal information protected?</h3>
+              </header>
+              <div className="pl-7">
+                <div className="mb-3 text-gray-600 dark:text-gray-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam, quis nostrud exercitation ullamco.</div>
+                <ul className="flex flex-wrap">
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">General</a>
+                  </li>
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Accessibility</a>
+                  </li>
+                </ul>
+              </div>
+            </motion.article>
+            {/* Post */}
+            <motion.article
+              className="p-5 mb-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur shadow-sm hover:shadow-md transition-shadow"
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.55, ease: 'easeOut' }}
+            >
+              <header className="flex items-start mb-2">
+                <div className="mt-2 mr-3">
+                  <svg className="shrink-0" width="20" height="20" viewBox="0 0 16 16">
+                    <path className="text-violet-300" d="M4 8H0v4.9c0 1 .7 1.9 1.7 2.1 1.2.2 2.3-.8 2.3-2V8z" />
+                    <path className="text-violet-500" d="M15 1H7c-.6 0-1 .4-1 1v11c0 .7-.2 1.4-.6 2H13c1.7 0 3-1.3 3-3V2c0-.6-.4-1-1-1z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl leading-snug text-gray-900 dark:text-white font-semibold">What can I create with with this product?</h3>
+              </header>
+              <div className="pl-7">
+                <div className="mb-3 text-gray-600 dark:text-gray-300">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam, quis nostrud exercitation ullamco.</div>
+                <ul className="flex flex-wrap">
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Marketing</a>
+                  </li>
+                  <li className="flex items-center after:block after:content-['·'] last:after:content-[''] after:text-sm after:text-gray-400 dark:after:text-gray-600 after:px-2">
+                    <a className="text-sm font-medium text-violet-500 hover:text-violet-600 dark:hover:text-violet-400" href="#0">Plans</a>
+                  </li>
+                </ul>
+              </div>
+            </motion.article>
+          </div>
+
+          {/* Pagination */}
+          <div className="mt-6">
+            <div className="flex justify-end">
+              <a className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#755FF8] hover:bg-[#6a54ee] text-white text-sm font-medium shadow-sm transition-colors" href="#0">
+                See All Questions
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </a>
+            </div>
+          </div>
+
+        </motion.div>
+
+      </div>
+
       <LandingFooter />
     </div>
   )

@@ -108,17 +108,17 @@ export function DynamicInsightsSection() {
   }
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-6">
+          <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-gray-800/50 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200/60 dark:border-purple-800/60 mb-6">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             Case Studies
           </div>
           <h2 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
-            Real Results from <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">Real Clients</span>
+            Real Results from <span className="text-purple-700 dark:text-purple-300">Real Clients</span>
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
             See how our proven strategies drive measurable growth for businesses across industries. 
@@ -126,29 +126,35 @@ export function DynamicInsightsSection() {
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
+        {/* Category Filter with animated underline */}
+        <div className="flex flex-wrap justify-center gap-2 mb-12 relative">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+            className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
               selectedCategory === 'all'
-                ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-lg'
+                ? 'bg-purple-600 text-white shadow-sm'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
             }`}
           >
             All Categories
+            {selectedCategory === 'all' && (
+              <motion.span layoutId="insights-cat-underline" className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded bg-white/80" />
+            )}
           </button>
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+              className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                 selectedCategory === category
-                  ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-lg'
+                  ? 'bg-purple-600 text-white shadow-sm'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
               }`}
             >
               {category}
+              {selectedCategory === category && (
+                <motion.span layoutId="insights-cat-underline" className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded bg-white/80" />
+              )}
             </button>
           ))}
         </div>
@@ -158,20 +164,24 @@ export function DynamicInsightsSection() {
           {filteredStudies.map((study, index) => (
             <motion.div
               key={study.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.25 }}
+              transition={{ delay: index * 0.06, duration: 0.5, ease: 'easeOut' }}
+              whileHover={{ y: -4 }}
+              className="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 rounded-2xl ring-1 ring-transparent group-hover:ring-purple-200/60 dark:group-hover:ring-purple-800/40 transition-colors duration-300"></div>
               
               <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={study.imageSrc}
-                    alt={study.title}
-                    className="w-16 h-16 rounded-xl object-cover"
-                  />
+                <div className="flex items-center gap-4 mb-5">
+                  <motion.div whileHover={{ scale: 1.03 }} className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <img
+                      src={study.imageSrc}
+                      alt={study.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </motion.div>
                   <div>
                     <div className="text-purple-600 dark:text-purple-400 text-sm font-semibold">
                       {study.category}
@@ -182,21 +192,21 @@ export function DynamicInsightsSection() {
                   </div>
                 </div>
                 
-                <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
+                <p className="text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
                   {study.subtitle}
                 </p>
                 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-2 gap-3 mb-5">
                   {study.stats.map((stat, statIndex) => (
-                    <div key={statIndex} className="text-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                    <motion.div key={statIndex} className="text-center rounded-lg border border-gray-200 dark:border-gray-700 p-3" whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                      <div className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                         {stat.value}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
                         {stat.label}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
                 
