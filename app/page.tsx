@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -8,6 +8,7 @@ import UnifiedNavbar from "@/components/ui/unified-navbar"
 import { useSearchToChatStore } from '@/stores/search-to-chat-store'
 import { InfiniteMovingCards } from "@/components/ui/infinite-moving-cards"
 import { Spotlight } from "@/components/ui/spotlight"
+import { motion, useScroll, useTransform } from 'framer-motion'
 import BarChart01 from "@/components/charts/bar-chart-01"
 import LineChart01 from "@/components/charts/line-chart-01"
 import DoughnutChart from "@/components/charts/doughnut-chart"
@@ -111,6 +112,14 @@ export default function LandingPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { setPendingQuery, setAutoSend, setRedirecting, isRedirecting } = useSearchToChatStore();
+
+  // Framer Motion scroll-based animation for the App Preview block
+  const appPreviewRef = useRef<HTMLDivElement | null>(null);
+  const { scrollYProgress } = useScroll({
+    target: appPreviewRef,
+    offset: ['start 80%', 'end 20%'],
+  });
+  const appPreviewScale = useTransform(scrollYProgress, [0, 1], [0.98, 1.02]);
 
   const handleSearchSubmit = async () => {
     if (!searchQuery.trim()) return;
@@ -456,7 +465,7 @@ export default function LandingPage() {
       {/* App Preview Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 reveal-up">
             <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
               Experience the power of <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">Mosaic Next</span>
             </h2>
@@ -466,7 +475,7 @@ export default function LandingPage() {
             </p>
           </div>
           
-          <div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-gray-50 dark:bg-gray-800 relative mx-auto max-w-7xl overflow-hidden rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg shadow-zinc-950/15 ring-1">
+          <motion.div ref={appPreviewRef} style={{ scale: appPreviewScale }} className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-gray-50 dark:bg-gray-800 relative mx-auto max-w-7xl overflow-hidden rounded-2xl border border-gray-300 dark:border-gray-700 shadow-lg shadow-zinc-950/15 ring-1 reveal-up will-change-transform">
             {/* Light mode image */}
             <img
               className="bg-gray-50 dark:bg-gray-800 aspect-[16/10] relative rounded-2xl w-full object-contain dark:hidden"
@@ -483,7 +492,7 @@ export default function LandingPage() {
               width={2700}
               height={1440}
             />
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -491,10 +500,10 @@ export default function LandingPage() {
       <DynamicInsightsSection />
 
       {/* Goal Selection Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-6">
+          <div className="text-center mb-12 reveal-up">
+            <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-gray-800/50 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200/60 dark:border-purple-800/60 mb-6">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
@@ -511,34 +520,34 @@ export default function LandingPage() {
           
           <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {/* Companies Card */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 hover:border-purple-400/50 transition-all duration-500 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10">
+            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 hover:border-purple-400/50 transition-all duration-500 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 reveal-card">
               {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   </div>
                   <div>
-                    <div className="text-purple-600 dark:text-purple-400 text-sm font-semibold">Companies & Startups</div>
+                    <div className="text-gray-800 dark:text-gray-200 text-sm font-semibold">Companies & Startups</div>
                   </div>
                 </div>
                 
                 <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-                  I want to <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">build connections</span>
+                  I want to <span className="text-purple-700 dark:text-purple-300">build connections</span>
                 </h3>
                 
                 {/* Interactive Chart */}
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-2xl p-4 mb-6 border border-gray-200/50 dark:border-gray-600/50">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6 border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Monthly outreach volume</div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">2,847</div>
                     </div>
-                    <div className="flex items-center gap-1 text-green-500">
+                    <div className="flex items-center gap-1 text-purple-600">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
                       </svg>
@@ -551,7 +560,7 @@ export default function LandingPage() {
                     {[65, 72, 58, 83, 76, 89, 95, 78, 82, 88, 92, 84].map((height, index) => (
                       <div key={index} className="flex flex-col items-center flex-1">
                         <div 
-                          className="w-full bg-gradient-to-t from-purple-500 to-violet-400 rounded-t-sm transition-all duration-500 hover:from-purple-600 hover:to-violet-500"
+                          className="w-full bg-purple-500 rounded-t-sm transition-all duration-300 hover:bg-purple-600"
                           style={{ height: `${height}%` }}
                         ></div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -564,22 +573,22 @@ export default function LandingPage() {
                 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                     <span className="text-gray-600 dark:text-gray-300">Build relationships across 1,000+ high-authority platforms</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                     <span className="text-gray-600 dark:text-gray-300">Expert content creation and curation included</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                     <span className="text-gray-600 dark:text-gray-300">Full transparency and detailed reporting</span>
                   </div>
                 </div>
                 
                 <Link 
                   href="/contact" 
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-violet-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-violet-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/25"
+                  className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Start Building Connections
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -590,34 +599,32 @@ export default function LandingPage() {
             </div>
             
             {/* Agencies Card */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 hover:border-green-400/50 transition-all duration-500 shadow-xl hover:shadow-2xl hover:shadow-green-500/10">
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:border-purple-300 transition-all duration-300 shadow-sm hover:shadow-md reveal-card">
               
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
                     </svg>
                   </div>
                   <div>
-                    <div className="text-green-600 dark:text-green-400 text-sm font-semibold">Agencies & White Label Partners</div>
+                    <div className="text-gray-800 dark:text-gray-200 text-sm font-semibold">Agencies & White Label Partners</div>
                   </div>
                 </div>
                 
                 <h3 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-                  I want to <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">resell or whitelabel</span> your service
+                  I want to <span className="text-purple-700 dark:text-purple-300">resell or whitelabel</span> your service
                 </h3>
                 
                 {/* Revenue Chart */}
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-2xl p-4 mb-6 border border-gray-200/50 dark:border-gray-600/50">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-6 border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Monthly Revenue</div>
                       <div className="text-2xl font-bold text-gray-900 dark:text-white">$530,865</div>
                     </div>
-                    <div className="flex items-center gap-1 text-green-500">
+                    <div className="flex items-center gap-1 text-purple-600">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
                       </svg>
@@ -629,24 +636,24 @@ export default function LandingPage() {
                   <div className="h-24 flex items-center justify-center">
                     <div className="relative w-20 h-20">
                       <div className="absolute inset-0 rounded-full border-8 border-gray-200 dark:border-gray-600"></div>
-                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-green-500 border-r-green-500" style={{clipPath: 'polygon(50% 50%, 50% 0%, 75% 0%, 75% 50%)'}}></div>
-                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-b-blue-500 border-l-blue-500" style={{clipPath: 'polygon(50% 50%, 0% 50%, 0% 25%, 25% 25%)'}}></div>
-                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-purple-500" style={{clipPath: 'polygon(50% 50%, 25% 0%, 50% 0%)'}}></div>
+                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-purple-500 border-r-purple-500" style={{clipPath: 'polygon(50% 50%, 50% 0%, 75% 0%, 75% 50%)'}}></div>
+                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-b-purple-400 border-l-purple-400" style={{clipPath: 'polygon(50% 50%, 0% 50%, 0% 25%, 25% 25%)'}}></div>
+                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-purple-300" style={{clipPath: 'polygon(50% 50%, 25% 0%, 50% 0%)'}}></div>
                     </div>
                   </div>
                   
                   {/* Revenue Breakdown */}
                   <div className="grid grid-cols-3 gap-3 mt-3">
                     <div className="text-center">
-                      <div className="text-lg font-bold text-green-600">$270K</div>
+                      <div className="text-lg font-bold text-purple-700">$270K</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">Outreach</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-bold text-blue-600">$181K</div>
+                      <div className="text-lg font-bold text-purple-700">$181K</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">Content</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-bold text-purple-600">$80K</div>
+                      <div className="text-lg font-bold text-purple-700">$80K</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">Social</div>
                     </div>
                   </div>
@@ -654,22 +661,22 @@ export default function LandingPage() {
                 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                     <span className="text-gray-600 dark:text-gray-300">White label services for 300+ agencies globally</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                     <span className="text-gray-600 dark:text-gray-300">Custom branding and client management</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                     <span className="text-gray-600 dark:text-gray-300">Dedicated support and training resources</span>
                   </div>
                 </div>
                 
                 <Link 
                   href="/contact" 
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-green-500/25"
+                  className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   Explore White Label Options
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -681,8 +688,8 @@ export default function LandingPage() {
           </div>
           
           {/* Bottom CTA */}
-          <div className="text-center mt-12">
-            <div className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-6 py-3 rounded-full">
+          <div className="text-center mt-12 reveal-fade">
+            <div className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-700">
               <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -698,7 +705,7 @@ export default function LandingPage() {
       {/* Statistics Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16 reveal-up">
             <div className="text-center">
               <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">2,000</div>
               <div className="text-gray-600 dark:text-gray-400">Clients served</div>
@@ -718,7 +725,7 @@ export default function LandingPage() {
           </div>
           
           {/* Features */}
-          <div className="flex flex-wrap justify-center gap-4 mb-16">
+          <div className="flex flex-wrap justify-center gap-4 mb-16 reveal-fade">
             <div className="flex items-center bg-gray-50/90 dark:bg-gray-800/50 px-4 py-2 rounded-full shadow-sm">
               <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
               <span className="text-gray-600 dark:text-gray-400">No spam or automated messages</span>
@@ -752,17 +759,17 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+      <section id="testimonials" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 reveal-up">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-violet-500/10 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200 dark:border-purple-800 mb-6">
+            <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-gray-800/50 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200/60 dark:border-purple-800/60 mb-6">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               Client Success Stories
             </div>
             <h2 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
-              What our <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">clients</span> are saying
+              What our <span className="text-purple-600 dark:text-purple-300">clients</span> are saying
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Join 2,000+ companies who trust us to build their authority and drive real results. 
@@ -773,8 +780,7 @@ export default function LandingPage() {
           {/* Featured Testimonials Grid */}
           <div className="grid lg:grid-cols-2 gap-8 mb-16">
             {/* Featured Testimonial 1 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200 reveal-card">
               
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-6">
@@ -787,7 +793,7 @@ export default function LandingPage() {
                     <div className="font-semibold text-gray-900 dark:text-white">Nitesh</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Sr. Marketing Manager</div>
                   </div>
-                  <div className="ml-auto flex text-yellow-400">
+                  <div className="ml-auto flex text-purple-500">
                     {[...Array(5)].map((_, i) => (
                       <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -801,17 +807,16 @@ export default function LandingPage() {
                 </blockquote>
                 
                 <div className="flex items-center justify-between">
-                  <div className="bg-gradient-to-r from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 px-4 py-2 rounded-full">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-full border border-purple-200/60 dark:border-purple-800/60">
                     <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Wikipedia Writing & Publishing</span>
                   </div>
-                  <div className="text-2xl">✨</div>
+                  <div className="text-2xl text-purple-600">✦</div>
                 </div>
               </div>
             </div>
 
             {/* Featured Testimonial 2 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-200 reveal-card">
               
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-6">
@@ -824,7 +829,7 @@ export default function LandingPage() {
                     <div className="font-semibold text-gray-900 dark:text-white">Nousheer</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Sr. Director SEO</div>
                   </div>
-                  <div className="ml-auto flex text-yellow-400">
+                  <div className="ml-auto flex text-purple-500">
                     {[...Array(5)].map((_, i) => (
                       <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -838,65 +843,49 @@ export default function LandingPage() {
                 </blockquote>
                 
                 <div className="flex items-center justify-between">
-                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 px-4 py-2 rounded-full">
-                    <span className="text-sm font-medium text-green-700 dark:text-green-300">209% Traffic Increase</span>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-full border border-purple-200/60 dark:border-purple-800/60">
+                    <span className="text-sm font-medium text-purple-700 dark:text-purple-300">209% Traffic Increase</span>
                   </div>
-                  <div className="text-2xl">🚀</div>
+                  <div className="text-2xl text-purple-600">★</div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">200+</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16 reveal-up">
+            <div className="text-center bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+              <div className="text-3xl font-bold text-purple-700 dark:text-purple-400 mb-2">200+</div>
               <div className="text-gray-600 dark:text-gray-400 text-sm">5-Star Reviews</div>
             </div>
-            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
-              <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">96.8%</div>
+            <div className="text-center bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+              <div className="text-3xl font-bold text-purple-700 dark:text-purple-400 mb-2">96.8%</div>
               <div className="text-gray-600 dark:text-gray-400 text-sm">Repeat Rate</div>
             </div>
-            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">50K+</div>
+            <div className="text-center bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+              <div className="text-3xl font-bold text-purple-700 dark:text-purple-400 mb-2">50K+</div>
               <div className="text-gray-600 dark:text-gray-400 text-sm">Connections Made</div>
             </div>
-            <div className="text-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
-              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">3 Days</div>
+            <div className="text-center bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+              <div className="text-3xl font-bold text-purple-700 dark:text-purple-400 mb-2">3 Days</div>
               <div className="text-gray-600 dark:text-gray-400 text-sm">Avg. Response</div>
-            </div>
-          </div>
-
-          {/* Moving Testimonials */}
-          <div className="relative">
-            <div className="h-[32rem] rounded-2xl flex flex-col antialiased bg-gradient-to-br from-gray-100/80 to-gray-200/80 dark:from-gray-900/80 dark:to-gray-800/80 items-center justify-center relative overflow-hidden border border-gray-200/50 dark:border-gray-700/50">
-              <InfiniteMovingCards
-                items={clientTestimonials.map((t) => ({
-                  quote: t.quote,
-                  name: t.name,
-                  title: `${t.role} • ${t.achievement}`,
-                  avatarUrl: t.logoSrc,
-                }))}
-                direction="right"
-                speed="slow"
-              />
             </div>
           </div>
         </div>
       </section>
 
       {/* Process Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 reveal-up">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-full text-sm font-medium border border-blue-200 dark:border-blue-800 mb-6">
+            <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-gray-800/50 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200/60 dark:border-purple-800/60 mb-6">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               How It Works
             </div>
             <h2 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
-              Our <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">proven process</span> in action
+              Our <span className="text-purple-700 dark:text-purple-300">proven process</span> in action
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
               From initial consultation to final results, we follow a systematic approach that ensures 
@@ -904,14 +893,13 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8 mb-16">
+            <div className="grid lg:grid-cols-3 gap-8 mb-16">
             {/* Step 1 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 reveal-card">
               
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
                     <span className="text-white font-bold text-lg">1</span>
                   </div>
                   <div>
@@ -943,12 +931,11 @@ export default function LandingPage() {
             </div>
 
             {/* Step 2 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-violet-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 reveal-card">
               
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
                     <span className="text-white font-bold text-lg">2</span>
                   </div>
                   <div>
@@ -980,12 +967,11 @@ export default function LandingPage() {
             </div>
 
             {/* Step 3 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 reveal-card">
               
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
                     <span className="text-white font-bold text-lg">3</span>
                   </div>
                   <div>
@@ -1018,7 +1004,7 @@ export default function LandingPage() {
           </div>
 
           {/* Results Timeline */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 border border-gray-200 dark:border-gray-700">
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Expected Timeline & Results</h3>
               <p className="text-gray-600 dark:text-gray-300">What you can expect at each stage of the process</p>
@@ -1026,7 +1012,7 @@ export default function LandingPage() {
             
             <div className="grid md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -1036,7 +1022,7 @@ export default function LandingPage() {
               </div>
               
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
@@ -1046,7 +1032,7 @@ export default function LandingPage() {
               </div>
               
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -1056,7 +1042,7 @@ export default function LandingPage() {
               </div>
               
               <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
@@ -1070,17 +1056,17 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+      <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-full text-sm font-medium border border-indigo-200 dark:border-indigo-800 mb-6">
+            <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-gray-800/50 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200/60 dark:border-purple-800/60 mb-6">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Frequently Asked Questions
             </div>
             <h2 className="text-5xl font-bold mb-6 text-gray-900 dark:text-white">
-              Got <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">questions</span>? We've got answers
+              Got <span className="text-purple-700 dark:text-purple-300">questions</span>? We've got answers
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Everything you need to know about our services, process, and how we can help 
@@ -1090,13 +1076,12 @@ export default function LandingPage() {
           
           <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
             {/* FAQ Item 1 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
               
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Can I submit my own content?</h3>
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
@@ -1110,13 +1095,12 @@ export default function LandingPage() {
             </div>
 
             {/* FAQ Item 2 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-green-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
               
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Do you provide white label services?</h3>
-                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
                     </svg>
@@ -1131,13 +1115,12 @@ export default function LandingPage() {
             </div>
 
             {/* FAQ Item 3 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
               
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">What's the typical turnaround time?</h3>
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -1152,13 +1135,12 @@ export default function LandingPage() {
             </div>
 
             {/* FAQ Item 4 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
               
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Which payment methods do you accept?</h3>
-                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
@@ -1173,13 +1155,12 @@ export default function LandingPage() {
             </div>
 
             {/* FAQ Item 5 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
               
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">Do you offer guarantees?</h3>
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -1194,13 +1175,12 @@ export default function LandingPage() {
             </div>
 
             {/* FAQ Item 6 */}
-            <div className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-teal-500/10 transition-all duration-500">
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-cyan-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
               
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white pr-4">How do you measure success?</h3>
-                  <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
@@ -1217,7 +1197,7 @@ export default function LandingPage() {
 
           {/* Contact CTA */}
           <div className="text-center mt-16">
-            <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-3xl p-8 border border-indigo-200/50 dark:border-indigo-700/50">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-sm">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Still have questions?</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
                 Our team is here to help! Schedule a free consultation to discuss your specific needs 
@@ -1226,7 +1206,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 
                   href="/contact" 
-                  className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-indigo-500/25"
+                  className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 transition-colors duration-200 shadow-sm hover:shadow-md"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -1235,7 +1215,7 @@ export default function LandingPage() {
                 </Link>
                 <Link 
                   href="mailto:hello@mosaicnext.com" 
-                  className="inline-flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 text-gray-900 dark:text-white px-8 py-4 rounded-xl font-semibold hover:bg-white dark:hover:bg-gray-800 transition-all duration-300 border border-gray-200 dark:border-gray-700"
+                  className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-6 py-3 rounded-xl font-semibold border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -1249,7 +1229,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-100 dark:bg-gray-900 py-16 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-gray-50 dark:bg-gray-900 py-16 px-4 sm:px-6 lg:px-8 border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-5 gap-8">
             <div className="md:col-span-2">
@@ -1278,7 +1258,7 @@ export default function LandingPage() {
                 <input
                   type="text"
                   placeholder="Search contacts"
-                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-purple-500"
                 />
               </div>
             </div>
@@ -1317,7 +1297,7 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div className="border-t border-gray-300 dark:border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+          <div className="border-t border-gray-200 dark:border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-600 dark:text-gray-400 text-sm">
               © 2024 Mosaic Next. All rights reserved.
             </div>

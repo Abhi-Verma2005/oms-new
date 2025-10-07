@@ -190,7 +190,31 @@ export default function Shop2() {
           {/* Cards 1 (Video Courses) */}
           <div>
             <div className="grid grid-cols-12 gap-6">
-              {loading && <div className="col-span-12 text-sm text-gray-500">Loading…</div>}
+              {loading && (
+                <>
+                  {Array.from({ length: 12 }).map((_, idx) => (
+                    <div key={idx} className="col-span-12 sm:col-span-6 xl:col-span-4">
+                      <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4 flex flex-col">
+                        <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+                        <div className="h-5 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+                        <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3" />
+                        <div className="mt-3 space-y-2">
+                          {Array.from({ length: 6 }).map((__, j) => (
+                            <div key={j} className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          ))}
+                        </div>
+                        <div className="mt-auto pt-4 flex items-center justify-between gap-2">
+                          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="flex items-center gap-2">
+                            <div className="h-9 w-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                            <div className="h-9 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
               {error && !loading && <div className="col-span-12 text-sm text-red-500">{error}</div>}
               {products && (
                 <ProductsGrid productsProp={pageItems} />

@@ -7,7 +7,8 @@ import { useWindowWidth } from '@/components/utils/use-window-width'
 import SidebarLinkGroup from '@/components/ui/sidebar-link-group'
 import SidebarLink from '@/components/ui/sidebar-link'
 import Logo from '@/components/ui/logo'
-import { Search, X } from 'lucide-react'
+import { Search, X, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 export function Sidebar() {
   const sidebar = useRef<HTMLDivElement>(null)
@@ -18,6 +19,7 @@ export function Sidebar() {
   const [isClient, setIsClient] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   
   // Fix hydration by ensuring expandOnly is only true on client
   const expandOnly = isClient && !sidebarExpanded && breakpoint && (breakpoint >= 1024 && breakpoint < 1536)
@@ -87,7 +89,7 @@ export function Sidebar() {
 
   // Get icon component based on icon name
   const getIcon = (iconName: string, isActive: boolean) => {
-    const iconClass = `shrink-0 fill-current ${isActive ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`
+    const iconClass = `shrink-0 w-5 h-5 lg:w-6 lg:h-6 fill-current ${isActive ? 'text-violet-500' : 'text-gray-400 dark:text-gray-500'}`
     
     switch (iconName) {
       case 'dashboard':
@@ -246,78 +248,124 @@ export function Sidebar() {
       <div
         id="sidebar"
         ref={sidebar}
-        className={`flex lg:!flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-hidden w-64 lg:w-20 lg:sidebar-expanded:!w-64 2xl:!w-64 shrink-0 bg-white dark:bg-gray-800 p-4 transition-all duration-200 ease-in-out ${
+        className={`flex lg:!flex flex-col absolute z-40 left-0 top-0 lg:sticky lg:top-0 lg:h-screen lg:left-auto lg:translate-x-0 h-[100dvh] overflow-hidden w-64 lg:w-20 lg:sidebar-expanded:!w-64 2xl:!w-64 shrink-0 bg-white dark:bg-gray-800 p-4 transition-all duration-200 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-64'
         } rounded-r-2xl shadow-xs`}
       >
         <div className="mb-10 pr-3 sm:px-2">
-          {/* Logo */}
-          <div className="flex justify-center lg:justify-start mb-4">
-            <Logo href="/admin" />
-          </div>
-          
-          {/* Toggle button - works for both mobile and desktop */}
-          <div className="flex justify-center lg:justify-start">
-            <button
-              className="inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
-              onClick={() => {
-                // On mobile, toggle sidebar open/close
-                if (breakpoint && breakpoint < 1024) {
-                  setSidebarOpen(!sidebarOpen)
-                } else {
-                  // On desktop, toggle sidebar expanded/collapsed
-                  setSidebarExpanded(!sidebarExpanded)
-                }
-              }}
-              aria-controls="sidebar"
-              aria-expanded={breakpoint && breakpoint < 1024 ? sidebarOpen : sidebarExpanded}
-              title={breakpoint && breakpoint < 1024 ? (sidebarOpen ? 'Close sidebar' : 'Open sidebar') : (sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar')}
-            >
-              <span className="sr-only">
-                {breakpoint && breakpoint < 1024 ? (sidebarOpen ? 'Close sidebar' : 'Open sidebar') : (sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar')}
-              </span>
-              {/* Mobile: X icon, Desktop: Arrow icon */}
-              {breakpoint && breakpoint < 1024 ? (
-                <svg className="w-6 h-6 fill-current transition-transform duration-150 will-change-transform group-active:scale-90" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10.7 18.7l1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4L4 12z" />
-                </svg>
-              ) : (
-                <svg className={`shrink-0 fill-current text-gray-400 dark:text-gray-500 ${sidebarExpanded ? 'rotate-180' : ''} transition-transform duration-200 ease-out`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-                  <path d="M15 16a1 1 0 0 1-1-1V1a1 1 0 1 1 2 0v14a1 1 0 0 1-1 1ZM8.586 7H1a1 1 0 1 0 0 2h7.586l-2.793 2.793a1 1 0 1 0 1.414 1.414l4.5-4.5A.997.997 0 0 0 12 8.01M11.924 7.617a.997.997 0 0 0-.217-.324l-4.5-4.5a1 1 0 0 0-1.414 1.414L8.586 7M12 7.99a.996.996 0 0 0-.076-.373Z" />
-                </svg>
-              )}
-            </button>
-          </div>
+          {/* Logo + Toggle: conditional layout */}
+          {(breakpoint && breakpoint >= 1024 && !sidebarExpanded) ? (
+            <div>
+              <div className="flex items-center justify-center mb-2">
+                <Logo href="/admin" />
+              </div>
+              <div className="flex items-center justify-center">
+                <button
+                  className="inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
+                  onClick={() => setSidebarExpanded(true)}
+                  aria-controls="sidebar"
+                  aria-expanded={false}
+                  title="Expand sidebar"
+                >
+                  <span className="sr-only">Expand sidebar</span>
+                  <svg className="shrink-0 fill-current text-gray-400 dark:text-gray-500 transition-transform duration-200 ease-out" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                    <path d="M15 16a1 1 0 0 1-1-1V1a1 1 0 1 1 2 0v14a1 1 0 0 1-1 1ZM8.586 7H1a1 1 0 1 0 0 2h7.586l-2.793 2.793a1 1 0 1 0 1.414 1.414l4.5-4.5A.997.997 0 0 0 12 8.01M11.924 7.617a.997.997 0 0 0-.217-.324l-4.5-4.5a1 1 0 0 0-1.414 1.414L8.586 7M12 7.99a.996.996 0 0 0-.076-.373Z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <Logo href="/admin" />
+              </div>
+              <button
+                className="inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
+                onClick={() => {
+                  if (breakpoint && breakpoint < 1024) {
+                    setSidebarOpen(!sidebarOpen)
+                  } else {
+                    setSidebarExpanded(!sidebarExpanded)
+                  }
+                }}
+                aria-controls="sidebar"
+                aria-expanded={breakpoint && breakpoint < 1024 ? sidebarOpen : sidebarExpanded}
+                title={breakpoint && breakpoint < 1024 ? (sidebarOpen ? 'Close sidebar' : 'Open sidebar') : (sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar')}
+              >
+                <span className="sr-only">
+                  {breakpoint && breakpoint < 1024 ? (sidebarOpen ? 'Close sidebar' : 'Open sidebar') : (sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar')}
+                </span>
+                {breakpoint && breakpoint < 1024 ? (
+                  <svg className="w-6 h-6 fill-current transition-transform duration-150 will-change-transform group-active:scale-90" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10.7 18.7l1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4L4 12z" />
+                  </svg>
+                ) : (
+                  <svg className={`shrink-0 fill-current text-gray-400 dark:text-gray-500 ${sidebarExpanded ? 'rotate-180' : ''} transition-transform duration-200 ease-out`} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                    <path d="M15 16a1 1 0 0 1-1-1V1a1 1 0 1 1 2 0v14a1 1 0 0 1-1 1ZM8.586 7H1a1 1 0 1 0 0 2h7.586l-2.793 2.793a1 1 0 1 0 1.414 1.414l4.5-4.5A.997.997 0 0 0 12 8.01M11.924 7.617a.997.997 0 0 0-.217-.324l-4.5-4.5a1 1 0 0 0-1.414 1.414L8.586 7M12 7.99a.996.996 0 0 0-.076-.373Z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Scrollable navigation area */}
         <div className="flex-1 overflow-y-auto no-scrollbar pr-2">
-        {/* Search Bar */}
-        <div className="mb-6 px-3">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search navigation..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className={`w-full pl-10 pr-10 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${
-                isSearchFocused ? 'ring-2 ring-violet-500' : ''
-              }`}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-              >
-                <X className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-              </button>
-            )}
+        {/* Search: icon-only on collapsed desktop, full input otherwise */}
+        {(breakpoint && breakpoint >= 1024 && !sidebarExpanded) ? (
+          <div className="mb-6 px-0 flex justify-center">
+            <button
+              type="button"
+              title="Search"
+              aria-label="Search"
+              className="inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
+              onClick={() => {
+                setSidebarExpanded(true)
+                setTimeout(() => searchInputRef.current?.focus(), 0)
+              }}
+            >
+              <Search className="h-5 w-5" />
+            </button>
           </div>
+        ) : (
+          <div className="mb-6 px-3">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              </div>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search navigation..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className={`w-full pl-10 pr-10 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${
+                  isSearchFocused ? 'ring-2 ring-violet-500' : ''
+                }`}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <X className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Back button below search */}
+        <div className="px-3 mb-4">
+          <Link
+            href="/dashboard"
+            className="flex h-10 items-center justify-center lg:justify-start rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span className="ml-2 text-sm font-medium hidden lg:sidebar-expanded:inline 2xl:inline">Back</span>
+          </Link>
         </div>
 
         <div className="space-y-8">
@@ -333,15 +381,15 @@ export function Sidebar() {
                 {category.items.map((item) => {
                   const isActive = segments.some(segment => item.href.includes(segment))
                   return (
-                    <li 
+                  <li 
                       key={item.href}
-                      className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r ${isActive && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`} 
+                      className={`pl-4 pr-3 lg:pl-0 lg:pr-0 lg:sidebar-expanded:pl-4 lg:sidebar-expanded:pr-3 py-2 rounded-lg mb-0.5 last:mb-0 transition-colors ${isActive ? 'bg-violet-500/10 dark:bg-violet-500/20 ring-1 ring-violet-500/20' : 'hover:bg-gray-100/60 dark:hover:bg-gray-700/40'}`} 
                       onClick={() => { if (!sidebarExpanded) setSidebarExpanded(true) }}
                     >
                       <SidebarLink href={item.href}>
-                  <div className="flex items-center">
+                  <div className="flex w-full h-10 items-center lg:justify-center lg:sidebar-expanded:justify-start 2xl:justify-start gap-0 lg:sidebar-expanded:gap-3 2xl:gap-3">
                           {getIcon(item.icon, isActive)}
-                          <span className="text-sm font-medium ml-4 lg:opacity-0 lg:sidebar-expanded:opacity-100 2xl:opacity-100 duration-200">{item.name}</span>
+                          <span className={`text-sm font-medium whitespace-nowrap hidden lg:sidebar-expanded:inline 2xl:inline duration-200 ${isActive ? 'text-violet-600 dark:text-violet-300' : 'text-gray-700 dark:text-gray-200'}`}>{item.name}</span>
                   </div>
                 </SidebarLink>
               </li>
