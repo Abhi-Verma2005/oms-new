@@ -10,6 +10,26 @@ import BarChart01 from '@/components/charts/bar-chart-01'
 import DoughnutChart from '@/components/charts/doughnut-chart'
 import { chartAreaGradient } from '@/components/charts/chartjs-config'
 import { CaseStudiesGrid } from '@/components/insights-section'
+import { caseStudiesData } from '@/components/insights-section'
+// Dashboard analytics/components reused here
+import CaseStudyAnalytics01 from '@/app/(default)/dashboard/case-study-analytics-01'
+import CaseStudyAnalytics02 from '@/app/(default)/dashboard/case-study-analytics-02'
+import CaseStudyAnalytics03 from '@/app/(default)/dashboard/case-study-analytics-03'
+import CaseStudyAnalytics04 from '@/app/(default)/dashboard/case-study-analytics-04'
+import CaseStudyCard01 from '@/app/(default)/dashboard/case-study-card-01'
+import CaseStudyCard02 from '@/app/(default)/dashboard/case-study-card-02'
+import CaseStudyCard03 from '@/app/(default)/dashboard/case-study-card-03'
+import CaseStudyTable from '@/app/(default)/dashboard/case-study-table'
+import TrafficGrowthChart from '@/app/(default)/dashboard/traffic-growth-chart'
+import KeywordRankingChart from '@/app/(default)/dashboard/keyword-ranking-chart'
+import IndustryComparisonChart from '@/app/(default)/dashboard/industry-comparison-chart'
+import SerpFeaturesChart from '@/app/(default)/dashboard/serp-features-chart'
+import BacklinksChart from '@/app/(default)/dashboard/backlinks-chart'
+import DomainRatingChart from '@/app/(default)/dashboard/domain-rating-chart'
+import TopKeywordsCard from '@/app/(default)/dashboard/analytics/top-keywords-card'
+import TrafficSourcesCard from '@/app/(default)/dashboard/analytics/traffic-sources-card'
+import BacklinksPerformanceCard from '@/app/(default)/dashboard/analytics/backlinks-performance-card'
+import SerpFeaturesCard from '@/app/(default)/dashboard/analytics/serp-features-card'
 import { adjustColorOpacity, getCssVariable } from '@/components/utils/utils'
 import LandingFooter from '@/components/landing-footer'
 
@@ -180,6 +200,75 @@ const HeroSection = () => {
         </div>
       </div>
     </section>
+  )
+}
+
+// Seamless marquee of all case study cards
+const MarqueeCaseStudies = () => {
+  const allStudies = caseStudiesData.flatMap(cat => cat.studies.map(s => ({ ...s, categoryId: cat.id })))
+
+  function Card({ study }: { study: any }) {
+    return (
+      <Link
+        href={study.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group bg-white/90 dark:bg-gray-900/90 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden w-[320px] sm:w-[360px] xl:w-[420px] flex-shrink-0 min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
+      >
+        <div className="relative h-48 sm:h-56 xl:h-64 bg-white dark:bg-gray-800/90 border-b border-gray-200/60 dark:border-gray-700/60">
+          <img src={study.imageSrc} alt={study.title} className="absolute inset-0 w-full h-full object-contain p-6" />
+        </div>
+        <div className="p-6 min-w-0">
+          <div className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1 truncate">{study.title}</div>
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 break-words leading-snug">
+            {study.subtitle}
+          </h4>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {study.stats.map((s: any, sIdx: number) => (
+              <div key={sIdx} className="rounded-lg border border-gray-200/60 dark:border-gray-700/60 p-3 min-w-0">
+                <div className="text-base font-bold text-gray-900 dark:text-white truncate">{s.value}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm font-semibold group-hover:translate-x-0.5 transition-transform">
+            View Case Study
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+          </div>
+        </div>
+      </Link>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-transparent to-transparent dark:from-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-transparent to-transparent dark:from-transparent" />
+      <div className="overflow-hidden">
+        <div className="flex gap-8 whitespace-nowrap marquee hover:[animationPlayState:paused] will-change-transform">
+          {/* first sequence */}
+          {allStudies.map((study, idx) => (
+            <Card key={`a-${study.categoryId}-${study.id}-${idx}`} study={study} />
+          ))}
+          {/* duplicate for seamless loop (hidden from AT) */}
+          <div aria-hidden="true" className="contents">
+            {allStudies.map((study, idx) => (
+              <Card key={`b-${study.categoryId}-${study.id}-${idx}`} study={study} />
+            ))}
+          </div>
+        </div>
+      </div>
+      <style jsx>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .marquee { animation: marquee linear infinite; animation-duration: 42s; }
+        @media (min-width: 768px) { .marquee { animation-duration: 50s; } }
+        @media (min-width: 1280px) { .marquee { animation-duration: 60s; } }
+        @media (prefers-reduced-motion: reduce) { .marquee { animation: none; } }
+      `}</style>
+    </div>
   )
 }
 
@@ -365,7 +454,6 @@ export default function InsightsPage() {
       ],
     }
   }, [analytics])
-
   // Build top keywords from API if available (first case study keywords by average rank)
   const keywordFromApiFull = useMemo(() => {
     if (!analytics?.keywordRankingData?.length) return null
@@ -728,9 +816,92 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* Case Studies - All Rows */}
+            {/* Case Studies - Marquee */}
             <div className="mt-6">
-              <CaseStudiesGrid selectedCategoryId="all" />
+              <MarqueeCaseStudies />
+            </div>
+
+            {/* Case Study Cards (from dashboard) */}
+            <div className="mt-12">
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">EMIAC Case Studies</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Comprehensive analytics and performance metrics</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-12 gap-6">
+                <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                  <CaseStudyCard01 />
+                </div>
+                <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                  <CaseStudyCard02 />
+                </div>
+                <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                  <CaseStudyCard03 />
+                </div>
+              </div>
+            </div>
+
+            {/* Analytics Grids (from dashboard) */}
+            <div className="mt-10 grid grid-cols-12 gap-6">
+              {/* Row 1 */}
+              <div className="col-span-full xl:col-span-8">
+                <CaseStudyAnalytics01 />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <CaseStudyAnalytics02 />
+              </div>
+
+              {/* Row 2 */}
+              <div className="col-span-full sm:col-span-6 xl:col-span-3">
+                <CaseStudyAnalytics03 />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-3">
+                <CaseStudyAnalytics04 />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-3">
+                <TopKeywordsCard />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-3">
+                <TrafficSourcesCard />
+              </div>
+
+              {/* Row 3 */}
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <BacklinksPerformanceCard />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <SerpFeaturesCard />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <KeywordRankingChart />
+              </div>
+
+              {/* Row 4 */}
+              <div className="col-span-full xl:col-span-8">
+                <TrafficGrowthChart />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <IndustryComparisonChart />
+              </div>
+
+              {/* Row 5 */}
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <SerpFeaturesChart />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <BacklinksChart />
+              </div>
+              <div className="col-span-full sm:col-span-6 xl:col-span-4">
+                <DomainRatingChart />
+              </div>
+
+              {/* Row 6 */}
+              <div className="col-span-full">
+                <CaseStudyTable />
+              </div>
             </div>
 
           </div>
