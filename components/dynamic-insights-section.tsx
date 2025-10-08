@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 
@@ -137,9 +138,6 @@ export function DynamicInsightsSection() {
             }`}
           >
             All Categories
-            {selectedCategory === 'all' && (
-              <motion.span layoutId="insights-cat-underline" className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded bg-white/80" />
-            )}
           </button>
           {categories.map((category) => (
             <button
@@ -152,9 +150,6 @@ export function DynamicInsightsSection() {
               }`}
             >
               {category}
-              {selectedCategory === category && (
-                <motion.span layoutId="insights-cat-underline" className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded bg-white/80" />
-              )}
             </button>
           ))}
         </div>
@@ -175,11 +170,14 @@ export function DynamicInsightsSection() {
               
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-5">
-                  <motion.div whileHover={{ scale: 1.03 }} className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <img
+                  <motion.div whileHover={{ scale: 1.03 }} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-white">
+                    <Image
                       src={study.imageSrc}
                       alt={study.title}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="80px"
+                      unoptimized
+                      className="object-contain p-1"
                     />
                   </motion.div>
                   <div>

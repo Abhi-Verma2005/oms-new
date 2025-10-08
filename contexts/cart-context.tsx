@@ -131,6 +131,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             metadata: { siteId: site.id, siteName: site.name, priceCents: site.publishing?.price ?? undefined }
           })
         }).catch(() => {})
+        // Notify AI sidebar (if present) to present cart action card immediately
+        try { window.dispatchEvent(new Event('AI_CART_ITEM_ADDED')) } catch {}
       } catch {}
     }, 0)
   }

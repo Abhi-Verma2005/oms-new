@@ -557,12 +557,22 @@ CONTEXT USAGE INSTRUCTIONS:
 
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          controller.enqueue(encoder.encode(' '))
+          let isClosed = false
+          const safeEnqueue = (chunk: string) => {
+            if (isClosed) return
+            try {
+              controller.enqueue(encoder.encode(chunk))
+            } catch {
+              isClosed = true
+            }
+          }
+
+          safeEnqueue(' ')
           try {
             for await (const delta of textStream) {
               fullText += delta
               detectionBuffer += delta
-              controller.enqueue(encoder.encode(delta))
+              safeEnqueue(delta)
 
               // Detect and emit tool events as soon as tags are complete in buffer
               for (const { pattern, type } of actionPatterns) {
@@ -574,7 +584,7 @@ CONTEXT USAGE INSTRUCTIONS:
                   const data = typeof raw === 'string' ? raw.replace(/\n/g, '').trim() : true
                   const json = JSON.stringify({ type, data })
                   const event = `\n[[TOOL]]${json}\n`
-                  controller.enqueue(encoder.encode(event))
+                  safeEnqueue(event)
                   matches.push({ full: match[0], json })
                 }
                 // Remove emitted matches from buffer to avoid duplicate emissions
@@ -590,10 +600,10 @@ CONTEXT USAGE INSTRUCTIONS:
             }
           } catch (err) {
             console.error('Streaming error:', err)
-            controller.error(err)
+            try { controller.error(err as any) } catch {}
             return
           }
-          // After stream ends, perform logging and background processing
+          
           try {
             if (session?.user?.id) {
               prisma.userInteraction.create({
@@ -619,7 +629,10 @@ CONTEXT USAGE INSTRUCTIONS:
               )
             }
           } finally {
-            controller.close()
+            if (!isClosed) {
+              try { controller.close() } catch {}
+              isClosed = true
+            }
           }
         }
       })

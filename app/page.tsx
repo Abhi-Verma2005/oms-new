@@ -151,7 +151,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 text-gray-900 dark:text-white">
+    <div className="min-h-screen">
 
       {/* Navigation */}
       <div className="relative flex flex-col">
@@ -385,6 +385,8 @@ export default function LandingPage() {
                     </div>
                   </div>
                   
+
+                  {/*Commented out the right side sound wave button */}
                   {/* Right side control - Sound wave icon */}
                   <button 
                     type="button"
@@ -555,20 +557,11 @@ export default function LandingPage() {
                     </div>
                   </div>
                   
-                  {/* Custom Bar Chart */}
-                  <div className="h-24 flex items-end justify-between gap-2">
-                    {[65, 72, 58, 83, 76, 89, 95, 78, 82, 88, 92, 84].map((height, index) => (
-                      <div key={index} className="flex flex-col items-center flex-1">
-                        <div 
-                          className="w-full bg-purple-500 rounded-t-sm transition-all duration-300 hover:bg-purple-600"
-                          style={{ height: `${height}%` }}
-                        ></div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][index]}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {/* Monthly outreach bars (real data) */}
+                  {(() => {
+                    const GoalMonthlyBars = require('@/components/goal-monthly-bars').default
+                    return <GoalMonthlyBars />
+                  })()}
                 </div>
                 
                 <div className="space-y-3 mb-6">
@@ -632,14 +625,12 @@ export default function LandingPage() {
                     </div>
                   </div>
                   
-                  {/* Doughnut Chart Placeholder */}
+                  {/* Industry donut (real data) */}
                   <div className="h-24 flex items-center justify-center">
-                    <div className="relative w-20 h-20">
-                      <div className="absolute inset-0 rounded-full border-8 border-gray-200 dark:border-gray-600"></div>
-                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-purple-500 border-r-purple-500" style={{clipPath: 'polygon(50% 50%, 50% 0%, 75% 0%, 75% 50%)'}}></div>
-                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-b-purple-400 border-l-purple-400" style={{clipPath: 'polygon(50% 50%, 0% 50%, 0% 25%, 25% 25%)'}}></div>
-                      <div className="absolute inset-0 rounded-full border-8 border-transparent border-t-purple-300" style={{clipPath: 'polygon(50% 50%, 25% 0%, 50% 0%)'}}></div>
-                    </div>
+                    {(() => {
+                      const GoalDonut = require('@/components/goal-donut').default
+                      return <GoalDonut />
+                    })()}
                   </div>
                   
                   {/* Revenue Breakdown */}
