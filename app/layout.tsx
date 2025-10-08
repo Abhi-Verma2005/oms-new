@@ -30,8 +30,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>{/* suppressHydrationWarning: https://github.com/vercel/next.js/issues/44343 */}
-      <body className="font-inter antialiased bg-[#1f2230] text-gray-300">
+    <html lang="en" className={`${inter.variable} global-no-scrollbar`} suppressHydrationWarning>{/* suppressHydrationWarning: https://github.com/vercel/next.js/issues/44343 */}
+      <body className="font-inter antialiased">
         <Theme>
           <AuthProvider>
             <AppProvider>

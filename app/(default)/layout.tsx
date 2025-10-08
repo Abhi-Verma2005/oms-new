@@ -8,7 +8,7 @@ export default function DefaultLayout({
   children: React.ReactNode
 }) {  
   return (
-    <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="min-h-[100dvh] flex flex-col">
 
       {/* Site header - sticky at top */}
       <Suspense fallback={null}>
@@ -28,7 +28,6 @@ export default function DefaultLayout({
           <Footer />
         </Suspense>
       </div>
-
     </div>
   )
 }

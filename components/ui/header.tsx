@@ -36,6 +36,7 @@ export default function Header({
   const [showCreditHint, setShowCreditHint] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false)
   const [isClient, setIsClient] = useState(false)
+  const [pagesOpen, setPagesOpen] = useState<boolean>(false)
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -123,18 +124,24 @@ export default function Header({
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
             <nav className="hidden lg:flex items-center space-x-1 ml-6 whitespace-nowrap">
-              {/* Pages dropdown (matches landing navbar style) */}
-              <div className="relative group mr-1">
+              {/* Pages dropdown (hover-sticky) */}
+              <div
+                className="relative mr-1"
+                onMouseEnter={() => setPagesOpen(true)}
+                onMouseLeave={() => setPagesOpen(false)}
+              >
                 <button className="relative px-3 py-2 text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 rounded-lg">
                   <span className="relative z-20">Pages</span>
                 </button>
-                <div className="absolute left-0 top-full mt-2 hidden group-hover:block min-w-[220px] rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 shadow-lg shadow-purple-500/10 backdrop-blur-md p-2 z-50">
-                  <Link href="/about" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">About</Link>
-                  <Link href="/integrations" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Integrations</Link>
-                  <Link href="/pricing" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Pricing</Link>
-                  <Link href="/customers" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Customers</Link>
-                  <Link href="/changelog" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Changelog</Link>
-                </div>
+                {pagesOpen && (
+                  <div className="absolute left-0 top-full mt-2 min-w-[220px] rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 shadow-lg shadow-purple-500/10 backdrop-blur-md p-2 z-50">
+                    <Link href="/about" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">About</Link>
+                    <Link href="/integrations" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Integrations</Link>
+                    <Link href="/pricing" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Pricing</Link>
+                    <Link href="/customers" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Customers</Link>
+                    <Link href="/changelog" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Changelog</Link>
+                  </div>
+                )}
               </div>
               <NavbarDropdown
                 title="Dashboard"
