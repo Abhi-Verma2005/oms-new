@@ -22,6 +22,7 @@ export function DynamicInsightsSection() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchCaseStudies()
@@ -172,11 +173,19 @@ export function DynamicInsightsSection() {
                 <div className="flex items-center gap-4 mb-5">
                   <motion.div whileHover={{ scale: 1.03 }} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-white">
                     <Image
-                      src={study.imageSrc}
+                      src={brokenImages.has(study.id) ? '/favicon.ico' : study.imageSrc}
                       alt={study.title}
                       fill
                       sizes="80px"
                       unoptimized
+                      referrerPolicy="no-referrer"
+                      onError={() => {
+                        setBrokenImages((prev) => {
+                          const next = new Set(prev)
+                          next.add(study.id)
+                          return next
+                        })
+                      }}
                       className="object-contain p-1"
                     />
                   </motion.div>

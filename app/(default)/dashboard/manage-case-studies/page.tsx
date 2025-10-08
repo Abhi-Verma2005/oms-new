@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { motion } from 'motion/react'
 
 interface HomepageCaseStudy {
@@ -24,6 +25,7 @@ export default function ManageCaseStudies() {
   const [isEditing, setIsEditing] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingCaseStudy, setEditingCaseStudy] = useState<Partial<HomepageCaseStudy>>({})
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set())
 
   // Load case studies
   useEffect(() => {
@@ -214,11 +216,24 @@ export default function ManageCaseStudies() {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
-                  <img
-                    src={caseStudy.imageSrc}
-                    alt={caseStudy.title}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-white">
+                    <Image
+                      src={brokenImages.has(caseStudy.id) ? '/favicon.ico' : (caseStudy.imageSrc || '/favicon.ico')}
+                      alt={caseStudy.title}
+                      fill
+                      sizes="64px"
+                      unoptimized
+                      referrerPolicy="no-referrer"
+                      onError={() => {
+                        setBrokenImages((prev) => {
+                          const next = new Set(prev)
+                          next.add(caseStudy.id)
+                          return next
+                        })
+                      }}
+                      className="object-contain p-1"
+                    />
+                  </div>
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {caseStudy.title}

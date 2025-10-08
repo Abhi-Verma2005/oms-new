@@ -206,6 +206,7 @@ const HeroSection = () => {
 // Seamless marquee of all case study cards
 const MarqueeCaseStudies = () => {
   const allStudies = caseStudiesData.flatMap(cat => cat.studies.map(s => ({ ...s, categoryId: cat.id })))
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set())
 
   function Card({ study }: { study: any }) {
     return (
@@ -215,8 +216,23 @@ const MarqueeCaseStudies = () => {
         rel="noopener noreferrer"
         className="group bg-white/90 dark:bg-gray-900/90 rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden w-[320px] sm:w-[360px] xl:w-[420px] flex-shrink-0 min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60"
       >
-        <div className="relative h-48 sm:h-56 xl:h-64 bg-white dark:bg-gray-800/90 border-b border-gray-200/60 dark:border-gray-700/60">
-          <img src={study.imageSrc} alt={study.title} className="absolute inset-0 w-full h-full object-contain p-6" />
+        <div className="relative h-48 sm:h-56 xl:h-64 bg-white dark:bg-white border-b border-gray-200/60 dark:border-gray-700/60">
+          <Image
+            src={brokenImages.has(study.id) ? '/favicon.ico' : (study.imageSrc || '/favicon.ico')}
+            alt={study.title}
+            fill
+            sizes="(max-width: 640px) 100vw, 420px"
+            unoptimized
+            referrerPolicy="no-referrer"
+            onError={() => {
+              setBrokenImages((prev) => {
+                const next = new Set(prev)
+                next.add(study.id)
+                return next
+              })
+            }}
+            className="object-contain p-6"
+          />
         </div>
         <div className="p-6 min-w-0">
           <div className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1 truncate">{study.title}</div>
