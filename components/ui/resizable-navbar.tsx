@@ -106,9 +106,9 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
       className={cn(
         "relative z-[60] hidden w-full flex-row items-center justify-between self-start px-6 py-3 lg:flex",
         // Always-glass base
-        "bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-white/20 dark:ring-white/10 shadow-lg shadow-purple-500/10",
+        "bg-gray-50/70 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-gray-200/60 dark:ring-white/10 shadow-lg shadow-purple-500/10",
         // On scroll, subtly intensify
-        visible && "bg-white/50 dark:bg-gray-900/50 ring-1 ring-white/30 dark:ring-white/20 shadow-purple-500/20",
+        visible && "bg-gray-50/80 dark:bg-gray-900/50 ring-1 ring-gray-200/80 dark:ring-white/20 shadow-purple-500/20",
         className,
       )}
     >
@@ -195,9 +195,9 @@ export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
       className={cn(
         "relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between px-4 py-3 lg:hidden",
         // Always-glass base
-        "bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-white/20 dark:ring-white/10 shadow-lg shadow-purple-500/10",
+        "bg-gray-50/70 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-gray-200/60 dark:ring-white/10 shadow-lg shadow-purple-500/10",
         // On scroll/open, intensify slightly
-        visible && "bg-white/50 dark:bg-gray-900/50 ring-1 ring-white/30 dark:ring-white/20 shadow-purple-500/20",
+        visible && "bg-gray-50/80 dark:bg-gray-900/50 ring-1 ring-gray-200/80 dark:ring-white/20 shadow-purple-500/20",
         className,
       )}
     >
@@ -239,7 +239,7 @@ export const MobileNavMenu = ({
           className={cn(
             "absolute inset-x-0 top-full mt-2 z-[70] flex w-full flex-col items-start justify-start gap-4 rounded-lg px-6 py-6 shadow-lg",
             // Glass styling for dropdown
-            "bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-white/20 dark:ring-white/10 shadow-purple-500/10",
+            "bg-gray-50/90 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-gray-200/70 dark:ring-white/10 shadow-purple-500/10",
             className,
           )}
         >
