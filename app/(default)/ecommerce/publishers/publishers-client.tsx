@@ -2297,21 +2297,23 @@ export default function PublishersClient() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-8 items-start">
           <div className="lg:col-span-7 xl:col-span-7">
-        <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
+            <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
           </div>
-          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 items-start justify-center">
-            {(() => {
-              const total = displayedSites.length
-              const prices = displayedSites.map(x => x.publishing?.price ?? 0).filter(v => v > 0)
-              const traffics = displayedSites.map(x => x.toolScores?.semrushOverallTraffic ?? 0).filter(v => v > 0)
-              const authorities = displayedSites.map(x => x.toolScores?.semrushAuthority ?? 0).filter(v => v > 0)
-              const avgPrice = prices.length ? Math.round(prices.reduce((s, v) => s + v, 0) / prices.length) : 180
-              const avgTraffic = traffics.length ? Math.round(traffics.reduce((s, v) => s + v, 0) / traffics.length) : 1_200_000
-              const avgAuthority = authorities.length ? Math.round(authorities.reduce((s, v) => s + v, 0) / authorities.length) : 58
-              return (
-                <PublishersHelpCarousel metrics={{ total, avgPrice, avgTraffic, avgAuthority }} />
-              )
-            })()}
+          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 h-[96%]">
+            <div className="w-full h-[100%]">
+              {(() => {
+                const total = displayedSites.length
+                const prices = displayedSites.map(x => x.publishing?.price ?? 0).filter(v => v > 0)
+                const traffics = displayedSites.map(x => x.toolScores?.semrushOverallTraffic ?? 0).filter(v => v > 0)
+                const authorities = displayedSites.map(x => x.toolScores?.semrushAuthority ?? 0).filter(v => v > 0)
+                const avgPrice = prices.length ? Math.round(prices.reduce((s, v) => s + v, 0) / prices.length) : 180
+                const avgTraffic = traffics.length ? Math.round(traffics.reduce((s, v) => s + v, 0) / traffics.length) : 1_200_000
+                const avgAuthority = authorities.length ? Math.round(authorities.reduce((s, v) => s + v, 0) / authorities.length) : 58
+                return (
+                  <PublishersHelpCarousel metrics={{ total, avgPrice, avgTraffic, avgAuthority }} />
+                )
+              })()}
+            </div>
           </div>
         </div>
 
