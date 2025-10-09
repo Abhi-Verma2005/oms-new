@@ -2299,8 +2299,8 @@ export default function PublishersClient() {
           <div className="lg:col-span-7 xl:col-span-7">
             <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
           </div>
-          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 h-[96%]">
-            <div className="w-full h-[100%]">
+          <div className="hidden lg:block lg:col-span-5 xl:col-span-5">
+            <div className="sticky top-0">
               {(() => {
                 const total = displayedSites.length
                 const prices = displayedSites.map(x => x.publishing?.price ?? 0).filter(v => v > 0)

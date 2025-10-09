@@ -88,9 +88,9 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col">
-      <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Quick tips</div>
-      <div className="overflow-hidden" ref={emblaRef}>
+    <div className="relative w-full flex flex-col min-h-0">
+      <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex-shrink-0">Quick tips</div>
+      <div className="overflow-hidden flex-shrink-0" ref={emblaRef}>
         <div className="flex -mr-6">
           <Slide
             title="Start with the Basics"
@@ -137,59 +137,59 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
         </div>
       </div>
       {/* Project panel */}
-      <div className="mt-4 flex-1 flex flex-col">
+      <div className="mt-3 flex-1 flex flex-col min-h-0">
         {projects.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-5 sm:p-6 flex-1 flex flex-col justify-between gap-4">
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col gap-3">
             <div>
-              <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">You have no projects yet.</div>
-              <ul className="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 mt-0.5" /><span>Assign link orders to your projects.</span></li>
-                <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 mt-0.5" /><span>Each project is a separate website & has its own metrics & statistics.</span></li>
-                <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-500 mt-0.5" /><span>Add your project competitors and automatically analyze their backlinks.</span></li>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">You have no projects yet.</div>
+              <ul className="mt-2 space-y-1.5 text-xs text-gray-600 dark:text-gray-300">
+                <li className="flex items-start gap-2"><Check className="h-3 w-3 text-emerald-500 mt-0.5" /><span>Assign link orders to your projects.</span></li>
+                <li className="flex items-start gap-2"><Check className="h-3 w-3 text-emerald-500 mt-0.5" /><span>Each project is a separate website & has its own metrics & statistics.</span></li>
+                <li className="flex items-start gap-2"><Check className="h-3 w-3 text-emerald-500 mt-0.5" /><span>Add your project competitors and automatically analyze their backlinks.</span></li>
               </ul>
             </div>
-            <button onClick={() => setOpen(true)} className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-700">
-              <Plus className="h-4 w-4" />
+            <button onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-violet-700">
+              <Plus className="h-3 w-3" />
               <span>New project</span>
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-4 sm:p-5 flex-1 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 truncate">Your projects</div>
-                <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full text-[11px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">{projects.length}</span>
+                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">Your projects</div>
+                <span className="inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">{projects.length}</span>
               </div>
-              <button onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-violet-700">
-                <Plus className="h-4 w-4" />
+              <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-2 py-1 text-[10px] font-semibold text-white shadow-sm hover:bg-violet-700">
+                <Plus className="h-3 w-3" />
                 <span>New</span>
               </button>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Select a project to scope your actions.</div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">Select a project to scope your actions.</div>
             {loading ? (
-              <div className="space-y-1.5">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-10 rounded-xl bg-gray-100 dark:bg-gray-800/60 animate-pulse" />
+              <div className="space-y-1">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-8 rounded-lg bg-gray-100 dark:bg-gray-800/60 animate-pulse" />
                 ))}
               </div>
             ) : error ? (
-              <div className="text-xs text-red-600 dark:text-red-400">{error}</div>
+              <div className="text-[10px] text-red-600 dark:text-red-400">{error}</div>
             ) : (
-              <div className="flex-1 overflow-auto pr-1">
+              <div className="h-[180px] overflow-y-auto overflow-x-hidden pr-1 no-scrollbar">
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800/60">
                   {projects.map((p) => (
                     <li key={p.id}>
                       <button
                         onClick={() => onSelectProject(p)}
-                        className={`w-full flex items-center gap-3 mt-2 text-left px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 rounded-xl transition-colors ${selectedProjectId === p.id
+                        className={`w-full flex items-center gap-2 mt-1 text-left px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 rounded-lg transition-colors ${selectedProjectId === p.id
                           ? 'bg-violet-50 text-violet-800 dark:bg-violet-500/10 dark:text-violet-200'
                           : 'hover:bg-gray-50 text-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60'}`}
                         aria-current={selectedProjectId === p.id ? 'true' : undefined}
                       >
-                        <span className={`shrink-0 inline-flex items-center justify-center size-4 rounded-full border ${selectedProjectId === p.id ? 'border-violet-600 bg-violet-600' : 'border-gray-300 dark:border-white/10'}`} />
+                        <span className={`shrink-0 inline-flex items-center justify-center size-3 rounded-full border ${selectedProjectId === p.id ? 'border-violet-600 bg-violet-600' : 'border-gray-300 dark:border-white/10'}`} />
                         <div className="min-w-0">
-                          <div className="font-medium truncate">{p.name || p.domain}</div>
-                          {p.domain ? <div className="text-xs text-gray-500 truncate">{p.domain}</div> : null}
+                          <div className="text-sm font-medium truncate">{p.name || p.domain}</div>
+                          {p.domain ? <div className="text-[10px] text-gray-500 truncate">{p.domain}</div> : null}
                         </div>
                       </button>
                     </li>
