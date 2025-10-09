@@ -17,6 +17,8 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
+  fallback: ['system-ui', 'arial'],
+  preload: false, // Disable preloading to avoid network issues during build
 })
 
 export const metadata = {
