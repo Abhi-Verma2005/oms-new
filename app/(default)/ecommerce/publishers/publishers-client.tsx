@@ -2287,7 +2287,7 @@ export default function PublishersClient() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" className="h-8 text-xs px-3 flex-1 sm:flex-none" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
-              <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname || '/publishers', { scroll: false }) }}>Reset</Button>
+              <Button className="h-8 text-xs px-3 flex-1 sm:flex-none bg-violet-600 hover:bg-violet-700 text-white" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname || '/publishers', { scroll: false }) }}>Reset</Button>
               {hasCheckoutFab && <HeaderCheckout />}
             </div>
           </div>
