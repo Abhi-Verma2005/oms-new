@@ -29,6 +29,9 @@ const nextConfig = {
     // Remove turbo configuration entirely
   },
   
+  // Font optimization settings for Docker builds
+  optimizeFonts: false,
+  
   // Force webpack for production builds
   webpack: (config, { isServer }) => {
     return config
