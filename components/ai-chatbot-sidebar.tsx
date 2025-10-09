@@ -155,6 +155,36 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     prevCartCountRef.current = current
   }, [cartState.items.length])
 
+  // Listen for explicit cart-add events to show action card immediately when sidebar opens
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const totalItems = getTotalItems()
+        const totalPrice = getTotalPrice()
+        const cardId = `${Date.now()}-added-card`
+        const dismissCard = () => dismissActionCard(cardId)
+        queueActionCard({
+          id: cardId,
+          type: 'cart',
+          title: 'Item Added to Cart',
+          message: `You now have ${totalItems} item${totalItems !== 1 ? 's' : ''} • $${totalPrice.toFixed(2)}`,
+          icon: <ShoppingCart className="h-4 w-4" />,
+          actions: [
+            { label: 'View Cart', variant: 'primary', onClick: () => openCart() },
+            { label: 'Checkout', variant: 'secondary', onClick: () => goToCheckout() },
+            { label: 'Continue Shopping', variant: 'tertiary', onClick: dismissCard },
+          ],
+          dismissible: true,
+          timestamp: new Date(),
+          afterMessageId: undefined,
+        })
+      } catch {}
+    }
+    window.addEventListener('AI_CART_ITEM_ADDED', handler)
+    return () => window.removeEventListener('AI_CART_ITEM_ADDED', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Listen for refine modal apply event from ChatActionCard
   useEffect(() => {
     const handler = (e: Event) => {
@@ -872,8 +902,8 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
           // Append cleaned text (without tool markers) to the assistant message content
           const cleanedToolEventsRemoved = chunk.replace(toolRegex, '')
-          // Also strip bracketed tool tags like [FILTER:...], [PROCEED_TO_CHECKOUT], etc. from visible text
-          const bracketToolTagRegex = /\[\s*(NAVIGATE|FILTER|ADD_TO_CART|REMOVE_FROM_CART|VIEW_CART|CLEAR_CART|CART_SUMMARY|PROCEED_TO_CHECKOUT|VIEW_ORDERS|PAYMENT_SUCCESS\s*:[^\]]*|PAYMENT_FAILED\s*:[^\]]*|ORDER_DETAILS\s*:[^\]]*|RECOMMEND\s*:[^\]]*|SIMILAR_ITEMS\s*:[^\]]*|BEST_DEALS)\s*:?[\s\S]*?\]/gi
+          // Strip any bracketed tool tags (e.g., [FILTER:...], [ACTION]) from visible text
+          const bracketToolTagRegex = /\[[A-Z_]+(?::[\s\S]*?)?\]/g
           const cleaned = cleanedToolEventsRemoved.replace(bracketToolTagRegex, '')
           accumulated += cleaned
           updateMessage(assistantId, { content: accumulated })
@@ -965,15 +995,15 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
-        {/* Header with Menu */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                <div className="w-3 h-3 bg-white/60 rounded"></div>
-              </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full"></div>
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/10">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
+              <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <circle cx="12" cy="12" r="8" />
+              </svg>
             </div>
+            <div className="text-sm font-semibold text-white/90">Assistant</div>
           </div>
           <Button
             variant="ghost"
@@ -993,22 +1023,18 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
         {/* Welcome Section - Only show when no messages */}
         {messages.length === 0 && (
-          <div className="p-6 pt-16">
+          <div className="p-6 pt-12">
             <div className="flex items-center gap-2">
               <div className="flex-shrink-0">
-                <svg
-                  className="fill-violet-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width={24}
-                  height={24}
-                  viewBox="0 0 32 32"
-                >
-                  <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
-                </svg>
+                <div className="h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
+                  <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <circle cx="12" cy="12" r="8" />
+                  </svg>
+                </div>
               </div>
               <div className="flex-1 text-white">
-                <div className="text-2xl font-bold mb-1">Hi,</div>
-                <div className="text-base text-white/80 mb-2">How can I assist you today?</div>
+                <div className="text-xl font-semibold mb-0.5">Hi,</div>
+                <div className="text-sm text-white/70 mb-2">How can I assist you today?</div>
                 <div className="flex items-center gap-2 text-xs text-white/60">
                   <span className="flex items-center gap-1">
                     <ShoppingCart className="h-3 w-3" />
@@ -1029,16 +1055,16 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         )}
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-4 space-y-4">
           {configLoading && messages.length === 0 && (
             <div className="text-center text-white/60 py-6">
-              <Bot className="h-8 w-8 mx-auto mb-3 opacity-50" />
+              <Bot className="h-8 w-8 mx-auto mb-3 opacity-60" />
               <p className="text-sm">Loading config…</p>
             </div>
           )}
           
           {messages.map((message) => (
-            <div key={message.id} className="space-y-2">
+            <div key={message.id} className="space-y-2 max-w-full overflow-hidden">
               <div
                 className={cn(
                   "flex gap-3",
@@ -1046,55 +1072,42 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 )}
               >
                 {message.role === 'user' ? (
-                  <div className="max-w-[85%] rounded-xl px-3 py-2 select-text backdrop-blur-sm bg-violet-600/90 text-white selection:bg-violet-400 selection:text-white border border-violet-500/30">
+                  <div className="max-w-full sm:max-w-[85%] rounded-xl px-3 py-2 select-text bg-indigo-600/90 text-white selection:bg-indigo-500/30 selection:text-white border border-indigo-400/30 shadow-sm break-words">
                     <MarkdownRenderer content={message.content} variant="chatbot" />
                   </div>
                 ) : (
                   <div className="w-full flex items-start gap-2">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <svg
-                        className="fill-violet-500"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width={16}
-                        height={16}
-                        viewBox="0 0 32 32"
-                      >
-                        <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+                    <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
+                      <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                        <circle cx="12" cy="12" r="8" />
                       </svg>
                     </div>
-                    <div className="flex-1 select-text selection:bg-violet-500/20 selection:text-white">
-                      <MarkdownRenderer content={message.content} variant="chatbot" />
+                    <div className="flex-1 select-text selection:bg-white/10 selection:text-white overflow-hidden">
+                      <div className="inline-block max-w-full sm:max-w-[90%] rounded-xl px-3 py-2 bg-white/5 border border-white/10 text-white/90 shadow-sm break-words">
+                        <MarkdownRenderer content={message.content} variant="chatbot" />
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Render contextual action cards after assistant messages */}
-              {message.role === 'assistant' && getActionCardsForMessage(message.id).map((card) => (
-                <ChatActionCard key={card.id} card={card} onDismiss={() => dismissActionCard(card.id)} />
-              ))}
+              {/* Action cards are shown in bottom dock; nothing inline here */}
             </div>
           ))}
           
           {isLoading && (
             <div className="flex gap-3 justify-start">
               <div className="w-full flex items-start gap-2">
-                <div className="flex-shrink-0 mt-0.5">
-                  <svg
-                    className="fill-violet-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={16}
-                    height={16}
-                    viewBox="0 0 32 32"
-                  >
-                    <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+                <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
+                  <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <circle cx="12" cy="12" r="8" />
                   </svg>
                 </div>
                 <div className="flex-1">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                   </div>
                 </div>
               </div>
@@ -1105,12 +1118,20 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         </div>
 
 
-        {/* Input Area */}
+        {/* Bottom Dock: Action cards above input */}
         <div className="px-6 pb-4">
+          {/* Action Dock */}
+          {actionCards.length > 0 && (
+            <div className="mb-3 space-y-2">
+              {actionCards.map((card) => (
+                <ChatActionCard key={card.id} card={card} onDismiss={() => dismissActionCard(card.id)} />
+              ))}
+            </div>
+          )}
 
           {/* Input Field */}
           <div className="relative">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -1118,29 +1139,29 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask anything, @models, / prompts"
                 disabled={isLoading}
-                className="w-full bg-transparent text-white placeholder-white/60 resize-none focus:outline-none text-sm border-0 selection:bg-violet-500/20 selection:text-white focus:ring-0 focus:border-0"
+                className="w-full bg-transparent text-white placeholder-white/50 resize-none focus:outline-none text-sm border-0 selection:bg-white/10 selection:text-white focus:ring-0 focus:border-0"
                 rows={2}
               />
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center gap-1.5">
-                  <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/30">
-                    <div className="w-1.5 h-1.5 bg-violet-300 rounded-sm"></div>
-                    Think (R1)
+                  <button className="bg-white/10 hover:bg-white/15 rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/10 text-white/80">
+                    <div className="w-1.5 h-1.5 bg-white/60 rounded-sm"></div>
+                    Think
                   </button>
-                  <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/30">
+                  <button className="bg-white/10 hover:bg-white/15 rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/10 text-white/80">
                     <Globe className="h-2.5 w-2.5" />
                     Search
                   </button>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-                    <Mic className="h-3 w-3 text-white/60" />
+                  <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/70">
+                    <Mic className="h-3 w-3" />
                   </button>
                   <Button
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || isLoading}
                     size="sm"
-                    className="bg-violet-600/90 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg backdrop-blur-sm border border-violet-500/30"
+                    className="bg-indigo-600/90 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg border border-indigo-400/30"
                   >
                     <Send className="h-3 w-3" />
                   </Button>

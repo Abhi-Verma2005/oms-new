@@ -513,7 +513,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         return (
           <div className="p-4 space-y-2">
             <Input placeholder="Enter niche" value={filters.niche} onChange={(e) => { setFilters(f => ({ ...f, niche: e.target.value })); setNicheSearch(e.target.value) }} />
-            <div className="max-h-48 overflow-auto border border-gray-200 dark:border-gray-700/60 rounded p-2">
+            <div className="max-h-48 overflow-auto no-scrollbar border border-gray-200 dark:border-gray-700/60 rounded p-2">
               {loadingCats ? <div className="text-sm">Loading…</div> : catError ? <div className="text-sm text-red-500">{catError}</div> : recommendations.length ? recommendations.map(r => (
                 <button key={r.category} className="block w-full text-left text-sm px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => { setFilters(f => ({ ...f, niche: r.category })); setModalOpen(false) }}>{r.category}</button>
               )) : <div className="text-sm text-gray-500">Type at least 2 characters</div>}
@@ -777,7 +777,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
               <RefreshCw className="w-3 h-3" />
               Refresh
             </Button>
-            <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+            <Button className="h-8 text-xs px-3 flex-1 sm:flex-none bg-[#755FF8] text-white hover:bg-[#755FF8]/80" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
             </div>
           </div>
         </div>
@@ -1311,7 +1311,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
   if (loading) return (
     <Card className="bg-white dark:bg-gray-800">
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           <div className="flex items-center gap-2">
@@ -1320,7 +1320,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           </div>
         </header>
       </div>
-      <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0">
         <div className="min-w-[600px] sm:min-w-[800px]">
           {/* Table header skeleton */}
           <div className="px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
@@ -1345,7 +1345,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   return (
     <Card className="bg-white dark:bg-gray-800">
       {/* Sticky Header Container */}
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Controls Row */}
         <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight flex items-center gap-2">
@@ -1408,7 +1408,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                     <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={resetColumns}>Reset</button>
                     <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={hideAllColumns}>Hide all</button>
                   </div>
-                  <div className="max-h-48 overflow-auto py-1">
+                  <div className="max-h-48 overflow-auto no-scrollbar py-1">
                     {columnDefs.map(col => (
                       <label key={col.key} className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer select-none">
                         <Checkbox
@@ -1461,7 +1461,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       {/* Fixed bottom-left trend preview panel */}
       {trendPreviewSite && (
         <div
-          className="hidden sm:block fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]"
+          className="hidden sm:block fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]"
           onMouseEnter={() => {
             if (hideTimeoutRef.current) {
               clearTimeout(hideTimeoutRef.current)
@@ -1540,7 +1540,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
       {/* Fixed top-center country preview panel */}
       {countryPreviewSite && (
-  <div className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
+  <div className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
           <div className="flex items-start justify-between">
             <div className="text-base font-semibold mb-2">Organic traffic by country</div>
             <div className="text-[11px] text-gray-500 whitespace-nowrap ml-2">Last updated {countryPreviewSite.quality?.lastPublished || '—'}</div>
@@ -1596,7 +1596,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       )}
       
       {/* Unified scroll container for header + body to keep horizontal sync */}
-      <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0">
         <Table className="dark:text-gray-300 w-full min-w-[600px] sm:min-w-[800px]">
           <UITableHeader>
             <TableRow className="text-xs sm:text-sm font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
@@ -1645,7 +1645,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       </div>
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogContent className="max-w-7xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl bg-white dark:bg-gray-950 p-0 overflow-hidden text-[13px]">
-                <DialogHeader className="sticky top-0 z-20 px-6 py-5 border-b border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                <DialogHeader className="sticky top-0 z-20 px-6 py-5 border-b border-gray-200/80 dark:border-white/10 bg-gray-50/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
                   <DialogTitle className="flex items-start justify-between gap-4">
                     {selectedSite ? (
                       <div className="min-w-0">
@@ -1807,7 +1807,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                         </div>
                       </div>
                     </div>
-                    <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                    <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-gray-50/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
                       {isItemInCart(selectedSite.id) ? (
                         <>
                           <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => { /* keep as visual state */ }}>{'In Cart'}</Button>
@@ -1992,7 +1992,13 @@ export default function PublishersClient() {
     if (!selectedProjectId) return
     try {
       const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
-      if (!raw) return
+      if (!raw) {
+        // No saved context for this project: reset filters and URL
+        setFilters(defaultFilters)
+        setSearchQuery("")
+        try { router.replace(pathname || '/publishers', { scroll: false }) } catch {}
+        return
+      }
       const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
       if (saved && typeof saved === 'object') {
         if (saved.filters && Object.keys(saved.filters).length > 0) {
@@ -2056,29 +2062,82 @@ export default function PublishersClient() {
       setSuggestions([])
       return
     }
+
+    // Helper: local fallback from loaded sites
+    const localFromSites = (): string[] => {
+      const ql = query.toLowerCase()
+      const toDomain = (u: string) => u.replace(/^https?:\/\//, '').replace(/\/$/, '')
+      const set = new Set<string>()
+      const out: string[] = []
+      for (const s of sites) {
+        const name = (s.name || '').toLowerCase()
+        const url = (s.url || '').toLowerCase()
+        const stripped = toDomain(s.url || '')
+        if (!name && !url) continue
+        if (name.includes(ql) || url.includes(ql) || stripped.includes(ql)) {
+          const candidate = stripped || s.name || s.url
+          const val = candidate || ''
+          if (val && !set.has(val)) {
+            set.add(val)
+            out.push(val)
+          }
+        }
+        if (out.length >= 8) break
+      }
+      return out
+    }
+
     try {
       setSuggestionsLoading(true)
       if (suggestionsAbortRef.current) suggestionsAbortRef.current.abort()
       const controller = new AbortController()
       suggestionsAbortRef.current = controller
-      const res = await fetch(`https://agents.outreachdeal.com/webhook/website-suggestion?query=${encodeURIComponent(query)}`, {
-        signal: controller.signal,
-        cache: 'no-store',
+
+      // Race external API with a local fallback timeout
+      const external = (async () => {
+        try {
+          const res = await fetch(`https://agents.outreachdeal.com/webhook/website-suggestion?query=${encodeURIComponent(query)}`, {
+            signal: controller.signal,
+            cache: 'no-store',
+          })
+          let data: any = null
+          try { data = await res.json() } catch { data = null }
+          let list: string[] = []
+          if (Array.isArray(data)) list = data as string[]
+          else if (data && Array.isArray(data.websites)) list = data.websites as string[]
+          else if (data && Array.isArray(data.suggestions)) list = data.suggestions as string[]
+          else if (data && Array.isArray(data.results)) list = data.results as string[]
+          return list.filter(Boolean)
+        } catch {
+          return [] as string[]
+        }
+      })()
+
+      const timeout = new Promise<string[]>((resolve) => {
+        const id = setTimeout(() => {
+          try { resolve(localFromSites()) } finally { clearTimeout(id) }
+        }, 1200)
       })
-      let data: any = null
-      try { data = await res.json() } catch { data = null }
-      let list: string[] = []
-      if (Array.isArray(data)) list = data as string[]
-      else if (data && Array.isArray(data.websites)) list = data.websites as string[]
-      else if (data && Array.isArray(data.suggestions)) list = data.suggestions as string[]
-      else if (data && Array.isArray(data.results)) list = data.results as string[]
-      setSuggestions(list.filter(Boolean))
+
+      // Prefer external results; fall back to local after timeout
+      const list = (await Promise.race([external, timeout]))
+      const merged = list.length > 0 ? list : localFromSites()
+      // Limit to top 4 unique suggestions
+      const unique: string[] = []
+      const seen = new Set<string>()
+      for (const s of merged) {
+        if (!seen.has(s)) { seen.add(s); unique.push(s) }
+        if (unique.length >= 4) break
+      }
+      setSuggestions(unique)
     } catch {
-      setSuggestions([])
+      // Fallback purely to local if anything throws
+      const local = localFromSites().slice(0, 4)
+      setSuggestions(local)
     } finally {
       setSuggestionsLoading(false)
     }
-  }, [])
+  }, [sites])
 
   // Debounce suggestions on input change
   useEffect(() => {
@@ -2180,8 +2239,8 @@ export default function PublishersClient() {
   }, [searchQuery, results.length, loading, filters])
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
+        <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-4 gap-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="relative" ref={suggestionsRef}>
@@ -2195,12 +2254,12 @@ export default function PublishersClient() {
                 onBlur={() => { /* keep open handled by outside click; avoid immediate close */ }}
               />
               {suggestionsOpen && (
-                <div className="absolute left-0 top-full mt-1 w-full sm:w-[18rem] max-h-60 overflow-auto rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg z-50 text-xs">
+                <div className="absolute left-0 top-full mt-1 w-full sm:w-[18rem] max-h-60 overflow-auto no-scrollbar rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg z-50 text-xs">
                   {suggestionsLoading ? (
                     <div className="px-3 py-2 text-gray-500">Searching…</div>
                   ) : suggestions.length > 0 ? (
                     <ul>
-                      {suggestions.slice(0, 8).map((sug, idx) => (
+                      {suggestions.slice(0, 4).map((sug, idx) => (
                         <li key={`${sug}-${idx}`}>
                           <button
                             className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 truncate"

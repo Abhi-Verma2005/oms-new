@@ -75,25 +75,25 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
   return (
     <ResizableLayoutContext.Provider value={contextValue}>
       {!isSidebarOpen ? (
-        <div className="h-[100dvh] overflow-y-auto bg-[#1f2230]">
+        <div className="h-[100dvh] overflow-y-auto bg-gray-50 dark:bg-[#1f2230]">
           {children}
         </div>
       ) : (
-        <div className="h-[100dvh] bg-[#1f2230]">
+        <div className="h-[100dvh] bg-gray-50 dark:bg-[#1f2230]">
           <PanelGroup direction="horizontal" className="h-full">
             {/* Main Content */}
             <Panel defaultSize={mainWidth} minSize={20} maxSize={80}>
-              <div className="h-full overflow-y-auto bg-[#1f2230]">
+              <div className="h-full overflow-y-auto bg-gray-50 dark:bg-[#1f2230]">
                 {children}
               </div>
             </Panel>
             
             {/* Resize Handle */}
-            <PanelResizeHandle className="w-1 bg-white/10 hover:bg-white/20 transition-colors" />
+            <PanelResizeHandle className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors" />
             
             {/* AI Sidebar */}
             <Panel defaultSize={sidebarWidth} minSize={20} maxSize={80}>
-              <div className="h-full bg-[#1f2230] max-w-3xl mx-auto w-full">
+              <div className="h-full bg-gray-50 dark:bg-[#1f2230] max-w-3xl mx-auto w-full">
                 <AIChatbotSidebar onClose={handleSidebarToggle} />
               </div>
             </Panel>
@@ -107,7 +107,7 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
 export function ResizableLayout({ children }: ResizableLayoutProps) {
   return (
     <Suspense fallback={
-      <div className="h-[100dvh] overflow-y-auto bg-[#1f2230]">
+      <div className="h-[100dvh] overflow-y-auto bg-gray-50 dark:bg-[#1f2230]">
         {children}
       </div>
     }>
