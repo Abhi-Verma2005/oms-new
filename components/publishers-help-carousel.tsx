@@ -88,7 +88,7 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
   }
 
   return (
-    <div className="relative w-full max-w-[44rem]">
+    <div className="relative w-full h-full flex flex-col">
       <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Quick tips</div>
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex -mr-6">
@@ -137,9 +137,9 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
         </div>
       </div>
       {/* Project panel */}
-      <div className="mt-4">
+      <div className="mt-4 flex-1 flex flex-col">
         {projects.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-5 sm:p-6 flex items-start justify-between gap-4">
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-5 sm:p-6 flex-1 flex flex-col justify-between gap-4">
             <div>
               <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">You have no projects yet.</div>
               <ul className="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-300">
@@ -154,7 +154,7 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-4 sm:p-5">
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-4 sm:p-5 flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 truncate">Your projects</div>
@@ -175,7 +175,7 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
             ) : error ? (
               <div className="text-xs text-red-600 dark:text-red-400">{error}</div>
             ) : (
-              <div className="max-h-[140px] overflow-auto pr-1">
+              <div className="flex-1 overflow-auto pr-1">
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800/60">
                   {projects.map((p) => (
                     <li key={p.id}>
