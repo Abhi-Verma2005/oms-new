@@ -166,7 +166,7 @@ export default function Header({
                   Invoices
                 </NavbarDropdownItem>
                 <NavbarDropdownItem href="/ecommerce/shop-2">
-                  Shop 2
+                  Shop
                 </NavbarDropdownItem>
                 <NavbarDropdownItem href="/ecommerce/link-building-packages">
                   Link Building Packages

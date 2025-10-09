@@ -43,15 +43,22 @@ test_webhook() {
     print_status "URL: $url"
     
     # Make the request
-    response=$(curl -s -w "\n%{http_code}" -X POST \
-        -H "Content-Type: application/json" \
-        $headers \
-        -d "$payload" \
-        "$url")
+    if [ -n "$headers" ]; then
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            $headers \
+            -d "$payload" \
+            "$url")
+    else
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            "$url")
+    fi
     
     # Extract status code and body
     http_code=$(echo "$response" | tail -n1)
-    body=$(echo "$response" | head -n -1)
+    body=$(echo "$response" | sed '$d')
     
     # Check if status code matches expected
     if [ "$http_code" = "$expected_status" ]; then
@@ -102,7 +109,7 @@ payment_succeeded_payload='{
   "type": "payment_intent.succeeded"
 }'
 
-test_webhook "Payment Succeeded (Dev Mode)" "$payment_succeeded_payload" "-H 'stripe-signature: test-signature'" "200" "$LOCAL_URL"
+test_webhook "Payment Succeeded (Dev Mode)" "$payment_succeeded_payload" "-H \"stripe-signature: test-signature\"" "200" "$LOCAL_URL"
 
 # Test 3: Payment Intent Failed (Development mode)
 print_status "=== Test 3: Payment Intent Failed (Development Mode) ==="
@@ -140,7 +147,7 @@ payment_failed_payload='{
   "type": "payment_intent.payment_failed"
 }'
 
-test_webhook "Payment Failed (Dev Mode)" "$payment_failed_payload" "-H 'stripe-signature: test-signature'" "200" "$LOCAL_URL"
+test_webhook "Payment Failed (Dev Mode)" "$payment_failed_payload" "-H \"stripe-signature: test-signature\"" "200" "$LOCAL_URL"
 
 # Test 4: Missing signature (should fail)
 print_status "=== Test 4: Missing Signature (Should Fail) ==="
@@ -149,7 +156,7 @@ test_webhook "Missing Signature" "$payment_succeeded_payload" "" "400" "$WEBHOOK
 # Test 5: Invalid JSON (should fail)
 print_status "=== Test 5: Invalid JSON (Should Fail) ==="
 invalid_json='{"invalid": json}'
-test_webhook "Invalid JSON" "$invalid_json" "-H 'stripe-signature: test-signature'" "400" "$LOCAL_URL"
+test_webhook "Invalid JSON" "$invalid_json" "-H \"stripe-signature: test-signature\"" "400" "$LOCAL_URL"
 
 # Test 6: Missing required metadata (should handle gracefully)
 print_status "=== Test 6: Missing Required Metadata ==="
@@ -177,7 +184,7 @@ missing_metadata_payload='{
   "type": "payment_intent.succeeded"
 }'
 
-test_webhook "Missing Metadata" "$missing_metadata_payload" "-H 'stripe-signature: test-signature'" "200" "$LOCAL_URL"
+test_webhook "Missing Metadata" "$missing_metadata_payload" "-H \"stripe-signature: test-signature\"" "200" "$LOCAL_URL"
 
 # Test 7: Unhandled event type
 print_status "=== Test 7: Unhandled Event Type ==="
@@ -201,6 +208,6 @@ unhandled_event_payload='{
   "type": "customer.created"
 }'
 
-test_webhook "Unhandled Event" "$unhandled_event_payload" "-H 'stripe-signature: test-signature'" "200" "$LOCAL_URL"
+test_webhook "Unhandled Event" "$unhandled_event_payload" "-H \"stripe-signature: test-signature\"" "200" "$LOCAL_URL"
 
 print_status "=== All tests completed ==="

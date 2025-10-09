@@ -90,15 +90,6 @@ function UserMenuContent({ align }: { align?: 'left' | 'right' }) {
               Settings
             </Link>
           </MenuItem>
-          <MenuItem as="li">
-            <button 
-              className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 w-full text-left"
-              onClick={toggleSidebar}
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              {isSidebarOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
-            </button>
-          </MenuItem>
           {isAdmin && (
             <MenuItem as="li">
               <Link className="font-medium text-sm flex items-center py-1 px-3 text-violet-500 hover:bg-gray-50 dark:hover:bg-gray-700/50" href="/admin">
