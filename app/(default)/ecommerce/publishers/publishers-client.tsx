@@ -777,7 +777,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
               <RefreshCw className="w-3 h-3" />
               Refresh
             </Button>
-            <Button className="h-8 text-xs px-3 flex-1 sm:flex-none" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+            <Button className="h-8 text-xs px-3 flex-1 sm:flex-none bg-[#755FF8] text-white hover:bg-[#755FF8]/80" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
             </div>
           </div>
         </div>
@@ -1311,7 +1311,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
   if (loading) return (
     <Card className="bg-white dark:bg-gray-800">
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           <div className="flex items-center gap-2">
@@ -1345,7 +1345,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   return (
     <Card className="bg-white dark:bg-gray-800">
       {/* Sticky Header Container */}
-      <div className="sticky top-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Controls Row */}
         <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight flex items-center gap-2">
@@ -1461,7 +1461,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       {/* Fixed bottom-left trend preview panel */}
       {trendPreviewSite && (
         <div
-          className="hidden sm:block fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]"
+          className="hidden sm:block fixed bottom-4 left-4 w-80 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-3 shadow-2xl z-[6000]"
           onMouseEnter={() => {
             if (hideTimeoutRef.current) {
               clearTimeout(hideTimeoutRef.current)
@@ -1540,7 +1540,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
       {/* Fixed top-center country preview panel */}
       {countryPreviewSite && (
-  <div className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
+  <div className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
           <div className="flex items-start justify-between">
             <div className="text-base font-semibold mb-2">Organic traffic by country</div>
             <div className="text-[11px] text-gray-500 whitespace-nowrap ml-2">Last updated {countryPreviewSite.quality?.lastPublished || '—'}</div>
@@ -1645,7 +1645,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       </div>
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogContent className="max-w-7xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl bg-white dark:bg-gray-950 p-0 overflow-hidden text-[13px]">
-                <DialogHeader className="sticky top-0 z-20 px-6 py-5 border-b border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                <DialogHeader className="sticky top-0 z-20 px-6 py-5 border-b border-gray-200/80 dark:border-white/10 bg-gray-50/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
                   <DialogTitle className="flex items-start justify-between gap-4">
                     {selectedSite ? (
                       <div className="min-w-0">
@@ -1807,7 +1807,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                         </div>
                       </div>
                     </div>
-                    <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-white/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                    <div className="sticky bottom-0 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 px-6 py-5 border-t border-gray-200/80 dark:border-white/10 bg-gray-50/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
                       {isItemInCart(selectedSite.id) ? (
                         <>
                           <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => { /* keep as visual state */ }}>{'In Cart'}</Button>
@@ -2239,7 +2239,7 @@ export default function PublishersClient() {
   }, [searchQuery, results.length, loading, filters])
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto no-scrollbar">
+    <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
         <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-4 gap-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">

@@ -151,7 +151,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50 dark:bg-transparent">
 
       {/* Navigation */}
       <div className="relative flex flex-col">
@@ -159,7 +159,7 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gray-50 dark:bg-transparent">
         {/* Spotlight effect - Dark Mode */}
         <Spotlight
           className="-top-60 left-2/5 transform -translate-x-1/2 hidden dark:block opacity-40"
@@ -465,7 +465,7 @@ export default function LandingPage() {
       </section>
 
       {/* App Preview Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-transparent">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 reveal-up">
             <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
@@ -694,7 +694,7 @@ export default function LandingPage() {
       </section>
 
       {/* Statistics Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-transparent">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16 reveal-up">
             <div className="text-center">
@@ -866,7 +866,7 @@ export default function LandingPage() {
       </section>
 
       {/* Process Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 reveal-up">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900 reveal-up">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-gray-800/50 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200/60 dark:border-purple-800/60 mb-6">
@@ -1047,7 +1047,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
+      <section id="faq" className="py-24 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-gray-800/50 text-purple-700 dark:text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-200/60 dark:border-purple-800/60 mb-6">
@@ -1220,7 +1220,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-50 dark:bg-gray-900 py-16 px-4 sm:px-6 lg:px-8 border-t border-gray-200 dark:border-gray-800">
+      <footer className="bg-white dark:bg-gray-900 py-16 px-4 sm:px-6 lg:px-8 border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-5 gap-8">
             <div className="md:col-span-2">

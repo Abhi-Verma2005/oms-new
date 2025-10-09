@@ -15,7 +15,7 @@ export default async function Page() {
   if (!session) redirect('/signin')
   return (
     <ResizableLayout>
-      <div className="no-scrollbar w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+      <div className="no-scrollbar dark:bg-white w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
         <PublishersClient />
       </div>
     </ResizableLayout>
