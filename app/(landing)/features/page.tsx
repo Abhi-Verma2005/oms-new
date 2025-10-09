@@ -70,38 +70,32 @@ export default function FeaturesPage() {
   ]
 
   return (
-    <div className="min-h-screen relative">
-      {/* Persistent ambient background (neutral, subtle, no animations) */}
-      <div aria-hidden className="fixed inset-0 -z-10 pointer-events-none">
-        <div
-          className="absolute inset-0 opacity-[0.09] dark:opacity-[0.07]"
+    <div className="min-h-screen relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 text-gray-900 dark:text-white">
+      {/* Mosaic grid background (subtle) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-20">
+        <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.12]"
           style={{
             backgroundImage:
-              'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.06) 1px, transparent 1px)',
-            backgroundSize: '28px 28px'
+              'linear-gradient(to right, rgba(120,119,198,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(120,119,198,0.15) 1px, transparent 1px)'
+            , backgroundSize: '32px 32px'
           }}
         />
-        <div
-          className="absolute -top-24 left-1/2 -translate-x-1/2 w-[56rem] h-[56rem] rounded-full blur-[64px]"
-          style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.32), transparent 60%)' }}
-        />
-        <div
-          className="absolute bottom-[-10%] right-[5%] w-[44rem] h-[44rem] rounded-full blur-[64px]"
-          style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.2), transparent 60%)' }}
-        />
-        <div
-          className="absolute top-[35%] left-[8%] w-[36rem] h-[36rem] rounded-full blur-[60px]"
-          style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.14), transparent 60%)' }}
-        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/5 dark:to-black/30" />
       </div>
-      {/* Removed page-local mosaic grid to prevent ambient from “disappearing” */}
       {/* Main content with top padding to account for fixed navbar */}
       <div className="">
         {/* Hero Section */}
-        <section className="relative min-h-[calc(100vh-4rem)] flex items-center px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Optional subtle particles accent */}
+        <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-visible">
+          {/* Particles animation */}
           <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-[28rem] h-[28rem] -mt-32 blur-sm opacity-80">
             <Particles className="absolute inset-0 -z-10" quantity={8} staticity={25} />
+          </div>
+          {/* Background glow for hero */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+            <div
+              className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[50rem] h-[50rem] blur-3xl opacity-70 dark:opacity-60"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
+            />
           </div>
 
           <div className="relative z-10 max-w-6xl mx-auto pt-24 md:pt-28">
@@ -154,12 +148,12 @@ export default function FeaturesPage() {
         </section>
 
         {/* Feature Highlights */}
-        <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm border-t border-gray-200/60 dark:border-gray-800 overflow-visible">
-        {/* Neutral glow for section - persist and layered above ambient */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+        <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-visible">
+          {/* Background glow */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[10%] -translate-x-1/2 -translate-y-1/2 w-[44rem] h-[44rem] blur-3xl opacity-60"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.18), transparent 60%)' }}
+              className="absolute left-1/2 top-[10%] -translate-x-1/2 -translate-y-1/2 w-[46rem] h-[46rem] blur-3xl opacity-70 dark:opacity-60"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
           <div className="max-w-6xl mx-auto">
@@ -202,11 +196,11 @@ export default function FeaturesPage() {
           variants={sectionReveal}
           className="relative overflow-visible"
         >
-          {/* Neutral glow for section - persistent (fixed) */}
-          <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+          {/* Background glow */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[28%] -translate-x-1/2 -translate-y-1/2 w-[56rem] h-[56rem] blur-[72px] opacity-45"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.16), transparent 60%)' }}
+              className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[46rem] h-[46rem] blur-3xl opacity-70 dark:opacity-60"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
           <Features02 />
@@ -218,11 +212,11 @@ export default function FeaturesPage() {
           variants={sectionReveal}
           className="relative overflow-visible"
         >
-          {/* Neutral glow for section - persistent (fixed) */}
-          <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+          {/* Background glow */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 w-[56rem] h-[56rem] blur-[74px] opacity-40"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.16), transparent 60%)' }}
+              className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[44rem] h-[44rem] blur-3xl opacity-70 dark:opacity-60"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
           <Features03 />
@@ -234,11 +228,11 @@ export default function FeaturesPage() {
           variants={sectionReveal}
           className="relative overflow-visible"
         >
-          {/* Neutral glow for section - persistent (fixed) */}
-          <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+          {/* Background glow */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[60%] -translate-x-1/2 -translate-y-1/2 w-[56rem] h-[56rem] blur-[76px] opacity-36"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.16), transparent 60%)' }}
+              className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[44rem] h-[44rem] blur-3xl opacity-70 dark:opacity-60"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
           <Features04 />
@@ -250,11 +244,11 @@ export default function FeaturesPage() {
           variants={sectionReveal}
           className="relative overflow-visible"
         >
-          {/* Neutral glow for section - persistent (fixed) */}
-          <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+          {/* Background glow */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[76%] -translate-x-1/2 -translate-y-1/2 w-[56rem] h-[56rem] blur-[78px] opacity-32"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.16), transparent 60%)' }}
+              className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[44rem] h-[44rem] blur-3xl opacity-70 dark:opacity-60"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
           <Features05 />
@@ -268,11 +262,11 @@ export default function FeaturesPage() {
           variants={sectionReveal}
           className="relative overflow-visible"
         >
-          {/* Neutral glow for section - persist and layered above ambient */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
+          {/* Background glow */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[42rem] h-[42rem] blur-3xl opacity-50"
-              style={{ background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.16), transparent 60%)' }}
+              className="absolute left-1/2 top-[20%] -translate-x-1/2 -translate-y-1/2 w-[42rem] h-[42rem] blur-3xl opacity-70 dark:opacity-60"
+              style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
           <Cta />
