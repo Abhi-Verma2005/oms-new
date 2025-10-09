@@ -44,6 +44,24 @@ input[type="range"].dual-range::-ms-thumb {
   cursor: grab;
 }
 
+/* Utility to hide scrollbars while preserving scroll functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Globally hide scrollbars while keeping scroll functional */
+.global-no-scrollbar, .global-no-scrollbar * {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.global-no-scrollbar *::-webkit-scrollbar {
+  display: none;
+}
+
 @import "tailwindcss";
 
 @keyframes spotlight {
