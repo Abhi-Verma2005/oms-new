@@ -127,14 +127,23 @@ USER CONTEXT:
 
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
+          let isClosed = false
+          const safeEnqueue = (chunk: string) => {
+            if (isClosed) return
+            try {
+              controller.enqueue(encoder.encode(chunk))
+            } catch {
+              isClosed = true
+            }
+          }
+
           // OPTIMIZATION 5: Send initial response immediately
-          controller.enqueue(encoder.encode(' '))
-          
+          safeEnqueue(' ')
           try {
             for await (const delta of textStream) {
               fullText += delta
               detectionBuffer += delta
-              controller.enqueue(encoder.encode(delta))
+              safeEnqueue(delta)
 
               // OPTIMIZATION 6: Optimized tool detection
               for (const { pattern, type } of actionPatterns) {
@@ -147,7 +156,7 @@ USER CONTEXT:
                   const data = typeof raw === 'string' ? raw.replace(/\n/g, '').trim() : true
                   const json = JSON.stringify({ type, data })
                   const event = `\n[[TOOL]]${json}\n`
-                  controller.enqueue(encoder.encode(event))
+                  safeEnqueue(event)
                   matches.push({ full: match[0], json })
                 }
                 
@@ -168,7 +177,7 @@ USER CONTEXT:
             
           } catch (err) {
             console.error('Streaming error:', err)
-            controller.error(err)
+            try { controller.error(err as any) } catch {}
             return
           }
           
@@ -180,7 +189,10 @@ USER CONTEXT:
                 .catch(error => console.warn('Background processing failed:', error))
             }
           } finally {
-            controller.close()
+            if (!isClosed) {
+              try { controller.close() } catch {}
+              isClosed = true
+            }
           }
         }
       })

@@ -123,8 +123,8 @@ export default function ActivityFeed() {
       
       {/* Activity Detail Modal */}
       {selectedActivity && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedActivity(null)}>
-          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 bg-black/20 supports-[backdrop-filter]:backdrop-blur-md backdrop-blur-md flex items-center justify-center p-4" onClick={() => setSelectedActivity(null)}>
+          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden border border-gray-200 dark:border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-200 dark:border-white/10">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Activity Details</h3>

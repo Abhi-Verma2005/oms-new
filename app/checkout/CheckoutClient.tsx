@@ -147,20 +147,38 @@ export default function CheckoutClient() {
         <div className="lg:max-w-[640px] lg:mx-auto">
           {/* Cart items */}
           <div className="mb-6 lg:mb-0">
-            <div className="mb-3">
-              <div className="flex text-sm font-medium text-gray-400 dark:text-gray-500 space-x-2">
+            <div className="mb-4">
+              <div className="flex items-center text-sm font-medium text-gray-400 dark:text-gray-500 gap-2">
                 <span className="text-gray-500 dark:text-gray-400">Review</span>
-                <span>-&gt;</span>
+                <svg className="h-3.5 w-3.5 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.24 4.24a.75.75 0 0 1 0 1.06l-4.24 4.24a.75.75 0 0 1-1.08 0Z" clipRule="evenodd" />
+                </svg>
                 <span className="text-violet-500">Payment</span>
-                <span>-&gt;</span>
+                <svg className="h-3.5 w-3.5 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L10.94 10 7.23 6.29a.75.75 0 1 1 1.06-1.06l4.24 4.24a.75.75 0 0 1 0 1.06l-4.24 4.24a.75.75 0 0 1-1.08 0Z" clipRule="evenodd" />
+                </svg>
                 <span className="text-gray-500 dark:text-gray-400">Confirm</span>
               </div>
             </div>
+            {/* Back to publishers */}
+            <div className="mb-5">
+              <a
+                href="/publishers"
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Back to Publishers
+              </a>
+            </div>
             <header className="mb-2">
               {/* Title */}
-              <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Shopping Cart ({state.items.length})</h1>
+              <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold tracking-tight">Shopping Cart ({state.items.length})</h1>
             </header>
-            <CartItems />
+            <div className="mt-4">
+              <CartItems />
+            </div>
           </div>
         </div>
       </div>
@@ -170,17 +188,17 @@ export default function CheckoutClient() {
         <div className="lg:sticky lg:top-16 bg-linear-to-r from-white/30 dark:from-gray-800/30 lg:overflow-x-hidden lg:overflow-y-auto no-scrollbar lg:shrink-0 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700/60 lg:w-[320px] xl:w-[352px] 2xl:w-[calc(352px+80px)] lg:h-[calc(100dvh-64px)]">
           <div className="py-8 px-4 lg:px-8 2xl:px-12">
             <div className="max-w-sm mx-auto lg:max-w-none">
-              <h2 className="text-2xl text-gray-800 dark:text-gray-100 font-bold mb-6">Review & Pay</h2>
-              <div className="space-y-6">
+              <h2 className="text-2xl text-gray-800 dark:text-gray-100 font-bold mb-6 tracking-tight">Review & Pay</h2>
+              <div className="space-y-7">
                 {/* Order summary */}
                 <div>
-                  <div className="text-gray-800 dark:text-gray-100 font-semibold mb-2">Order Summary</div>
-                  <ul className="mb-4">
-                    <li className="text-sm w-full flex justify-between py-3 border-b border-gray-200 dark:border-gray-700/60">
+                  <div className="text-gray-800 dark:text-gray-100 font-semibold mb-3">Order Summary</div>
+                  <ul className="mb-5 divide-y divide-gray-200 dark:divide-gray-700/60">
+                    <li className="text-sm w-full flex items-center justify-between py-3">
                       <div>Subtotal</div>
                       <div className="font-medium text-gray-800 dark:text-gray-100">${amount}</div>
                     </li>
-                    <li className="text-sm w-full flex justify-between py-3 border-b border-gray-200 dark:border-gray-700/60">
+                    <li className="text-sm w-full flex items-center justify-between py-3">
                       <div>Total due (including taxes)</div>
                       <div className="font-medium text-green-600">${amount}</div>
                     </li>
@@ -189,13 +207,15 @@ export default function CheckoutClient() {
 
                 {/* Payment Details */}
                 <div>
-                  <div className="text-gray-800 dark:text-gray-100 font-semibold mb-4">Payment Details</div>
+                  <div className="text-gray-800 dark:text-gray-100 font-semibold mb-3">Payment Details</div>
                   {error && <div className="mb-4 text-sm text-red-600 dark:text-red-400">{error}</div>}
                   {!clientSecret ? (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">{loading ? 'Creating payment session…' : amount > 0 ? 'Preparing payment…' : 'Waiting for amount'}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 leading-6">{loading ? 'Creating payment session…' : amount > 0 ? 'Preparing payment…' : 'Waiting for amount'}</div>
                   ) : (
                     <Elements stripe={stripePromise} options={options}>
-                      <PaymentForm />
+                      <div className="space-y-4">
+                        <PaymentForm />
+                      </div>
                     </Elements>
                   )}
                 </div>
@@ -212,6 +232,7 @@ function PaymentForm() {
   const stripe = useStripe()
   const elements = useElements()
   const { clearCart, state } = useCart()
+  const { addMessage } = useChat()
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [success, setSuccess] = React.useState<string | null>(null)
@@ -278,6 +299,7 @@ function PaymentForm() {
 
         // Add user message to chat context immediately
         addMessage({
+          id: Date.now().toString(),
           content: "I have completed the payment successfully. Please show me my orders.",
           role: 'user',
           timestamp: new Date()
@@ -344,11 +366,11 @@ function PaymentForm() {
       {error && <div className="text-sm text-red-500">{error}</div>}
       <div className="mt-6">
         <div className="mb-4">
-          <button type="submit" className="btn w-full bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white" disabled={loading || !stripe}>
+          <button type="submit" className="btn w-full bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white transition-colors" disabled={loading || !stripe}>
             {loading ? 'Processing…' : `Pay $${amount}.00`}
           </button>
         </div>
-        <div className="text-xs text-gray-500 italic text-center">You'll be charged ${amount}, including applicable taxes</div>
+        <div className="text-xs text-gray-500 italic text-center leading-5">You'll be charged ${amount}, including applicable taxes</div>
       </div>
     </form>
   )
