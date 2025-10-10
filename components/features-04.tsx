@@ -1,6 +1,6 @@
 export default function Features04() {
   return (
-    <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+    <section className="relative py-12 sm:py-16 lg:py-20 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
       <div className="relative max-w-6xl mx-auto">
 
         {/* Blurred shape */}

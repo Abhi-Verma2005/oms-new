@@ -40,15 +40,15 @@ export default function PricingPage() {
       {/* Main content with top padding to account for fixed navbar */}
       <div className="pt-16">
         {/* Hero Section */}
-        <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-visible">
+        <section className="relative py-16 sm:py-20 lg:py-24 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 overflow-visible">
           {/* Particles animation */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-[28rem] h-[28rem] -mt-32 blur-sm opacity-80">
-            <Particles className="absolute inset-0 -z-10" quantity={8} staticity={25} />
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-[20rem] sm:w-[28rem] h-[20rem] sm:h-[28rem] -mt-16 sm:-mt-32 blur-sm opacity-80">
+            <Particles className="absolute inset-0 -z-10" quantity={6} staticity={25} />
           </div>
           {/* Background glow for hero */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[50rem] h-[50rem] blur-3xl opacity-70 dark:opacity-60"
+              className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[30rem] sm:w-[40rem] lg:w-[50rem] h-[30rem] sm:h-[40rem] lg:h-[50rem] blur-3xl opacity-70 dark:opacity-60"
               style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
@@ -57,14 +57,14 @@ export default function PricingPage() {
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: '-80px' }}
-              className="text-center pb-12"
+              className="text-center pb-8 sm:pb-12"
             >
-              <motion.h1 variants={containerFade} className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+              <motion.h1 variants={containerFade} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 tracking-tight">
                 <span className="bg-gradient-to-r from-violet-600 to-violet-800 bg-clip-text text-transparent">
                   Simple, transparent pricing
                 </span>
               </motion.h1>
-              <motion.p variants={itemFade} className="text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              <motion.p variants={itemFade} className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto px-4 sm:px-0">
                 Choose the perfect plan for your outreach needs. No hidden fees, no surprises.
               </motion.p>
             </motion.div>
