@@ -61,3 +61,4 @@ fi
 
 echo "✅ All ports are now free!"
 echo "🚀 You can now run: docker-compose up -d"
+

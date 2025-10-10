@@ -60,3 +60,4 @@ fi
 
 echo "✅ All ports are now free!"
 echo "🚀 You can now run: docker-compose -f docker-compose-unified.yml up -d"
+
