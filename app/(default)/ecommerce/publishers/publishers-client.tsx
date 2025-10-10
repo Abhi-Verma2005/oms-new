@@ -744,12 +744,12 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 
   return (
     <>
-      <Card className="mb-4 bg-white dark:bg-gray-800">
-        <UICardHeader className="pb-1">
+      <Card className="mb-4 bg-white dark:bg-gray-800 h-full flex flex-col overflow-hidden">
+        <UICardHeader className="pb-1 flex-shrink-0">
           <UICardTitle className="text-base">Filters</UICardTitle>
         </UICardHeader>
-        <CardContent className="pt-1">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3.5 gap-3">
+        <CardContent className="pt-1 flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3.5 gap-3 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
           <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
@@ -782,15 +782,15 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
           </div>
         </div>
 
-      {/* Grouped filter pebbles */}
-      <div className="space-y-3">
+      {/* Grouped filter pebbles - takes remaining space */}
+      <div className="space-y-3 flex-1 overflow-hidden">
           {Object.entries(groupedPebbles).map(([category, pebbles]) => (
             <div key={category} className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                 {categoryIcons[category as keyof typeof categoryIcons]}
                 <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 overflow-hidden">
                 {pebbles.map(p => (
                   <span key={p.key}>{pebble(p.label, p.key)}</span>
                 ))}
@@ -800,7 +800,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       </div>
 
       {activeChips.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2 flex-shrink-0">
           {activeChips.map(chip => (
             <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600 hover:bg-violet-700 transition-all duration-200 hover:scale-105">
               <span>{chip.label}</span>
@@ -2242,65 +2242,18 @@ export default function PublishersClient() {
     <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
         <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-4 gap-4">
           <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="relative" ref={suggestionsRef}>
-              <Input
-                ref={inputRef as any}
-                className="h-8 text-xs w-full sm:w-56"
-                placeholder="Search by website or URL"
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setSuggestionsOpen(true) }}
-                onFocus={() => setSuggestionsOpen(true)}
-                onBlur={() => { /* keep open handled by outside click; avoid immediate close */ }}
-              />
-              {suggestionsOpen && (
-                <div className="absolute left-0 top-full mt-1 w-full sm:w-[18rem] max-h-60 overflow-auto no-scrollbar rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-lg z-50 text-xs">
-                  {suggestionsLoading ? (
-                    <div className="px-3 py-2 text-gray-500">Searching…</div>
-                  ) : suggestions.length > 0 ? (
-                    <ul>
-                      {suggestions.slice(0, 4).map((sug, idx) => (
-                        <li key={`${sug}-${idx}`}>
-                          <button
-                            className="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 truncate"
-                            title={sug}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => { 
-                              setSearchQuery(sug); 
-                              setSuggestionsOpen(false); 
-                              inputRef.current?.blur();
-                              // Trigger API filtering to show only this specific website
-                              const apiFilters = convertFiltersToAPI(filters, sug);
-                              fetchData(apiFilters);
-                            }}
-                          >
-                            {sug}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="px-3 py-2 text-gray-500">No suggestions</div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="h-8 text-xs px-3 flex-1 sm:flex-none" onClick={() => { if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current); fetchData(convertFiltersToAPI(filters, searchQuery)) }} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
-              <Button className="h-8 text-xs px-3 flex-1 sm:flex-none bg-violet-600 hover:bg-violet-700 text-white" onClick={() => { setFilters(defaultFilters); setSearchQuery(""); router.replace(pathname || '/publishers', { scroll: false }) }}>Reset</Button>
-              {hasCheckoutFab && <HeaderCheckout />}
-            </div>
-          </div>
         </div>
 
         {/* Project Context moved into sidebar (PublishersHelpCarousel) */}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-8 items-start">
-          <div className="lg:col-span-7 xl:col-span-7">
-            <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
+        <div className="grid grid-cols-1 mb-10 lg:grid-cols-12 lg:gap-8 items-stretch min-h-[400px]">
+          <div className="lg:col-span-7 xl:col-span-7 flex flex-col">
+            <div className="flex-1">
+              <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
+            </div>
           </div>
-          <div className="hidden lg:block lg:col-span-5 xl:col-span-5">
-            <div className="sticky top-0">
+          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col">
+            <div className="flex-1 sticky top-0">
               {(() => {
                 const total = displayedSites.length
                 const prices = displayedSites.map(x => x.publishing?.price ?? 0).filter(v => v > 0)
@@ -2310,7 +2263,22 @@ export default function PublishersClient() {
                 const avgTraffic = traffics.length ? Math.round(traffics.reduce((s, v) => s + v, 0) / traffics.length) : 1_200_000
                 const avgAuthority = authorities.length ? Math.round(authorities.reduce((s, v) => s + v, 0) / authorities.length) : 58
                 return (
-                  <PublishersHelpCarousel metrics={{ total, avgPrice, avgTraffic, avgAuthority }} />
+                  <PublishersHelpCarousel 
+                    metrics={{ total, avgPrice, avgTraffic, avgAuthority }}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    loading={loading}
+                    onRefresh={() => { 
+                      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
+                      fetchData(convertFiltersToAPI(filters, searchQuery)) 
+                    }}
+                    onReset={() => { 
+                      setFilters(defaultFilters)
+                      setSearchQuery("")
+                      router.replace(pathname || '/publishers', { scroll: false })
+                    }}
+                    hasCheckoutFab={hasCheckoutFab}
+                  />
                 )
               })()}
             </div>

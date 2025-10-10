@@ -81,7 +81,7 @@ export function ChatActionCard({ card, onDismiss, className }: ChatActionCardPro
           ) : null}
 
           {card.actions?.length ? (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               {card.actions.map((a, idx) => (
                 <ChatActionButton
                   key={`${card.id}-action-${idx}`}
@@ -95,6 +95,8 @@ export function ChatActionCard({ card, onDismiss, className }: ChatActionCardPro
                       return
                     }
                     a.onClick()
+                    // Auto-dismiss the card after any action is clicked
+                    handleDismiss()
                   }}
                 />
               ))}
@@ -130,6 +132,8 @@ export function ChatActionCard({ card, onDismiss, className }: ChatActionCardPro
                       }
                     } catch {}
                     setShowRefine(false)
+                    // Auto-dismiss the card after applying filters
+                    handleDismiss()
                   }}
                 />
                 <ChatActionButton label="Cancel" variant="tertiary" onClick={() => setShowRefine(false)} />

@@ -21,8 +21,8 @@ export function ChatActionButton({
   className,
   ...props
 }: ChatActionButtonProps) {
-  const base = 'inline-flex items-center justify-center gap-1.5 rounded-[6px] transition-all duration-150 ease-out whitespace-nowrap'
-  const size = 'px-3 py-1.5 text-[13px] font-medium'
+  const base = 'inline-flex items-center justify-center gap-1.5 rounded-[6px] transition-all duration-150 ease-out'
+  const size = 'px-3 py-1.5 text-[13px] font-medium min-w-0'
   const styles =
     variant === 'primary'
       ? 'bg-violet-600/90 text-white hover:bg-violet-700'
@@ -41,8 +41,8 @@ export function ChatActionButton({
           <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
         </span>
       )}
-      {!loading && icon ? <span className="inline-flex items-center justify-center h-4 w-4">{icon}</span> : null}
-      <span>{label}</span>
+      {!loading && icon ? <span className="inline-flex items-center justify-center h-4 w-4 flex-shrink-0">{icon}</span> : null}
+      <span className="truncate">{label}</span>
     </button>
   )
 }
