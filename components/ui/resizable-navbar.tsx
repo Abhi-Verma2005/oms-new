@@ -104,7 +104,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         minWidth: "800px",
       }}
       className={cn(
-        "relative z-[60] hidden w-full flex-row items-center justify-between self-start px-6 py-3 lg:flex",
+        "relative z-[60] hidden w-full flex-row items-center justify-between self-start px-4 sm:px-6 py-3 lg:flex",
         // Always-glass base
         "bg-gray-50/70 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-gray-200/60 dark:ring-white/10 shadow-lg shadow-purple-500/10",
         // On scroll, subtly intensify
@@ -193,7 +193,7 @@ export const MobileNav = ({ children, className, visible }: MobileNavProps) => {
         damping: 50,
       }}
       className={cn(
-        "relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between px-4 py-3 lg:hidden",
+        "relative z-50 mx-auto flex w-full max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-2rem)] flex-col items-center justify-between px-3 sm:px-4 py-3 lg:hidden",
         // Always-glass base
         "bg-gray-50/70 dark:bg-gray-900/40 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-gray-200/60 dark:ring-white/10 shadow-lg shadow-purple-500/10",
         // On scroll/open, intensify slightly
@@ -213,7 +213,7 @@ export const MobileNavHeader = ({
   return (
     <div
       className={cn(
-        "flex w-full flex-row items-center justify-between",
+        "flex w-full flex-row items-center justify-between px-2 sm:px-3",
         className,
       )}
     >
@@ -237,14 +237,14 @@ export const MobileNavMenu = ({
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
           className={cn(
-            "absolute inset-x-0 top-full mt-2 z-[70] flex w-full flex-col items-start justify-start gap-4 rounded-lg px-6 py-6 shadow-lg",
-            // Glass styling for dropdown
-            "bg-gray-50/90 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-gray-200/70 dark:ring-white/10 shadow-purple-500/10",
+            "absolute inset-x-0 top-full mt-2 z-[70] flex w-full flex-col items-start justify-start gap-3 sm:gap-4 rounded-lg px-4 sm:px-6 py-4 sm:py-6 shadow-lg",
+            // Glass styling for dropdown with reduced transparency
+            "bg-gray-50/95 dark:bg-gray-900/85 backdrop-blur-xl backdrop-saturate-150 ring-1 ring-gray-200/80 dark:ring-white/20 shadow-purple-500/15",
             className,
           )}
         >
           {children}
-          <div className="flex items-center justify-between w-full pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between w-full pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
             <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
             <ThemeToggle />
           </div>
@@ -262,9 +262,21 @@ export const MobileNavToggle = ({
   onClick: () => void;
 }) => {
   return isOpen ? (
-    <IconX className="text-black dark:text-white" onClick={onClick} />
+    <button 
+      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+      onClick={onClick}
+      aria-label="Close menu"
+    >
+      <IconX className="text-black dark:text-white w-5 h-5" />
+    </button>
   ) : (
-    <IconMenu2 className="text-black dark:text-white" onClick={onClick} />
+    <button 
+      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+      onClick={onClick}
+      aria-label="Open menu"
+    >
+      <IconMenu2 className="text-black dark:text-white w-5 h-5" />
+    </button>
   );
 };
 
@@ -272,17 +284,19 @@ export const NavbarLogo = () => {
   return (
     <a
       href="/"
-      className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
+      className="relative z-20 flex items-center space-x-1 sm:space-x-2 px-1 sm:px-2 py-1 text-sm font-normal text-black min-w-0 flex-shrink-0"
     >
-      <svg
-        className="fill-violet-500"
-        xmlns="http://www.w3.org/2000/svg"
-        width={32}
-        height={32}
-      >
-        <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
-      </svg>
-      <span className="font-medium text-black dark:text-white">Mosaic Next</span>
+      <div className="w-6 h-6 sm:w-8 mr-2 sm:h-8 flex-shrink-0 flex items-center justify-center">
+        <svg
+          className="fill-violet-500 w-full h-full"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 32 32"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+        </svg>
+      </div>
+      <span className="font-medium text-black dark:text-white text-sm sm:text-base truncate">Mosaic Next</span>
     </a>
   );
 };

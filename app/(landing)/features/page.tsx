@@ -85,20 +85,20 @@ export default function FeaturesPage() {
       {/* Main content with top padding to account for fixed navbar */}
       <div className="">
         {/* Hero Section */}
-        <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-visible">
+        <section className="relative py-16 sm:py-20 lg:py-24 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 overflow-visible">
           {/* Particles animation */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-[28rem] h-[28rem] -mt-32 blur-sm opacity-80">
-            <Particles className="absolute inset-0 -z-10" quantity={8} staticity={25} />
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-[20rem] sm:w-[28rem] h-[20rem] sm:h-[28rem] -mt-16 sm:-mt-32 blur-sm opacity-80">
+            <Particles className="absolute inset-0 -z-10" quantity={6} staticity={25} />
           </div>
           {/* Background glow for hero */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[50rem] h-[50rem] blur-3xl opacity-70 dark:opacity-60"
+              className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[30rem] sm:w-[40rem] lg:w-[50rem] h-[30rem] sm:h-[40rem] lg:h-[50rem] blur-3xl opacity-70 dark:opacity-60"
               style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
 
-          <div className="relative z-10 max-w-6xl mx-auto pt-24 md:pt-28">
+          <div className="relative z-10 max-w-6xl mx-auto pt-16 sm:pt-20 lg:pt-24 md:pt-28">
             <motion.div
               initial="hidden"
               whileInView="show"
@@ -106,12 +106,12 @@ export default function FeaturesPage() {
               variants={staggerContainer}
               className="text-center pb-12"
             >
-              <motion.h1 variants={containerFade} className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+              <motion.h1 variants={containerFade} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 tracking-tight">
                 <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
                   Powerful Features
                 </span>
               </motion.h1>
-              <motion.p variants={itemFade} className="text-lg md:text-[1.15rem] text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
+              <motion.p variants={itemFade} className="text-base sm:text-lg md:text-[1.15rem] text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-6 sm:mb-8 px-4 sm:px-0">
                 Discover a refined toolkit designed to streamline workflows, enhance reliability, and scale with you.
               </motion.p>
               {/* Hero supporting bullets to reduce emptiness */}
@@ -148,11 +148,11 @@ export default function FeaturesPage() {
         </section>
 
         {/* Feature Highlights */}
-        <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-visible">
+        <section className="relative py-12 sm:py-16 lg:py-20 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 overflow-visible">
           {/* Background glow */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
             <div
-              className="absolute left-1/2 top-[10%] -translate-x-1/2 -translate-y-1/2 w-[46rem] h-[46rem] blur-3xl opacity-70 dark:opacity-60"
+              className="absolute left-1/2 top-[10%] -translate-x-1/2 -translate-y-1/2 w-[30rem] sm:w-[40rem] lg:w-[46rem] h-[30rem] sm:h-[40rem] lg:h-[46rem] blur-3xl opacity-70 dark:opacity-60"
               style={{ background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.12), transparent 60%)' }}
             />
           </div>
@@ -162,7 +162,7 @@ export default function FeaturesPage() {
               whileInView="show"
               viewport={{ once: true, amount: 0.25, margin: '-60px' }}
               variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-              className="grid md:grid-cols-3 gap-6 md:gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
             >
               {featureHighlights.map((feature, index) => (
                 <motion.div
@@ -170,16 +170,16 @@ export default function FeaturesPage() {
                   variants={itemFade}
                   whileHover={{ y: -1 }}
                   transition={{ type: 'spring', stiffness: 140, damping: 24 }}
-                  className="group relative rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/95 dark:bg-gray-900/90 p-6 shadow-sm transition-all transform-gpu will-change-transform"
+                  className="group relative rounded-xl border border-gray-200/80 dark:border-gray-800/80 bg-white/95 dark:bg-gray-900/90 p-4 sm:p-6 shadow-sm transition-all transform-gpu will-change-transform"
                 >
                   <div className="absolute inset-0 rounded-xl ring-1 ring-transparent group-hover:ring-[rgba(124,58,237,0.15)] transition"></div>
-                  <div className="w-14 h-14 md:w-16 md:h-16 bg-[rgba(124,58,237,0.10)] dark:bg-[rgba(124,58,237,0.16)] rounded-full flex items-center justify-center mb-4" style={{ color: '#7C3AED' }}>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-[rgba(124,58,237,0.10)] dark:bg-[rgba(124,58,237,0.16)] rounded-full flex items-center justify-center mb-3 sm:mb-4" style={{ color: '#7C3AED' }}>
                     {feature.icon}
                   </div>
-                  <h3 className="text-lg md:text-xl font-semibold mb-2 text-gray-900 dark:text-white tracking-tight">
+                  <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-2 text-gray-900 dark:text-white tracking-tight">
                     {feature.title}
                   </h3>
-                  <p className="text-sm md:text-base text-gray-600 dark:text-gray-300">
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
                     {feature.description}
                   </p>
                 </motion.div>

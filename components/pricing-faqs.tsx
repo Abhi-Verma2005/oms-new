@@ -2,7 +2,7 @@
 
 export default function PricingFaqs() {
   return (
-    <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+    <section className="relative py-12 sm:py-16 lg:py-20 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
       {/* Blurred shape */}
       <div className="absolute top-0 -translate-y-1/3 left-1/2 -translate-x-1/2 ml-24 blur-2xl opacity-50 pointer-events-none -z-10" aria-hidden="true">
         <svg xmlns="http://www.w3.org/2000/svg" width="434" height="427">

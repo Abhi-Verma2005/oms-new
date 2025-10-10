@@ -5,7 +5,7 @@ import FeatureImg04 from '@/public/images/applications-image-04.jpg'
 
 export default function Features03() {
   return (
-    <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+    <section className="relative py-12 sm:py-16 lg:py-20 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
 
       {/* Blurred shape */}
       <div className="absolute top-0 -translate-y-1/4 left-1/2 -translate-x-1/2 blur-2xl opacity-50 pointer-events-none -z-10" aria-hidden="true">
@@ -21,16 +21,16 @@ export default function Features03() {
       </div>
 
       <div className="max-w-6xl mx-auto">
-        <div className="pt-16 pb-12 md:pt-32 md:pb-20 border-b border-gray-200 dark:border-gray-700">
+        <div className="pt-8 sm:pt-12 md:pt-16 lg:pt-32 pb-8 sm:pb-12 md:pb-20 border-b border-gray-200 dark:border-gray-700">
 
           {/* Section header */}
-          <div className="max-w-3xl mx-auto text-center pb-12 md:pb-20">
-            <h2 className="text-4xl font-bold mb-6">
+          <div className="max-w-3xl mx-auto text-center pb-8 sm:pb-12 md:pb-20">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
               <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
                 More than a login box
               </span>
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300">There are many variations available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable.</p>
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 px-4 sm:px-0">There are many variations available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable.</p>
           </div>
 
           <div className="max-w-3xl mx-auto">
@@ -42,7 +42,7 @@ export default function Features03() {
                     <div className="absolute bottom-0 translate-y-1/2 left-1/2 -translate-x-1/2 pointer-events-none -z-10 w-1/2 aspect-square" aria-hidden="true">
                       <div className="absolute inset-0 translate-z-0 bg-purple-500 rounded-full blur-[120px]" />
                     </div>
-                    <Image src={FeatureImg04} width={768} height={400} alt="Feature 04" />
+                    <Image src={FeatureImg04} width={768} height={400} alt="Feature 04" className="w-full h-auto object-cover" />
                   </div>
                 </HighlighterItem>
               </Highlighter>

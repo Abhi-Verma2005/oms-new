@@ -19,7 +19,7 @@ export default function AddToCartProductButton({ id, name, priceDollars, classNa
         addProduct({ id, name, priceDollars })
         if (openOnAdd) openCart()
       }}
-      className={className || 'btn bg-violet-600 hover:bg-violet-700 text-white'}
+      className={className || 'btn bg-violet-600 hover:bg-violet-700 text-white whitespace-nowrap'}
     >
       Add to Cart
     </button>

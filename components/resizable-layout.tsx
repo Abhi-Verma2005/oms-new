@@ -80,24 +80,33 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
         </div>
       ) : (
         <div className="h-[100dvh] bg-gray-50 dark:bg-[#1f2230]">
-          <PanelGroup direction="horizontal" className="h-full">
-            {/* Main Content */}
-            <Panel defaultSize={mainWidth} minSize={20} maxSize={80}>
-              <div className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
-                {children}
-              </div>
-            </Panel>
-            
-            {/* Resize Handle */}
-            <PanelResizeHandle className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors" />
-            
-            {/* AI Sidebar */}
-            <Panel defaultSize={sidebarWidth} minSize={20} maxSize={80}>
-              <div className="h-full bg-gray-50 dark:bg-[#1f2230] max-w-3xl mx-auto w-full">
-                <AIChatbotSidebar onClose={handleSidebarToggle} />
-              </div>
-            </Panel>
-          </PanelGroup>
+          {/* Mobile: Stack vertically, Desktop: Side by side */}
+          <div className="block lg:hidden">
+            {/* Mobile: AI Sidebar takes full width */}
+            <div className="h-full bg-gray-50 dark:bg-[#1f2230] w-full">
+              <AIChatbotSidebar onClose={handleSidebarToggle} />
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <PanelGroup direction="horizontal" className="h-full">
+              {/* Main Content */}
+              <Panel defaultSize={mainWidth} minSize={20} maxSize={80}>
+                <div className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
+                  {children}
+                </div>
+              </Panel>
+              
+              {/* Resize Handle */}
+              <PanelResizeHandle className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors" />
+              
+              {/* AI Sidebar */}
+              <Panel defaultSize={sidebarWidth} minSize={20} maxSize={80}>
+                <div className="h-full bg-gray-50 dark:bg-[#1f2230] max-w-3xl mx-auto w-full">
+                  <AIChatbotSidebar onClose={handleSidebarToggle} />
+                </div>
+              </Panel>
+            </PanelGroup>
+          </div>
         </div>
       )}
     </ResizableLayoutContext.Provider>

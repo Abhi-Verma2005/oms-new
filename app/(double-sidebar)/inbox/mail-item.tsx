@@ -8,13 +8,13 @@ export default function MailItem({ mail }: { mail: Mail }) {
   const [open, setOpen] = useState<boolean>(mail.open)
 
   return (
-    <div className="py-6">
+    <div className="py-4 sm:py-6">
       {/* Header */}
       <header className="flex items-start">
         {/* Avatar */}
-        <Image className="rounded-full shrink-0 mr-3" src={mail.image} width={40} height={40} alt={mail.name} />
+        <Image className="rounded-full shrink-0 mr-2 sm:mr-3 w-8 h-8 sm:w-10 sm:h-10" src={mail.image} width={40} height={40} alt={mail.name} />
         {/* Meta */}
-        <div className="grow">
+        <div className="grow min-w-0">
           <div className="sm:flex items-start justify-between mb-0.5">
             {/* Message author */}
             <div className="xl:flex items-center mb-2 sm:mb-0">
@@ -35,13 +35,13 @@ export default function MailItem({ mail }: { mail: Mail }) {
           }
           {/* Excerpt */}
           {!open &&
-            <div className="text-sm">{mail.excerpt}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">{mail.excerpt}</div>
           }
         </div>
       </header>
       {/* Body */}
       {open &&
-        <div className="text-sm text-gray-800 dark:text-gray-100 mt-4 space-y-2" dangerouslySetInnerHTML={{ __html: mail.message }}></div>
+        <div className="text-sm text-gray-800 dark:text-gray-100 mt-3 sm:mt-4 space-y-2" dangerouslySetInnerHTML={{ __html: mail.message }}></div>
       }
     </div>
   )

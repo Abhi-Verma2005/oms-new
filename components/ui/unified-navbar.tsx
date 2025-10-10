@@ -145,8 +145,10 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
       {/* Mobile Navigation */}
       <MobileNav>
         <MobileNavHeader>
-          <NavbarLogo />
-          <div className="mr-2">
+          <div className="flex-1">
+            <NavbarLogo />
+          </div>
+          <div className="flex items-center justify-end pr-2 sm:pr-3">
             <MobileNavToggle
               isOpen={isMobileMenuOpen}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -164,10 +166,10 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
               key={`mobile-link-${idx}`}
               href={item.link}
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`relative py-2 px-3 rounded-lg transition-colors duration-200 ${
+              className={`relative py-3 px-4 rounded-lg transition-colors duration-200 font-medium ${
                 isActiveRoute(item.link)
-                  ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
-                  : 'text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                  ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30'
+                  : 'text-gray-800 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'
               }`}
             >
               {item.name}
@@ -175,7 +177,7 @@ export default function UnifiedNavbar({ variant = 'landing' }: UnifiedNavbarProp
           ))}
           
           {/* Mobile theme toggle and user menu */}
-          <div className="flex w-full flex-col gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex w-full flex-col gap-3 pt-4 border-t border-gray-300 dark:border-gray-600">
             <div className="flex items-center justify-center py-2">
               <ThemeToggle />
             </div>
