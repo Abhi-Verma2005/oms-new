@@ -54,6 +54,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Reduce memory pressure during Next.js build
 ENV NODE_OPTIONS=--max-old-space-size=2048
 ENV NEXT_DISABLE_SOURCEMAPS=1
+# Disable font optimization to avoid network issues during build
+ENV NEXT_FONT_GOOGLE_MOCKED_RESPONSES=1
+# Network timeout settings
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+ENV HTTP_TIMEOUT=30000
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 ENV AUTH_SECRET="dummy-secret-for-build"
 ENV AUTH_URL="http://localhost:3000"

@@ -14,5 +14,9 @@ export const revalidate = 0
 export default async function Page() {
   const session = await auth()
   if (!session) redirect('/signin')
-  return <PublishersClient />
+  return (
+    <div className="no-scrollbar">
+      <PublishersClient />
+    </div>
+  )
 }
