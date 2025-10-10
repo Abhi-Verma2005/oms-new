@@ -276,28 +276,22 @@ model CaseStudy {
   @@map("case_studies")
 }
 
-// Homepage Case Studies Management
 model HomepageCaseStudy {
-  id          String   @id @default(cuid())
-  title       String
-  subtitle    String
-  imageSrc    String   @map("image_src")
-  category    String   // e.g., "Finance", "Insurance", "Healthcare"
-  isActive    Boolean  @default(true) @map("is_active")
-  displayOrder Int     @default(0) @map("display_order")
-  
-  // Stats for the case study
-  stats       Json     // Array of { value: string, label: string }
-  link        String?  // Optional link to full case study
-  
-  // Metadata
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  createdBy   String?  @map("created_by")
-  
+  id           String   @id @default(cuid())
+  title        String
+  subtitle     String
+  imageSrc     String   @map("image_src")
+  category     String
+  isActive     Boolean  @default(true) @map("is_active")
+  displayOrder Int      @default(0) @map("display_order")
+  stats        Json
+  link         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  createdBy    String?  @map("created_by")
+
   @@map("homepage_case_studies")
 }
-
 
 model MonthlyData {
   id          String    @id @default(cuid())
@@ -926,23 +920,24 @@ model user_context_profiles {
 }
 
 model user_interaction_embeddings {
-  id                 String   @id
+  id                 String                 @id
   user_id            String
   content            String
   contentType        String
-  embedding          Json?
   session_id         String?
   page_context       String?
-  timestamp          DateTime @default(now())
-  importance         Float    @default(1.0)
+  timestamp          DateTime               @default(now())
+  importance         Float                  @default(1.0)
   extracted_insights Json?
   sentiment          String?
   intent             String?
   topics             String[]
-  users              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  embedding          Unsupported("vector")?
+  users              User                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, contentType])
   @@index([user_id, timestamp])
+  @@index([embedding])
 }
 
 enum ActivityCategory {

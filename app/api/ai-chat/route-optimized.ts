@@ -61,25 +61,16 @@ ${cartState ? `
             id: true,
             name: true,
             email: true,
-            userRoles: {
-              select: {
-                role: {
-                  select: {
-                    name: true
-                  }
-                }
-              }
-            }
+            roles: true
           }
         })
         
         if (user) {
-          const roles = user.userRoles?.map(ur => ur.role.name).join(', ') || 'None'
           userContext = `
 USER CONTEXT:
 - Name: ${user.name || 'Not specified'}
 - Email: ${user.email || 'Not specified'}
-- Roles: ${roles}
+- Roles: ${user.roles?.join(', ') || 'None'}
 `
         }
       } catch (error) {

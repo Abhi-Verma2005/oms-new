@@ -40,3 +40,4 @@ else
 fi
 
 echo "✅ Port conflict resolved. You can now run: docker-compose up -d"
+
