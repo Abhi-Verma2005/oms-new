@@ -105,7 +105,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     }
   }, [])
 
-  // Detect cart additions and open cart modal + show action card
+  // Detect cart additions and show action card (single handler to prevent duplicates)
   useEffect(() => {
     if (!didMountRef.current) {
       didMountRef.current = true
@@ -115,7 +115,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     const previous = prevCartCountRef.current
     const current = cartState.items.length
     if (current > previous) {
-      // Item(s) added (do not auto-open cart; only via action)
+      // Item(s) added - show action card
       prevCartCountRef.current = current
       const totalItems = getTotalItems()
       const totalPrice = getTotalPrice()
@@ -155,35 +155,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     prevCartCountRef.current = current
   }, [cartState.items.length])
 
-  // Listen for explicit cart-add events to show action card immediately when sidebar opens
-  useEffect(() => {
-    const handler = () => {
-      try {
-        const totalItems = getTotalItems()
-        const totalPrice = getTotalPrice()
-        const cardId = `${Date.now()}-added-card`
-        const dismissCard = () => dismissActionCard(cardId)
-        queueActionCard({
-          id: cardId,
-          type: 'cart',
-          title: 'Item Added to Cart',
-          message: `You now have ${totalItems} item${totalItems !== 1 ? 's' : ''} • $${totalPrice.toFixed(2)}`,
-          icon: <ShoppingCart className="h-4 w-4" />,
-          actions: [
-            { label: 'View Cart', variant: 'primary', onClick: () => openCart() },
-            { label: 'Checkout', variant: 'secondary', onClick: () => goToCheckout() },
-            { label: 'Continue Shopping', variant: 'tertiary', onClick: dismissCard },
-          ],
-          dismissible: true,
-          timestamp: new Date(),
-          afterMessageId: undefined,
-        })
-      } catch {}
-    }
-    window.addEventListener('AI_CART_ITEM_ADDED', handler)
-    return () => window.removeEventListener('AI_CART_ITEM_ADDED', handler)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  // Remove the duplicate event listener - the cart length change detection above handles this
 
   // Listen for refine modal apply event from ChatActionCard
   useEffect(() => {
@@ -741,13 +713,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     }
   }
 
-  // Helper: enqueue a card and limit concurrent visible cards
+  // Helper: enqueue a card and replace any existing cards
   const queueActionCard = (card: ActionCard) => {
     setActionCards((prev) => {
-      const next = [...prev, card]
-      // keep at most 2 latest
-      const trimmed = next.slice(-2)
-      return trimmed
+      // Clear all existing cards and add the new one
+      return [card]
     })
   }
 
@@ -1142,17 +1112,8 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 className="w-full bg-transparent text-white placeholder-white/50 resize-none focus:outline-none text-sm border-0 selection:bg-white/10 selection:text-white focus:ring-0 focus:border-0"
                 rows={2}
               />
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-1.5">
-                  <button className="bg-white/10 hover:bg-white/15 rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/10 text-white/80">
-                    <div className="w-1.5 h-1.5 bg-white/60 rounded-sm"></div>
-                    Think
-                  </button>
-                  <button className="bg-white/10 hover:bg-white/15 rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1 transition-colors border border-white/10 text-white/80">
-                    <Globe className="h-2.5 w-2.5" />
-                    Search
-                  </button>
-                </div>
+              <div className="flex items-center justify-end mt-2">
+                
                 <div className="flex items-center gap-1.5">
                   <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/70">
                     <Mic className="h-3 w-3" />
