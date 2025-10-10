@@ -4,12 +4,12 @@ import Link from 'next/link'
 
 export default function PricingCta() {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800">
+    <section className="py-12 sm:py-16 lg:py-20 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20 bg-gray-50 dark:bg-gray-800">
       <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
           Ready to get started?
         </h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 max-w-2xl mx-auto px-4 sm:px-0">
           Join thousands of users who are already using our platform to build amazing things.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

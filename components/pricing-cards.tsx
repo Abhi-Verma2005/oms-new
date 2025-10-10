@@ -61,13 +61,13 @@ export default function PricingCards() {
   ]
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8">
+    <section className="py-12 sm:py-16 lg:py-20 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
       <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {plans.map((plan, index) => (
             <div
               key={index}
-              className={`relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-8 border transition-all duration-500 ${
+              className={`relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border transition-all duration-500 ${
                 plan.popular
                   ? 'border-purple-400/50 shadow-xl shadow-purple-500/10 scale-105'
                   : 'border-gray-200/50 dark:border-gray-700/50 hover:border-purple-400/50 hover:shadow-lg hover:shadow-purple-500/5'
@@ -81,28 +81,28 @@ export default function PricingCards() {
                 </div>
               )}
               
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-center mb-6 sm:mb-8">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
                   {plan.name}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-4">
                   {plan.description}
                 </p>
                 <div className="flex items-baseline justify-center">
-                  <span className="text-5xl font-bold text-gray-900 dark:text-white">
+                  <span className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
                     {plan.price}
                   </span>
-                  <span className="text-gray-600 dark:text-gray-300 ml-1">
+                  <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300 ml-1">
                     {plan.period}
                   </span>
                 </div>
               </div>
 
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                 {plan.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className="flex items-start">
-                    <Check className="w-5 h-5 text-purple-500 mt-0.5 mr-3 flex-shrink-0" />
-                    <span className="text-gray-600 dark:text-gray-300">
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <span className="text-sm sm:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
                       {feature}
                     </span>
                   </li>
