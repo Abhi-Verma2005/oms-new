@@ -7,6 +7,8 @@ import { Check, Plus } from "lucide-react"
 import { useState, useEffect, useCallback } from 'react'
 import { NewProjectModal } from '@/components/projects/new-project-modal'
 import { useProjectStore, type UserProject } from '@/stores/project-store'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 function Slide({
   title,
@@ -36,13 +38,29 @@ function Slide({
   )
 }
 
-export type PublishersHelpCarouselProps = { metrics?: { total: number; avgPrice: number; avgTraffic: number; avgAuthority: number } }
+export type PublishersHelpCarouselProps = { 
+  metrics?: { total: number; avgPrice: number; avgTraffic: number; avgAuthority: number }
+  searchQuery?: string
+  setSearchQuery?: (query: string) => void
+  loading?: boolean
+  onRefresh?: () => void
+  onReset?: () => void
+  hasCheckoutFab?: boolean
+}
 
-export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarouselProps) {
+export default function PublishersHelpCarousel({ 
+  metrics, 
+  searchQuery = '', 
+  setSearchQuery, 
+  loading = false, 
+  onRefresh, 
+  onReset,
+  hasCheckoutFab = false 
+}: PublishersHelpCarouselProps) {
   const [open, setOpen] = useState(false)
   const { selectedProjectId, setSelectedProject, clearProject } = useProjectStore()
   const [projects, setProjects] = useState<UserProject[]>([])
-  const [loading, setLoading] = useState(false)
+  const [projectsLoading, setProjectsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [emblaRef] = useEmblaCarousel(
     { loop: true, align: "start", dragFree: true },
@@ -51,7 +69,7 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
 
   const fetchProjects = useCallback(() => {
     let cancelled = false
-    setLoading(true)
+    setProjectsLoading(true)
     fetch('/api/projects')
       .then(async (r) => {
         if (!r.ok) throw new Error('Failed to load projects')
@@ -71,7 +89,7 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
       })
       .finally(() => {
         if (cancelled) return
-        setLoading(false)
+        setProjectsLoading(false)
       })
     return () => { cancelled = true }
   }, [selectedProjectId, clearProject])
@@ -88,59 +106,97 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
   }
 
   return (
-    <div className="relative w-full flex flex-col min-h-0">
-      <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex-shrink-0">Quick tips</div>
-      <div className="overflow-hidden flex-shrink-0" ref={emblaRef}>
-        <div className="flex -mr-6">
-          <Slide
-            title="Start with the Basics"
-            description="Pick Niche, Language, and Country. Click any pill to refine and save as a reusable view."
-            icon={
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-            }
-          />
-          <Slide
-            title="Authority & SEO"
-            description="Use DA/PA/DR and Spam Score ranges. Drag sliders or type exact values."
-            icon={
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M21 10H7" />
-                <path d="M21 6H3" />
-                <path d="M21 14H3" />
-                <path d="M21 18H7" />
-              </svg>
-            }
-          />
-          <Slide
-            title="Traffic Preview"
-            description="Hover the Trend cell to see quick traffic charts for any site."
-            icon={
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-            }
-          />
-          <Slide
-            title="Add to Cart & Checkout"
-            description="Click Add to Cart from the table or details panel. Use the floating Checkout to finish."
-            icon={
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 12.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-            }
-          />
+    <div className="relative w-full h-full flex flex-col">
+      {/* Search and controls section */}
+      <div className="flex-shrink-0 mb-4">
+        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Search & Controls</div>
+        <div className="space-y-3">
+          {/* Search input */}
+          <div className="relative">
+            <Input
+              className="h-8 text-xs w-full"
+              placeholder="Search by website or URL"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery?.(e.target.value)}
+            />
+          </div>
+          
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline" 
+              className="h-8 text-xs px-3 flex-1" 
+              onClick={onRefresh} 
+              disabled={loading}
+            >
+              {loading ? 'Loading…' : 'Refresh'}
+            </Button>
+            <Button 
+              className="h-8 text-xs px-3 flex-1 bg-violet-600 hover:bg-violet-700 text-white" 
+              onClick={onReset}
+            >
+              Reset
+            </Button>
+          </div>
         </div>
       </div>
-      {/* Project panel */}
-      <div className="mt-3 flex-1 flex flex-col min-h-0">
+
+      {/* Quick tips section - fixed height */}
+      <div className="flex-shrink-0">
+        <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Quick tips</div>
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex -mr-6">
+            <Slide
+              title="Start with the Basics"
+              description="Pick Niche, Language, and Country. Click any pill to refine and save as a reusable view."
+              icon={
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              }
+            />
+            <Slide
+              title="Authority & SEO"
+              description="Use DA/PA/DR and Spam Score ranges. Drag sliders or type exact values."
+              icon={
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M21 10H7" />
+                  <path d="M21 6H3" />
+                  <path d="M21 14H3" />
+                  <path d="M21 18H7" />
+                </svg>
+              }
+            />
+            <Slide
+              title="Traffic Preview"
+              description="Hover the Trend cell to see quick traffic charts for any site."
+              icon={
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              }
+            />
+            <Slide
+              title="Add to Cart & Checkout"
+              description="Click Add to Cart from the table or details panel. Use the floating Checkout to finish."
+              icon={
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 12.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+              }
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* Project panel - takes remaining height */}
+      <div className="mt-4 flex-1 flex flex-col min-h-0">
         {projects.length === 0 ? (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col gap-3">
-            <div>
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col gap-3 h-full">
+            <div className="flex-1">
               <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">You have no projects yet.</div>
               <ul className="mt-2 space-y-1.5 text-xs text-gray-600 dark:text-gray-300">
                 <li className="flex items-start gap-2"><Check className="h-3 w-3 text-emerald-500 mt-0.5" /><span>Assign link orders to your projects.</span></li>
@@ -154,8 +210,8 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-2 flex-shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">Your projects</div>
                 <span className="inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[10px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">{projects.length}</span>
@@ -165,17 +221,17 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
                 <span>New</span>
               </button>
             </div>
-            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">Select a project to scope your actions.</div>
-            {loading ? (
-              <div className="space-y-1">
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-2 flex-shrink-0">Select a project to scope your actions.</div>
+            {projectsLoading ? (
+              <div className="space-y-1 flex-1">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="h-8 rounded-lg bg-gray-100 dark:bg-gray-800/60 animate-pulse" />
                 ))}
               </div>
             ) : error ? (
-              <div className="text-[10px] text-red-600 dark:text-red-400">{error}</div>
+              <div className="text-[10px] text-red-600 dark:text-red-400 flex-1">{error}</div>
             ) : (
-              <div className="h-[180px] overflow-y-auto overflow-x-hidden pr-1 no-scrollbar">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 no-scrollbar max-h-[120px]">
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800/60">
                   {projects.map((p) => (
                     <li key={p.id}>
@@ -195,6 +251,11 @@ export default function PublishersHelpCarousel({ metrics }: PublishersHelpCarous
                     </li>
                   ))}
                 </ul>
+                {projects.length > 2 && (
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 text-center py-1 mt-1 border-t border-gray-100 dark:border-gray-800/60">
+                    Scroll to see {projects.length - 2} more project{projects.length - 2 !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
             )}
           </div>
