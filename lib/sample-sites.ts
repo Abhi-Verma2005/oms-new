@@ -159,43 +159,63 @@ function buildFilterQuery(filters: APIFilters): string {
   }
   
   if (filters.niche) {
-    conditions.push(`"niche" = "${filters.niche}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedNiche = filters.niche.replace(/'/g, "''");
+    conditions.push(`"niche" = "${escapedNiche}"`);
   }
   
   if (filters.language) {
-    conditions.push(`"language" = "${filters.language}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedLanguage = filters.language.replace(/'/g, "''");
+    conditions.push(`"language" = "${escapedLanguage}"`);
   }
   
   if (filters.webCountry) {
-    conditions.push(`"webCountry" = "${filters.webCountry}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedWebCountry = filters.webCountry.replace(/'/g, "''");
+    conditions.push(`"webCountry" = "${escapedWebCountry}"`);
   }
   
   if (filters.contentCategories) {
-    conditions.push(`"contentCategories" = "${filters.contentCategories}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedContentCategories = filters.contentCategories.replace(/'/g, "''");
+    conditions.push(`"contentCategories" = "${escapedContentCategories}"`);
   }
   
   if (filters.priceCategory) {
-    conditions.push(`"priceCategory" = "${filters.priceCategory}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedPriceCategory = filters.priceCategory.replace(/'/g, "''");
+    conditions.push(`"priceCategory" = "${escapedPriceCategory}"`);
   }
   
   if (filters.linkAttribute) {
-    conditions.push(`"linkAttribute" = "${filters.linkAttribute}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedLinkAttribute = filters.linkAttribute.replace(/'/g, "''");
+    conditions.push(`"linkAttribute" = "${escapedLinkAttribute}"`);
   }
   
   if (filters.websiteStatus) {
-    conditions.push(`"websiteStatus" = "${filters.websiteStatus}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedWebsiteStatus = filters.websiteStatus.replace(/'/g, "''");
+    conditions.push(`"websiteStatus" = "${escapedWebsiteStatus}"`);
   }
   
   if (filters.turnAroundTime) {
-    conditions.push(`"turnAroundTime" = "${filters.turnAroundTime}"`);
+    // Escape single quotes to prevent SQL injection
+    const escapedTurnAroundTime = filters.turnAroundTime.replace(/'/g, "''");
+    conditions.push(`"turnAroundTime" = "${escapedTurnAroundTime}"`);
   }
   
   if (filters.websiteRemark) {
-    conditions.push(`"websiteRemark" LIKE '%${filters.websiteRemark}%'`);
+    // Escape single quotes to prevent SQL injection
+    const escapedRemark = filters.websiteRemark.replace(/'/g, "''");
+    conditions.push(`"websiteRemark" LIKE '%${escapedRemark}%'`);
   }
   
   if (filters.website) {
-    conditions.push(`"website" LIKE '%${filters.website}%'`);
+    // Escape single quotes to prevent SQL injection
+    const escapedWebsite = filters.website.replace(/'/g, "''");
+    conditions.push(`"website" LIKE '%${escapedWebsite}%'`);
   }
   
   return conditions.join(" AND ");

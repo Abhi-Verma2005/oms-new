@@ -744,12 +744,12 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 
   return (
     <>
-      <Card className="mb-4 bg-white dark:bg-gray-800 h-full flex flex-col overflow-hidden">
-        <UICardHeader className="pb-1 flex-shrink-0">
-          <UICardTitle className="text-base">Filters</UICardTitle>
+      <Card className="mb-3 sm:mb-4 bg-white dark:bg-gray-800 h-full flex flex-col overflow-hidden">
+        <UICardHeader className="pb-1 flex-shrink-0 px-3 sm:px-6">
+          <UICardTitle className="text-sm sm:text-base">Filters</UICardTitle>
         </UICardHeader>
-        <CardContent className="pt-1 flex-1 flex flex-col overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3.5 gap-3 flex-shrink-0">
+        <CardContent className="pt-1 flex-1 flex flex-col overflow-hidden px-3 sm:px-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-3.5 gap-2 sm:gap-3 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
           <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
@@ -768,29 +768,29 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
           </Select>
           {/* Save as view */}
           <Input className="h-8 text-xs w-full sm:w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
-          <div className="flex flex-wrap gap-2">
-            <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-3 flex-1 sm:flex-none" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
               <CheckCircle className="w-3 h-3" />
               Save
             </Button>
-            <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-3 flex-1 sm:flex-none" onClick={() => setFilters(defaultFilters)} disabled={loading}>
+            <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" onClick={() => setFilters(defaultFilters)} disabled={loading}>
               <RefreshCw className="w-3 h-3" />
               Refresh
             </Button>
-            <Button className="h-8 text-xs px-3 flex-1 sm:flex-none bg-[#755FF8] text-white hover:bg-[#755FF8]/80" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+            <Button className="h-8 text-xs px-2 sm:px-3 flex-1 sm:flex-none bg-[#755FF8] text-white hover:bg-[#755FF8]/80" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
             </div>
           </div>
         </div>
 
       {/* Grouped filter pebbles - takes remaining space */}
-      <div className="space-y-3 flex-1 overflow-hidden">
+      <div className="space-y-2 sm:space-y-3 flex-1 overflow-hidden">
           {Object.entries(groupedPebbles).map(([category, pebbles]) => (
-            <div key={category} className="space-y-2">
+            <div key={category} className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                 {categoryIcons[category as keyof typeof categoryIcons]}
                 <span className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</span>
               </div>
-              <div className="flex flex-wrap gap-2 overflow-hidden">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 overflow-hidden">
                 {pebbles.map(p => (
                   <span key={p.key}>{pebble(p.label, p.key)}</span>
                 ))}
@@ -800,9 +800,9 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
       </div>
 
       {activeChips.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2 flex-shrink-0">
+        <div className="mt-2 sm:mt-3 flex flex-wrap gap-1.5 sm:gap-2 flex-shrink-0">
           {activeChips.map(chip => (
-            <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600 hover:bg-violet-700 transition-all duration-200 hover:scale-105">
+            <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-1.5 rounded-full px-2 sm:px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600 hover:bg-violet-700 transition-all duration-200 hover:scale-105">
               <span>{chip.label}</span>
               <span onClick={(e) => { e.stopPropagation(); clearKey(chip.key) }} aria-label="Remove" className="opacity-70 hover:opacity-100">✕</span>
             </button>
@@ -814,7 +814,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 
       <ModalBasic title={activeKey ? `Filter: ${String(activeKey)}` : 'Filter'} isOpen={modalOpen} setIsOpen={setModalOpen}>
         {renderModalBody()}
-        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex flex-col sm:flex-row justify-end gap-2">
+        <div className="px-4 sm:px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex flex-col sm:flex-row justify-end gap-2">
           <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={loading} className="w-full sm:w-auto">Cancel</Button>
           <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
         </div>
@@ -1347,18 +1347,18 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       {/* Sticky Header Container */}
       <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         {/* Controls Row */}
-        <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <header className="px-3 sm:px-4 py-2 sm:py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight flex items-center gap-2">
             <span>All Publishers</span>
             <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full text-[11px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
               {sites.length}
             </span>
           </h2>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2">
             <div className="flex items-center gap-1.5">
               <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1.5 px-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1 px-1.5 sm:px-2">
                   <span className="hidden sm:inline">Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
                   <span className="sm:hidden">{rowLevel === 1 ? 'S' : rowLevel === 2 ? 'M' : rowLevel === 3 ? 'L' : 'XL'}</span>
                   <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -1388,7 +1388,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs inline-flex items-center gap-1.5 px-2"
+                className="h-7 text-xs inline-flex items-center gap-1 px-1.5 sm:px-2"
                 onClick={() => setColumnsOpen(o => !o)}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -1438,7 +1438,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Sort by</span>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                 <SelectTrigger className="h-8 w-full sm:w-44 text-xs">
@@ -1596,25 +1596,25 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       )}
       
       {/* Unified scroll container for header + body to keep horizontal sync */}
-      <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0">
-        <Table className="dark:text-gray-300 w-full min-w-[600px] sm:min-w-[800px]">
+      <div className="overflow-x-auto no-scrollbar -mx-3 sm:-mx-4 md:mx-0">
+        <Table className="dark:text-gray-300 w-full min-w-[500px] sm:min-w-[600px] md:min-w-[800px]">
           <UITableHeader>
             <TableRow className="text-xs sm:text-sm font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
               {columnDefs.map(col => (
                 visibleColumns.includes(col.key) ? (
-                  <TableHead key={col.key} className={`px-2 sm:px-5 py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
-                    <div className="inline-flex items-center gap-2">
-                      <span>{col.label}</span>
+                  <TableHead key={col.key} className={`px-1.5 sm:px-2 md:px-5 py-2 sm:py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
+                    <div className="inline-flex items-center gap-1 sm:gap-2">
+                      <span className="text-xs">{col.label}</span>
                       {col.key === 'trend' && (
-                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover</span>
+                        <span className="px-1 sm:px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover</span>
                       )}
                     </div>
                   </TableHead>
                 ) : null
               ))}
               {/* Cart column always visible */}
-              <TableHead className="px-2 sm:px-5 py-3 whitespace-nowrap text-center min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem] sticky right-0 z-20 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.06)]">
-                <div className="inline-flex items-center gap-2">
+              <TableHead className="px-1.5 sm:px-2 md:px-5 py-2 sm:py-3 whitespace-nowrap text-center min-w-[5rem] w-[6rem] sm:w-[7rem] md:w-[9rem] max-w-[10rem] sticky right-0 z-20 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.06)]">
+                <div className="inline-flex items-center gap-1 sm:gap-2">
                   <span className="text-xs sm:text-sm">Cart</span>
                 </div>
               </TableHead>
@@ -1622,20 +1622,20 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           </UITableHeader>
           <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {sites.length === 0 ? (
-              <TableRow><TableCell className="px-2 sm:px-5 py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
+              <TableRow><TableCell className="px-1.5 sm:px-2 md:px-5 py-3 sm:py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
             ) : sites.map(s => (
               <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
                   visibleColumns.includes(col.key) ? (
                     <TableCell key={col.key}
-                      className={`px-2 sm:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}
+                      className={`px-1.5 sm:px-2 md:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}
                     >
                       {renderCell(col.key, s)}
                 </TableCell>
                   ) : null
                 ))}
                 {/* Cart column always visible */}
-                <TableCell className={`px-2 sm:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem] sticky right-0 z-10 bg-gray-50 dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.04)]`}>
+                <TableCell className={`px-1.5 sm:px-2 md:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[5rem] w-[6rem] sm:w-[7rem] md:w-[9rem] max-w-[10rem] sticky right-0 z-10 bg-gray-50 dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.04)]`}>
                   {renderCell('cart', s)}
                 </TableCell>
                     </TableRow>
@@ -1644,12 +1644,12 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         </Table>
       </div>
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-              <DialogContent className="max-w-7xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl bg-white dark:bg-gray-950 p-0 overflow-hidden text-[13px]">
-                <DialogHeader className="sticky top-0 z-20 px-6 py-5 border-b border-gray-200/80 dark:border-white/10 bg-gray-50/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
-                  <DialogTitle className="flex items-start justify-between gap-4">
+              <DialogContent className="max-w-7xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl bg-white dark:bg-gray-950 p-0 overflow-hidden text-[12px] sm:text-[13px]">
+                <DialogHeader className="sticky top-0 z-20 px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200/80 dark:border-white/10 bg-gray-50/90 dark:bg-gray-950/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur">
+                  <DialogTitle className="flex items-start justify-between gap-3 sm:gap-4">
                     {selectedSite ? (
                       <div className="min-w-0">
-                        <div className="text-lg sm:text-xl font-semibold tracking-tight truncate"></div>
+                        <div className="text-base sm:text-lg md:text-xl font-semibold tracking-tight truncate"></div>
                       </div>
                     ) : (
                       <span>Site Details</span>
@@ -2239,14 +2239,14 @@ export default function PublishersClient() {
   }, [searchQuery, results.length, loading, filters])
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
-        <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-4 gap-4">
-          <h1 className="text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
+        <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-3 sm:mb-4 gap-3 sm:gap-4">
+          <h1 className="text-lg sm:text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
         </div>
 
         {/* Project Context moved into sidebar (PublishersHelpCarousel) */}
 
-        <div className="grid grid-cols-1 mb-10 lg:grid-cols-12 lg:gap-8 items-stretch min-h-[400px]">
+        <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[300px] sm:min-h-[400px]">
           <div className="lg:col-span-7 xl:col-span-7 flex flex-col">
             <div className="flex-1">
               <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />

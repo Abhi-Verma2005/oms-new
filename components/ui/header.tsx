@@ -124,20 +124,20 @@ export default function Header({
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 before:absolute before:inset-0 before:backdrop-blur-2xl before:backdrop-saturate-150 before:bg-white/40 dark:before:bg-gray-900/40 before:ring-1 before:ring-white/20 dark:before:ring-white/10 before:-z-10 ${variant === 'v2' || variant === 'v3' ? 'after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'shadow-sm border-b border-gray-200/50 dark:border-gray-700/50'} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className={`flex items-center justify-between h-16 ${variant === 'v2' || variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60'}`}>
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className={`flex items-center justify-between h-14 sm:h-16 ${variant === 'v2' || variant === 'v3' ? '' : 'lg:border-b border-gray-200 dark:border-gray-700/60'}`}>
 
           {/* Header: Left side */}
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             {/* Mobile menu button */}
             {isClient && (
               <button
                 data-mobile-menu=""
-                className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
+                className="lg:hidden inline-flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-700/60 active:scale-95 transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800 shadow-xs"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Open mobile menu"
               >
-              <span className="sr-only">Open mobile menu</span>
-                <svg className="w-6 h-6 fill-current transition-transform duration-150 will-change-transform group-active:scale-90" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 fill-current transition-transform duration-150 will-change-transform group-active:scale-90" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <rect x="4" y="5" width="16" height="2" />
                   <rect x="4" y="11" width="16" height="2" />
                   <rect x="4" y="17" width="16" height="2" />
@@ -146,10 +146,12 @@ export default function Header({
             )}
 
             {/* Logo */}
-            <Logo href='/'/>
+            <div className="flex-shrink-0">
+              <Logo href='/'/>
+            </div>
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
-            <nav className="hidden lg:flex items-center space-x-1 ml-6 whitespace-nowrap">
+            <nav className="hidden lg:flex items-center space-x-1 ml-4 sm:ml-6 whitespace-nowrap">
               {/* Pages dropdown (hover-sticky) */}
               <div
                 className="relative mr-1"
@@ -257,16 +259,16 @@ export default function Header({
           </div>
 
           {/* Header: Right side */}
-          <div className="flex items-center space-x-2 sm:space-x-3 relative z-30">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3 relative z-30">
             {/* Credits Display */}
             <div className="relative group">
               <button
                 onMouseEnter={() => setShowCreditHint(true)}
                 onMouseLeave={() => setShowCreditHint(false)}
-                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-violet-300 text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-1 sm:gap-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border border-violet-300 text-xs sm:text-sm text-gray-700 hover:bg-violet-50 dark:border-violet-500/40 dark:text-gray-200 dark:hover:bg-violet-500/10 transition-colors"
                 title="Daily credits"
               >
-                <Coins className="w-4 h-4" />
+                <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="font-medium">{credits ?? '—'}</span>
               </button>
               {showCreditHint && (
@@ -286,11 +288,11 @@ export default function Header({
                 href="https://cal.com/emiactech/30min" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors"
+                className="hidden sm:inline-flex items-center gap-1 px-2 py-1 sm:gap-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border border-emerald-400/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors"
                 title="Book a call"
               >
-                <Phone className="w-4 h-4" />
-                <span className="font-medium">Call</span>
+                <Phone className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="font-medium text-xs sm:text-sm">Call</span>
               </a>
               {/* Hover tooltip */}
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
@@ -300,12 +302,12 @@ export default function Header({
             </div>
             <div className="relative group">
               <button
-                className={`w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
+                className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full ${searchModalOpen && 'bg-gray-200 dark:bg-gray-800'}`}
                 onClick={() => { setSearchModalOpen(true) }}
                 title="Search"
               >
                 <span className="sr-only">Search</span>
-                <Search className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
+                <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
               
               <SearchModal isOpen={searchModalOpen} setIsOpen={setSearchModalOpen} />
@@ -314,12 +316,12 @@ export default function Header({
             {/* AI Sidebar Button */}
             <div className="relative group">
               <button
-                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full"
+                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full"
                 onClick={toggleSidebar}
                 title="AI Assistant (⌘K)"
               >
                 <span className="sr-only">AI Assistant</span>
-                <MessageCircle className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
+                <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
               
               {/* Keyboard shortcut hint (positioned below to avoid browser chrome clipping) */}
@@ -332,11 +334,11 @@ export default function Header({
             <div className="relative">
               <button
                 onClick={toggleCart}
-                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full relative"
+                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full relative"
                 title="Shopping Cart"
               >
                 <span className="sr-only">Shopping Cart</span>
-                <ShoppingCart className="h-4 w-4 text-gray-500/80 dark:text-gray-400/80" />
+                <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
               {/* Cart Modal positioned relative to this button */}
               <CartModal />
@@ -355,73 +357,73 @@ export default function Header({
       
       {/* Mobile Menu */}
       {isClient && mobileMenuOpen && (
-        <div data-mobile-menu="" className="lg:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700/60 shadow-lg z-40">
-          <div className="px-4 py-4 space-y-2">
+        <div data-mobile-menu="" className="lg:hidden absolute top-full left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700/60 shadow-lg z-40">
+          <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-2 max-h-[calc(100vh-4rem)] overflow-y-auto">
             <div className="space-y-1">
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-1">
                 Pages
               </div>
-              <Link href="/dashboard" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/dashboard" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Dashboard
               </Link>
-              <Link href="/publishers" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/publishers" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Publishers
               </Link>
-              <Link href="/orders" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/orders" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Orders
               </Link>
-              <Link href="/ecommerce/invoices" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/ecommerce/invoices" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Invoices
               </Link>
-              <Link href="/ecommerce/shop-2" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
-                Shop 2
+              <Link href="/ecommerce/shop-2" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
+                Shop
               </Link>
-              <Link href="/ecommerce/link-building-packages" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/ecommerce/link-building-packages" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Link Building Packages
               </Link>
-              <Link href="/inbox" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/inbox" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Inbox
               </Link>
-              <Link href="/calendar" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/calendar" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Calendar
               </Link>
             </div>
 
             <div className="space-y-1">
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-1">
                 Settings
               </div>
-              <Link href="/settings/account" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/settings/account" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 My Account
               </Link>
-              <Link href="/settings/notifications" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/settings/notifications" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 My Notifications
               </Link>
-              <Link href="/settings/apps" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/settings/apps" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Connected Apps
               </Link>
-              <Link href="/settings/plans" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/settings/plans" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Plans
               </Link>
-              <Link href="/settings/billing" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/settings/billing" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Billing & Invoices
               </Link>
-              <Link href="/settings/feedback" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/settings/feedback" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Give Feedback
               </Link>
             </div>
 
             <div className="space-y-1">
-              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-1">
                 Utility
               </div>
-              <Link href="/utility/changelog" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/utility/changelog" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Changelog
               </Link>
-              <Link href="/utility/roadmap" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/utility/roadmap" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Roadmap
               </Link>
-              <Link href="/utility/faqs" className="block px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg">
+              <Link href="/utility/faqs" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 FAQs
               </Link>
             </div>
