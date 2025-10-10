@@ -14,15 +14,15 @@ function ProductsGrid({ productsProp }: { productsProp: Product[] }) {
   return (
     <>
       {productsProp.map((p: any) => (
-        <div key={p.id} className="col-span-12 sm:col-span-6 xl:col-span-4">
-          <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4 flex flex-col">
+        <div key={p.id} className="w-full min-w-0">
+          <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-3 sm:p-4 flex flex-col min-w-0">
             <div className="text-xs text-gray-500 mb-1">{p.badge || 'Package'}</div>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{p.header}</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">{p.header}</h3>
             {p.subheader && <div className="text-sm text-gray-500 dark:text-gray-400">{p.subheader}</div>}
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-1.5 sm:space-y-2">
               {(p.features || []).slice(0,6).map((f: any) => (
-                <div key={f.id} className="text-sm text-gray-700 dark:text-gray-300 flex items-start">
-                  <span className="inline-block mt-1 mr-2 text-emerald-500">✓</span>
+                <div key={f.id} className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 flex items-start">
+                  <span className="inline-block mt-0.5 sm:mt-1 mr-1.5 sm:mr-2 text-emerald-500">✓</span>
                   <span><span className="font-medium">{f.title}</span>{f.value ? `: ${f.value}` : ''}</span>
                 </div>
               ))}
@@ -139,17 +139,17 @@ export default function Shop2() {
   const pageItems = filtered.slice(startIdx, endIdx)
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 w-full max-w-[96rem] mx-auto">
       {/* Page header */}
-      <div className="mb-5">
+      <div className="mb-4 sm:mb-5">
 
         {/* Title */}
-        <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Find the right product for you</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Find the right product for you</h1>
 
       </div>
 
       {/* Page content */}
-      <div className="flex flex-col space-y-10 sm:flex-row sm:space-x-6 sm:space-y-0 md:flex-col md:space-x-0 md:space-y-10 xl:flex-row xl:space-x-6 xl:space-y-0 mt-9">
+      <div className="flex flex-col space-y-6 lg:flex-row lg:space-x-6 lg:space-y-0 mt-6 sm:mt-9">
 
         {/* Sidebar */}
         <ShopSidebar 
@@ -165,36 +165,36 @@ export default function Shop2() {
         <div>
 
           {/* Filters */}
-          <div className="mb-5">
+          <div className="mb-4 sm:mb-5">
             <ul className="flex flex-wrap -m-1">
               <li className="m-1">
-                <button onClick={() => { clearFilters() }} className="inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border border-transparent shadow-sm bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-800 transition">View All</button>
+                <button onClick={() => { clearFilters() }} className="inline-flex items-center justify-center text-xs sm:text-sm font-medium leading-5 rounded-full px-2 py-1 sm:px-3 border border-transparent shadow-sm bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-800 transition">View All</button>
               </li>
               <li className="m-1">
-                <button onClick={() => toggleFilter('featured')} className={`inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border shadow-sm transition ${sortKey==='featured' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Featured</button>
+                <button onClick={() => toggleFilter('featured')} className={`inline-flex items-center justify-center text-xs sm:text-sm font-medium leading-5 rounded-full px-2 py-1 sm:px-3 border shadow-sm transition ${sortKey==='featured' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Featured</button>
               </li>
               <li className="m-1">
-                <button onClick={() => toggleFilter('newest')} className={`inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border shadow-sm transition ${sortKey==='newest' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Newest</button>
+                <button onClick={() => toggleFilter('newest')} className={`inline-flex items-center justify-center text-xs sm:text-sm font-medium leading-5 rounded-full px-2 py-1 sm:px-3 border shadow-sm transition ${sortKey==='newest' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Newest</button>
               </li>
               <li className="m-1">
-                <button onClick={() => toggleFilter('price-asc')} className={`inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border shadow-sm transition ${sortKey==='price-asc' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Price - Low To High</button>
+                <button onClick={() => toggleFilter('price-asc')} className={`inline-flex items-center justify-center text-xs sm:text-sm font-medium leading-5 rounded-full px-2 py-1 sm:px-3 border shadow-sm transition ${sortKey==='price-asc' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Price - Low To High</button>
               </li>
               <li className="m-1">
-                <button onClick={() => toggleFilter('price-desc')} className={`inline-flex items-center justify-center text-sm font-medium leading-5 rounded-full px-3 py-1 border shadow-sm transition ${sortKey==='price-desc' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Price - High to Low</button>
+                <button onClick={() => toggleFilter('price-desc')} className={`inline-flex items-center justify-center text-xs sm:text-sm font-medium leading-5 rounded-full px-2 py-1 sm:px-3 border shadow-sm transition ${sortKey==='price-desc' ? 'border-gray-900 dark:border-gray-100 bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-800' : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>Price - High to Low</button>
               </li>
             </ul>
           </div>
 
-          <div className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">Packages</div>
+          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic mb-3 sm:mb-4">Packages</div>
 
           {/* Cards 1 (Video Courses) */}
           <div>
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 min-w-0">
               {loading && (
                 <>
                   {Array.from({ length: 12 }).map((_, idx) => (
-                    <div key={idx} className="col-span-12 sm:col-span-6 xl:col-span-4">
-                      <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4 flex flex-col">
+                    <div key={idx} className="w-full min-w-0">
+                      <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-3 sm:p-4 flex flex-col min-w-0">
                         <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
                         <div className="h-5 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
                         <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3" />
@@ -223,7 +223,7 @@ export default function Shop2() {
           </div>
 
           {/* Pagination */}
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <PaginationClassic 
               page={page}
               perPage={perPage}
@@ -243,11 +243,11 @@ export default function Shop2() {
 function CardActions({ p }: { p: any }) {
   const priceDollars = (p.finalPricePerMonthCents ?? p.pricePerMonthCents ?? 0) / 100
   return (
-    <div className="mt-auto pt-4 flex items-center justify-between gap-2">
-      <div className="text-sm text-gray-600 dark:text-gray-300">{p.discountPercent ? `${p.discountPercent}% Off` : ''}</div>
-      <div className="flex items-center gap-2">
-  <AddToCartProductButton id={p.id} name={p.header} priceDollars={priceDollars} openOnAdd={false} />
-        <Link href={`/ecommerce/product/${p.slug}`} className="btn bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">View</Link>
+    <div className="mt-auto pt-3 sm:pt-4 flex flex-col gap-2">
+      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{p.discountPercent ? `${p.discountPercent}% Off` : ''}</div>
+      <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2">
+        <AddToCartProductButton id={p.id} name={p.header} priceDollars={priceDollars} openOnAdd={false} className="btn bg-violet-600 hover:bg-violet-700 text-white text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-1 sm:flex-none min-w-0" />
+        <Link href={`/ecommerce/product/${p.slug}`} className="btn bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 whitespace-nowrap flex-1 sm:flex-none min-w-0">View</Link>
       </div>
     </div>
   )

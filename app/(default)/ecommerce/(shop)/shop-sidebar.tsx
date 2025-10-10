@@ -26,12 +26,12 @@ export default function ShopSidebar({
 
   return (
     <div>
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-5 min-w-[15rem]">
-        <div className="grid md:grid-cols-2 xl:grid-cols-1 gap-6">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-3 sm:p-4 md:p-5 min-w-[12rem] sm:min-w-[15rem] lg:min-w-[18rem] xl:min-w-[20rem]">
+        <div className="grid lg:grid-cols-1 xl:grid-cols-1 gap-4 sm:gap-6">
           {/* Group 1 */}
           <div>
-            <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold mb-3">Discover</div>
-            <ul className="text-sm font-medium space-y-2">
+            <div className="text-xs sm:text-sm text-gray-800 dark:text-gray-100 font-semibold mb-2 sm:mb-3">Discover</div>
+            <ul className="text-xs sm:text-sm font-medium space-y-1.5 sm:space-y-2">
               <li>
                 <button onClick={onClearTags} className="text-violet-500">View All</button>
               </li>
@@ -49,10 +49,10 @@ export default function ShopSidebar({
           </div>
           {/* Price Range */}
           <div>
-            <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold mb-3">Price Range</div>
+            <div className="text-xs sm:text-sm text-gray-800 dark:text-gray-100 font-semibold mb-2 sm:mb-3">Price Range</div>
             <label className="sr-only">Price</label>
             <select
-              className="form-select w-full"
+              className="form-select w-full text-xs sm:text-sm"
               value={priceRange ?? ''}
               onChange={(e) => onChangePriceRange((e.target.value || null) as PriceRange)}
             >
@@ -65,8 +65,8 @@ export default function ShopSidebar({
           </div>
           {/* Group 3 */}
           <div>
-            <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold mb-3">Multi Select</div>
-            <ul className="space-y-2">
+            <div className="text-xs sm:text-sm text-gray-800 dark:text-gray-100 font-semibold mb-2 sm:mb-3">Multi Select</div>
+            <ul className="space-y-1.5 sm:space-y-2">
               {allTags.map(tag => (
                 <li key={tag}>
                   <label className="flex items-center">
@@ -76,7 +76,7 @@ export default function ShopSidebar({
                       checked={selectedTags.includes(tag)}
                       onChange={() => onToggleTag(tag)}
                     />
-                    <span className="text-sm text-gray-600 dark:text-gray-300 font-medium ml-2">{tag}</span>
+                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium ml-2">{tag}</span>
                   </label>
                 </li>
               ))}
@@ -84,8 +84,8 @@ export default function ShopSidebar({
           </div>
           {/* Group 4 */}
           <div>
-            <div className="text-sm text-gray-800 dark:text-gray-100 font-semibold mb-3">Sort By Rating</div>
-            <ul className="space-y-2">
+            <div className="text-xs sm:text-sm text-gray-800 dark:text-gray-100 font-semibold mb-2 sm:mb-3">Sort By Rating</div>
+            <ul className="space-y-1.5 sm:space-y-2">
               <li>
                 {/* Rating button */}
                 <button className="flex items-center space-x-2 mr-2">

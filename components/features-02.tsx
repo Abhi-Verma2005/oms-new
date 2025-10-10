@@ -8,24 +8,24 @@ import FeatureImg03 from '@/public/images/applications-image-03.jpg'
 
 export default function Features02() {
   return (
-    <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+    <section className="relative py-12 sm:py-16 lg:py-20 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-20">
 
       {/* Particles animation */}
-      <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-80 h-80 -mt-24 -ml-32">
-        <Particles className="absolute inset-0 -z-10" quantity={6} staticity={30} />    
+      <div className="absolute left-1/2 -translate-x-1/2 top-0 -z-10 w-60 sm:w-80 h-60 sm:h-80 -mt-16 sm:-mt-24 -ml-16 sm:-ml-32">
+        <Particles className="absolute inset-0 -z-10" quantity={4} staticity={30} />    
       </div>
 
       <div className="max-w-6xl mx-auto">
-        <div className="pt-16 md:pt-32">
+        <div className="pt-8 sm:pt-12 md:pt-16 lg:pt-32">
 
           {/* Section header */}
-          <div className="max-w-3xl mx-auto text-center pb-12 md:pb-20">
-            <h2 className="text-4xl font-bold mb-6">
+          <div className="max-w-3xl mx-auto text-center pb-8 sm:pb-12 md:pb-20">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
               <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
                 Faster. Smarter.
               </span>
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300">There are many variations available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable.</p>
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 px-4 sm:px-0">There are many variations available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable.</p>
           </div>
 
           {/* Highlighted boxes */}
@@ -43,7 +43,7 @@ export default function Features02() {
               </svg>
             </div>
             {/* Grid */}
-            <Highlighter className="grid md:grid-cols-12 gap-6 group">
+            <Highlighter className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 group">
               {/* Box #1 */}
               <div className="md:col-span-12" data-aos="fade-down">
                 <HighlighterItem>
@@ -67,11 +67,11 @@ export default function Features02() {
                         <div className="absolute w-1/4 h-1/4 translate-z-0 bg-purple-400 rounded-full blur-[40px]" />
                       </div>
                       {/* Text */}
-                      <div className="md:max-w-[480px] shrink-0 order-1 md:order-none p-6 pt-0 md:p-8 md:pr-0">
-                        <div className="mb-5">
+                      <div className="md:max-w-[480px] shrink-0 order-1 md:order-none p-4 sm:p-6 pt-0 md:p-8 md:pr-0">
+                        <div className="mb-4 sm:mb-5">
                           <div>
-                            <h3 className="inline-flex text-xl font-bold text-gray-100 dark:text-gray-100 pb-1">Optimized for security</h3>
-                            <p className="text-gray-400 dark:text-gray-400">Optimize for user experience and privacy. Use social login integrations, lower user friction, incorporate rich user profiling, and facilitate more transactions.</p>
+                            <h3 className="inline-flex text-lg sm:text-xl font-bold text-gray-100 dark:text-gray-100 pb-1">Optimized for security</h3>
+                            <p className="text-sm sm:text-base text-gray-400 dark:text-gray-400 leading-relaxed">Optimize for user experience and privacy. Use social login integrations, lower user friction, incorporate rich user profiling, and facilitate more transactions.</p>
                           </div>
                         </div>
                         <div>
@@ -83,8 +83,8 @@ export default function Features02() {
                         </div>
                       </div>
                       {/* Image */}
-                      <div className="relative w-full h-64 md:h-auto overflow-hidden">
-                        <Image className="absolute bottom-0 left-1/2 -translate-x-1/2 mx-auto max-w-none md:relative md:left-0 md:translate-x-0" src={FeatureImg01} width="504" height="400" alt="Feature 01" />
+                      <div className="relative w-full h-48 sm:h-56 md:h-auto overflow-hidden">
+                        <Image className="absolute bottom-0 left-1/2 -translate-x-1/2 mx-auto max-w-none md:relative md:left-0 md:translate-x-0 object-cover w-full h-full" src={FeatureImg01} width="504" height="400" alt="Feature 01" />
                       </div>
                     </div>
                   </div>
@@ -100,15 +100,15 @@ export default function Features02() {
                         <div className="absolute inset-0 translate-z-0 bg-gray-800 rounded-full blur-[80px]" />
                       </div>
                       {/* Text */}
-                      <div className="md:max-w-[480px] shrink-0 order-1 md:order-none p-6 pt-0 md:p-8">
+                      <div className="md:max-w-[480px] shrink-0 order-1 md:order-none p-4 sm:p-6 pt-0 md:p-8">
                         <div>
-                          <h3 className="inline-flex text-xl font-bold text-gray-100 dark:text-gray-100 pb-1">Extensibility</h3>
-                          <p className="text-gray-400 dark:text-gray-400">Your login box must find the right balance between user convenience, privacy and security.</p>
+                          <h3 className="inline-flex text-lg sm:text-xl font-bold text-gray-100 dark:text-gray-100 pb-1">Extensibility</h3>
+                          <p className="text-sm sm:text-base text-gray-400 dark:text-gray-400 leading-relaxed">Your login box must find the right balance between user convenience, privacy and security.</p>
                         </div>
                       </div>
                       {/* Image */}
-                      <div className="relative w-full h-64 md:h-auto overflow-hidden md:pb-8">
-                        <Image className="absolute bottom-0 left-1/2 -translate-x-1/2 mx-auto max-w-none md:max-w-full md:relative md:left-0 md:translate-x-0" src={FeatureImg02} width={536} height={230} alt="Feature 02" />
+                      <div className="relative w-full h-48 sm:h-56 md:h-auto overflow-hidden md:pb-8">
+                        <Image className="absolute bottom-0 left-1/2 -translate-x-1/2 mx-auto max-w-none md:max-w-full md:relative md:left-0 md:translate-x-0 object-cover w-full h-full" src={FeatureImg02} width={536} height={230} alt="Feature 02" />
                       </div>
                     </div>
                   </div>
@@ -124,15 +124,15 @@ export default function Features02() {
                         <div className="absolute inset-0 translate-z-0 bg-gray-800 rounded-full blur-[80px]" />
                       </div>
                       {/* Text */}
-                      <div className="md:max-w-[480px] shrink-0 order-1 md:order-none p-6 pt-0 md:p-8">
+                      <div className="md:max-w-[480px] shrink-0 order-1 md:order-none p-4 sm:p-6 pt-0 md:p-8">
                         <div>
-                          <h3 className="inline-flex text-xl font-bold text-gray-100 dark:text-gray-100 pb-1">Infinite options</h3>
-                          <p className="text-gray-400 dark:text-gray-400">Quickly apply filters to refine your issues lists and create custom views.</p>
+                          <h3 className="inline-flex text-lg sm:text-xl font-bold text-gray-100 dark:text-gray-100 pb-1">Infinite options</h3>
+                          <p className="text-sm sm:text-base text-gray-400 dark:text-gray-400 leading-relaxed">Quickly apply filters to refine your issues lists and create custom views.</p>
                         </div>
                       </div>
                       {/* Image */}
-                      <div className="relative w-full h-64 md:h-auto overflow-hidden md:pb-8">
-                        <Image className="absolute bottom-0 left-1/2 -translate-x-1/2 mx-auto max-w-none md:max-w-full md:relative md:left-0 md:translate-x-0" src={FeatureImg03} width={230} height={230} alt="Feature 03" />
+                      <div className="relative w-full h-48 sm:h-56 md:h-auto overflow-hidden md:pb-8">
+                        <Image className="absolute bottom-0 left-1/2 -translate-x-1/2 mx-auto max-w-none md:max-w-full md:relative md:left-0 md:translate-x-0 object-cover w-full h-full" src={FeatureImg03} width={230} height={230} alt="Feature 03" />
                       </div>
                     </div>
                   </div>
@@ -142,7 +142,7 @@ export default function Features02() {
           </div>
 
           {/* Features list */}
-          <div className="grid md:grid-cols-3 gap-8 md:gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 md:gap-12">
             {/* Feature */}
             <div>
               <div className="flex items-center space-x-2 mb-1">
