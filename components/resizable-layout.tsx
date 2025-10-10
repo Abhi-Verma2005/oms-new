@@ -75,7 +75,7 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
   return (
     <ResizableLayoutContext.Provider value={contextValue}>
       {!isSidebarOpen ? (
-        <div className="h-[100dvh] overflow-y-auto bg-gray-50 dark:bg-[#1f2230]">
+        <div className="h-[100dvh] overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
           {children}
         </div>
       ) : (
@@ -83,7 +83,7 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
           <PanelGroup direction="horizontal" className="h-full">
             {/* Main Content */}
             <Panel defaultSize={mainWidth} minSize={20} maxSize={80}>
-              <div className="h-full overflow-y-auto bg-gray-50 dark:bg-[#1f2230]">
+              <div className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
                 {children}
               </div>
             </Panel>
@@ -107,7 +107,7 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
 export function ResizableLayout({ children }: ResizableLayoutProps) {
   return (
     <Suspense fallback={
-      <div className="h-[100dvh] overflow-y-auto bg-gray-50 dark:bg-[#1f2230]">
+      <div className="h-[100dvh] overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
         {children}
       </div>
     }>

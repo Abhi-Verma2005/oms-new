@@ -37,28 +37,7 @@ function OrdersList() {
             // Open the sidebar to show AI chat
             openSidebar()
             
-            // Add user message to chat context
-            addMessage({
-              content: "I have completed the payment successfully. Please show me my orders.",
-              role: 'user',
-              timestamp: new Date()
-            })
-            
-            // Send automatic message to AI chat
-            fetch('/api/ai-chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                message: "I have completed the payment successfully. Please show me my orders.",
-                messages: [],
-                currentUrl: window.location.href,
-                autoMessage: true
-              })
-            }).catch(error => {
-              console.warn('Failed to send automatic AI message:', error)
-            })
-            
-            // Clear the payment success flag
+            // Clear the payment success flag (message already sent from checkout)
             sessionStorage.removeItem('recentPaymentSuccess')
           }
         }
