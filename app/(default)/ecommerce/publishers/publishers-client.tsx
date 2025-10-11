@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import ModalBasic from "@/components/modal-basic"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -370,33 +371,77 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
 
   const pebble = (label: string, key: keyof Filters) => {
     const hasValue = filters[key] !== undefined && filters[key] !== "" && filters[key] !== null
+    const [isHovered, setIsHovered] = useState(false)
+    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+    const buttonRef = useRef<HTMLButtonElement>(null)
+
+    const updateTooltipPosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect()
+        setTooltipPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 8
+        })
+      }
+    }
+
+    useEffect(() => {
+      if (isHovered) {
+        updateTooltipPosition()
+        const handleScroll = () => updateTooltipPosition()
+        const handleResize = () => updateTooltipPosition()
+        
+        window.addEventListener('scroll', handleScroll, true)
+        window.addEventListener('resize', handleResize)
+        
+        return () => {
+          window.removeEventListener('scroll', handleScroll, true)
+          window.removeEventListener('resize', handleResize)
+        }
+      }
+    }, [isHovered])
+
     return (
-      <div className="relative group inline-block">
-        <button
-          type="button"
-          onClick={() => open(key)}
-          disabled={loading}
-          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-all duration-200 hover:scale-105 ${
-            hasValue 
-              ? "bg-violet-600 text-white border-violet-600 shadow-md" 
-              : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
-          } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-          id={`filter-pebble-${String(key)}`}
-          data-filter-key={String(key)}
-        >
-          {pebbleIconMap[key]}
-          <span>{label}</span>
-          {hasValue ? <span className="ml-0.5 opacity-70">•</span> : null}
-        </button>
-        {/* Tooltip */}
-        {tooltipByKey[key] && (
-          <div className="pointer-events-none absolute left-0 -top-9 ml-1 whitespace-nowrap px-3 py-1.5 text-xs rounded-md bg-gray-900 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-[120]">
+      <>
+        <div className="relative group inline-block">
+          <button
+            ref={buttonRef}
+            type="button"
+            onClick={() => open(key)}
+            disabled={loading}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-all duration-200 hover:scale-105 ${
+              hasValue 
+                ? "bg-violet-600 text-white border-violet-600 shadow-md" 
+                : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
+            } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            id={`filter-pebble-${String(key)}`}
+            data-filter-key={String(key)}
+          >
+            {pebbleIconMap[key]}
+            <span>{label}</span>
+            {hasValue ? <span className="ml-0.5 opacity-70">•</span> : null}
+          </button>
+        </div>
+        
+        {/* Portal-based Tooltip */}
+        {tooltipByKey[key] && isHovered && typeof document !== 'undefined' && createPortal(
+          <div 
+            className="pointer-events-none fixed whitespace-nowrap px-3 py-1.5 text-xs rounded-md bg-gray-900 text-white shadow-lg z-[9999] transition-opacity"
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y}px`,
+              transform: 'translateX(-50%) translateY(-100%)'
+            }}
+          >
             <div className="font-medium mb-0.5">{label}</div>
             <div className="text-gray-300">{tooltipByKey[key]}</div>
             <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-          </div>
+          </div>,
+          document.body
         )}
-      </div>
+      </>
     )
   }
 

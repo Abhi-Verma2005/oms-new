@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Bell, X, Eye, Calendar, Users, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useNotifications } from '@/contexts/notification-context';
+import { useNotificationStore } from '@/stores/notification-store';
 
 interface NotificationType {
   id: string;
@@ -211,7 +211,7 @@ export function NotificationToast({
 
 // Container component to manage multiple toasts
 export function NotificationToastContainer() {
-  const { toasts, removeToast, markAsRead } = useNotifications();
+  const { toasts, removeToast, markAsRead } = useNotificationStore();
 
   // Debug logging
   console.log('🔔 NotificationToastContainer: Rendering with toasts:', {
