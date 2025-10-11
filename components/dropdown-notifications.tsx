@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import { Bell, Loader2 } from 'lucide-react'
-import { useNotifications } from '@/contexts/notification-context'
+import { useNotificationStore } from '@/stores/notification-store'
 
 interface NotificationType {
   id: string;
@@ -35,7 +35,7 @@ interface Notification {
 export default function DropdownNotifications({ align }: {
   align?: 'left' | 'right'
 }) {
-  const { notifications, unreadCount, markAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead } = useNotificationStore();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function DropdownNotifications({ align }: {
             leaveTo="opacity-0"
           >
             <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase pt-1.5 pb-2 px-4">Notifications</div>
-            <MenuItems as="ul" className="focus:outline-hidden max-h-96 overflow-y-auto">
+            <MenuItems as="ul" className="focus:outline-hidden max-h-96 overflow-y-auto no-scrollbar">
               {loading ? (
                 <MenuItem as="li">
                   <div className="flex items-center justify-center py-4">

@@ -2,7 +2,7 @@
 
 import React, { useEffect, createContext, useContext, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+// Removed PanelGroup imports - using custom flex layout instead
 import { useLayout } from '@/contexts/LayoutContext'
 import { AIChatbotSidebar } from './ai-chatbot-sidebar'
 
@@ -40,7 +40,7 @@ export const useResizableLayout = () => {
 
 // Component that uses useSearchParams - needs to be wrapped in Suspense
 function ResizableLayoutContent({ children }: ResizableLayoutProps) {
-  const { mainWidth, sidebarWidth, isSidebarOpen, closeSidebar, openSidebar, updateSidebarState } = useLayout()
+  const { mainWidth, sidebarWidth, isSidebarOpen, closeSidebar, openSidebar, updateSidebarState, setWidths } = useLayout()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -67,6 +67,35 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
     router.replace(`?${newParams.toString()}`, { scroll: false })
   }
 
+  // Handle resize functionality
+  const handleResize = (e: MouseEvent) => {
+    if (!isSidebarOpen) return
+    
+    const container = document.querySelector('.resizable-container') as HTMLElement
+    if (!container) return
+    
+    const containerRect = container.getBoundingClientRect()
+    const mouseX = e.clientX - containerRect.left
+    const containerWidth = containerRect.width
+    
+    const newMainWidth = (mouseX / containerWidth) * 100
+    const newSidebarWidth = 100 - newMainWidth
+    
+    // Constrain to reasonable bounds
+    const constrainedMainWidth = Math.max(20, Math.min(80, newMainWidth))
+    const constrainedSidebarWidth = 100 - constrainedMainWidth
+    
+    setWidths(constrainedMainWidth, constrainedSidebarWidth)
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    document.addEventListener('mousemove', handleResize)
+    document.addEventListener('mouseup', () => {
+      document.removeEventListener('mousemove', handleResize)
+    })
+  }
+
   // Provide the custom toggle function to child components
   const contextValue = {
     toggleSidebar: handleSidebarToggle
@@ -79,33 +108,36 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
           {children}
         </div>
       ) : (
-        <div className="h-[100dvh] bg-gray-50 dark:bg-[#1f2230]">
+        <div className="h-[100dvh] bg-gray-50 dark:bg-[#1f2230] flex resizable-container">
           {/* Mobile: Stack vertically, Desktop: Side by side */}
-          <div className="block lg:hidden">
+          <div className="block lg:hidden flex-1">
             {/* Mobile: AI Sidebar takes full width */}
-            <div className="h-full bg-gray-50 dark:bg-[#1f2230] w-full">
+            <div className="h-full bg-gray-50 dark:bg-[#1f2230] w-full overflow-hidden">
               <AIChatbotSidebar onClose={handleSidebarToggle} />
             </div>
           </div>
-          <div className="hidden lg:block">
-            <PanelGroup direction="horizontal" className="h-full">
-              {/* Main Content */}
-              <Panel defaultSize={mainWidth} minSize={20} maxSize={80}>
-                <div className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
-                  {children}
-                </div>
-              </Panel>
-              
-              {/* Resize Handle */}
-              <PanelResizeHandle className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors" />
-              
-              {/* AI Sidebar */}
-              <Panel defaultSize={sidebarWidth} minSize={20} maxSize={80}>
-                <div className="h-full bg-gray-50 dark:bg-[#1f2230] max-w-3xl mx-auto w-full">
-                  <AIChatbotSidebar onClose={handleSidebarToggle} />
-                </div>
-              </Panel>
-            </PanelGroup>
+          <div className="hidden lg:flex flex-1">
+            {/* Main Content - Independent container */}
+            <div 
+              className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230] flex-1"
+              style={{ width: `${mainWidth}%` }}
+            >
+              {children}
+            </div>
+            
+            {/* Resize Handle */}
+            <div 
+              className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors cursor-col-resize"
+              onMouseDown={handleMouseDown}
+            />
+            
+            {/* AI Sidebar - Independent container */}
+            <div 
+              className="h-full bg-gray-50 dark:bg-[#1f2230] overflow-hidden flex-shrink-0"
+              style={{ width: `${sidebarWidth}%` }}
+            >
+              <AIChatbotSidebar onClose={handleSidebarToggle} />
+            </div>
           </div>
         </div>
       )}

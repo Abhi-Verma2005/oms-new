@@ -57,6 +57,8 @@ model User {
   accounts                    Account[]
   authenticators              Authenticator[]
   bonusGrants                 BonusGrant[]
+  chat_sessions               chat_sessions[]
+  cross_chat_references       cross_chat_references[]
   feedbacks                   Feedback[]
   onboardingProfile           OnboardingProfile?
   orderFilters                OrderFilter[]
@@ -72,9 +74,11 @@ model User {
   user_interaction_embeddings user_interaction_embeddings[]
   interactions                UserInteraction[]
   notificationReads           UserNotificationRead[]
+  user_personality            user_personality?
   userProfile                 UserProfile?
   userRoles                   UserRole[]
   userTags                    UserTag[]
+  user_topic_clusters         user_topic_clusters[]
   wishlists                   Wishlist[]
 
   @@map("users")
@@ -938,6 +942,77 @@ model user_interaction_embeddings {
   @@index([user_id, contentType])
   @@index([user_id, timestamp])
   @@index([embedding])
+}
+
+model chat_sessions {
+  id              String   @id
+  user_id         String
+  session_id      String   @unique
+  title           String?
+  description     String?
+  message_count   Int      @default(0)
+  last_message_at DateTime @default(now())
+  created_at      DateTime @default(now())
+  is_active       Boolean  @default(true)
+  topics          String[]
+  summary         String?
+  users           User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([is_active])
+  @@index([user_id, created_at])
+  @@index([user_id, last_message_at])
+}
+
+model cross_chat_references {
+  id                String   @id
+  user_id           String
+  source_session_id String
+  target_session_id String
+  relevance_score   Float
+  reference_type    String
+  source_content    String
+  target_content    String
+  topics            String[]
+  similarity        Float
+  created_at        DateTime @default(now())
+  users             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([source_session_id, target_session_id])
+  @@index([user_id, reference_type])
+  @@index([user_id, relevance_score])
+}
+
+model user_personality {
+  id                   String   @id
+  user_id              String   @unique
+  communication_style  String?
+  detail_preference    String?
+  expertise_areas      String[]
+  learning_style       String?
+  interaction_patterns Json?
+  response_length_pref String?
+  technical_level      String?
+  preferred_examples   Boolean  @default(true)
+  last_updated         DateTime @default(now())
+  confidence           Float    @default(0.0)
+  users                User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model user_topic_clusters {
+  id             String   @id
+  user_id        String
+  topic          String
+  session_ids    String[]
+  frequency      Int      @default(1)
+  last_mentioned DateTime @default(now())
+  related_topics String[]
+  importance     Float    @default(1.0)
+  created_at     DateTime @default(now())
+  users          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, topic])
+  @@index([user_id, frequency])
+  @@index([user_id, last_mentioned])
 }
 
 enum ActivityCategory {

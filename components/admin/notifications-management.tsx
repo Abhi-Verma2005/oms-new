@@ -37,7 +37,7 @@ import {
 //   AlertDialogTitle, 
 //   AlertDialogTrigger 
 // } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, Bell, Users, Globe, Calendar, Eye, EyeIcon, Send, Zap } from 'lucide-react';
+import { Plus, Edit, Trash2, Bell, Users, Globe, Calendar, Eye, EyeIcon, Send, Zap, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface NotificationType {
@@ -89,6 +89,9 @@ export function NotificationsManagement() {
     isActive: true
   });
   const [statusFilter, setStatusFilter] = useState('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+  const [pushingNotificationId, setPushingNotificationId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -131,6 +134,7 @@ export function NotificationsManagement() {
 
   const handleSubmit = async (e: React.FormEvent, shouldPush = false) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     try {
       const url = editingNotification 
@@ -173,6 +177,8 @@ export function NotificationsManagement() {
     } catch (error) {
       console.error('Error saving notification:', error);
       toast.error('Failed to save notification');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -217,12 +223,14 @@ export function NotificationsManagement() {
   };
 
   const handlePushNotification = async (notification: Notification) => {
+    setPushingNotificationId(notification.id);
     setNotificationToPush(notification);
     setIsPushConfirmOpen(true);
   };
 
   const confirmPushNotification = async () => {
     if (!notificationToPush) return;
+    setIsPushing(true);
     
     try {
       const response = await fetch('/api/admin/notifications/push', {
@@ -244,8 +252,10 @@ export function NotificationsManagement() {
       console.error('Error pushing notification:', error);
       toast.error('Failed to push notification');
     } finally {
+      setIsPushing(false);
       setIsPushConfirmOpen(false);
       setNotificationToPush(null);
+      setPushingNotificationId(null);
     }
   };
 
@@ -559,19 +569,35 @@ export function NotificationsManagement() {
                     type="button" 
                     variant="outline"
                     onClick={(e) => handleSubmit(e, false)}
-                    disabled={!formData.title || !formData.body || !formData.typeId}
+                    disabled={!formData.title || !formData.body || !formData.typeId || isSubmitting}
                   >
-                    {editingNotification ? 'Update' : 'Create'}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {editingNotification ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      editingNotification ? 'Update' : 'Create'
+                    )}
                   </Button>
                   <Button 
                     type="button" 
                     variant="default"
                     onClick={(e) => handleSubmit(e, true)}
-                    disabled={!formData.title || !formData.body || !formData.typeId}
+                    disabled={!formData.title || !formData.body || !formData.typeId || isSubmitting}
                     className="bg-green-600 hover:bg-green-700"
                   >
-                    <Send className="h-4 w-4 mr-2" />
-                    {editingNotification ? 'Update & Push' : 'Create & Push'}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {editingNotification ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        {editingNotification ? 'Update & Push' : 'Create & Push'}
+                      </>
+                    )}
                   </Button>
                 </div>
               </DialogFooter>
@@ -712,11 +738,21 @@ export function NotificationsManagement() {
                               variant="default"
                               size="sm"
                               onClick={() => handlePushNotification(notification)}
+                              disabled={pushingNotificationId === notification.id}
                               title="Push notification now"
                               className="bg-green-600 hover:bg-green-700 text-white"
                             >
-                              <Send className="h-4 w-4 mr-1" />
-                              Push
+                              {pushingNotificationId === notification.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                  Pushing...
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="h-4 w-4 mr-1" />
+                                  Push
+                                </>
+                              )}
                             </Button>
                           </>
                         )}
@@ -922,15 +958,29 @@ export function NotificationsManagement() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPushConfirmOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsPushConfirmOpen(false)}
+              disabled={isPushing}
+            >
               Cancel
             </Button>
             <Button 
               onClick={confirmPushNotification}
+              disabled={isPushing}
               className="bg-green-600 hover:bg-green-700"
             >
-              <Send className="h-4 w-4 mr-2" />
-              Push Now
+              {isPushing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Pushing...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Push Now
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
