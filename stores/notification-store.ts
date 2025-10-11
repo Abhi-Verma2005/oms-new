@@ -66,7 +66,10 @@ export const useNotificationStore = create<NotificationStore>()(
         // Check if notification already exists
         const exists = state.notifications.some((n) => n.id === notification.id)
         if (!exists) {
+          // Add to notifications list
           state.notifications.unshift(notification)
+          // Add to toast queue for real-time display
+          state.toasts.push(notification)
           // Update unread count
           state.unreadCount = state.notifications.filter((n) => !n.isRead).length
         }
