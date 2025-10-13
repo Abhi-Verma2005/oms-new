@@ -46,16 +46,29 @@ export type PublishersHelpCarouselProps = {
   onRefresh?: () => void
   onReset?: () => void
   hasCheckoutFab?: boolean
+  // Suggestions controls (optional, provided by parent)
+  suggestions?: string[]
+  suggestionsLoading?: boolean
+  suggestionsOpen?: boolean
+  setSuggestionsOpen?: (open: boolean) => void
+  setSuggestionsContainerRef?: (el: HTMLDivElement | null) => void
+  onPickSuggestion?: (value: string) => void
 }
 
 export default function PublishersHelpCarousel({ 
   metrics, 
-  searchQuery = '', 
+  searchQuery = '',
   setSearchQuery, 
   loading = false, 
   onRefresh, 
   onReset,
-  hasCheckoutFab = false 
+  hasCheckoutFab = false,
+  suggestions = [],
+  suggestionsLoading = false,
+  suggestionsOpen = false,
+  setSuggestionsOpen,
+  setSuggestionsContainerRef,
+  onPickSuggestion,
 }: PublishersHelpCarouselProps) {
   const [open, setOpen] = useState(false)
   const { selectedProjectId, setSelectedProject, clearProject } = useProjectStore()
@@ -112,13 +125,40 @@ export default function PublishersHelpCarousel({
         <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Search & Controls</div>
         <div className="space-y-3">
           {/* Search input */}
-          <div className="relative">
+          <div className="relative" ref={setSuggestionsContainerRef}>
             <Input
               className="h-8 text-xs w-full"
               placeholder="Search by website or URL"
               value={searchQuery}
               onChange={(e) => setSearchQuery?.(e.target.value)}
+              onFocus={() => setSuggestionsOpen?.(true)}
             />
+            {/* Suggestions dropdown */}
+            {suggestionsOpen && (suggestionsLoading || (suggestions && suggestions.length > 0)) && (
+              <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-xl overflow-hidden">
+                {suggestionsLoading ? (
+                  <div className="px-3 py-2 text-[11px] text-gray-500">Searching…</div>
+                ) : (
+                  <ul className="max-h-56 overflow-auto no-scrollbar divide-y divide-gray-100 dark:divide-gray-800/60">
+                    {suggestions.map((s, idx) => (
+                      <li key={`${s}-${idx}`}>
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors truncate"
+                          title={s}
+                          onClick={() => {
+                            onPickSuggestion?.(s)
+                            setSuggestionsOpen?.(false)
+                          }}
+                        >
+                          {s}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Action buttons */}

@@ -29,9 +29,9 @@ export default function LinkBuildingPackages() {
         <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Link Building Packages</h1>
         <p className="text-gray-500 dark:text-gray-400">Choose from our curated monthly packages.</p>
       </div>
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
         {(loading ? Array.from({ length: 4 }) : products).map((p: any, idx: number) => (
-          <div key={loading ? idx : p.id} className="col-span-12 md:col-span-6 xl:col-span-3">
+          <div key={loading ? idx : p.id} className="w-full">
             <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-5 flex flex-col">
               {loading ? (
                 <>

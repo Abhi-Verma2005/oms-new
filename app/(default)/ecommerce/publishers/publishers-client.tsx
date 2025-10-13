@@ -2369,6 +2369,12 @@ export default function PublishersClient() {
                       router.replace(pathname || '/publishers', { scroll: false })
                     }}
                     hasCheckoutFab={hasCheckoutFab}
+                    suggestions={suggestions}
+                    suggestionsLoading={suggestionsLoading}
+                    suggestionsOpen={suggestionsOpen}
+                    setSuggestionsOpen={setSuggestionsOpen}
+                    setSuggestionsContainerRef={(el) => { suggestionsRef.current = el }}
+                    onPickSuggestion={(val) => { setSearchQuery(val) }}
                   />
                 )
               })()}
