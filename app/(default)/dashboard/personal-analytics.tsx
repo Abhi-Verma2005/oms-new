@@ -18,70 +18,100 @@ export default function PersonalAnalytics() {
     dailyCredits: 50,
     creditsUsed: 0,
     activityScore: 0,
-    monthOverMonthChange: 0
+    monthOverMonthChange: 0,
+    orderStatusDistribution: {} as Record<string, number>,
+    weeklyCreditsUsage: [] as { day: string; credits: number }[],
+    wishlistBreakdown: { addedThisMonth: 0, addedLastMonth: 0, addedEarlier: 0 },
+    activityByMonth: {} as Record<string, Record<string, number>>,
+    monthLabels: [] as string[]
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Fetch real user analytics data
-  useEffect(() => {
-    const fetchUserAnalytics = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const response = await fetch('/api/user/analytics', {
-          cache: 'no-store'
-        })
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch analytics: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        
-        setUserData({
-          totalOrders: data.totalOrders,
-          totalSpent: data.totalSpent,
-          wishlistItems: data.wishlistItems,
-          feedbackCount: data.feedbackCount,
-          avgRating: 4.2, // This would need to be calculated from actual feedback
-          dailyCredits: data.dailyCredits,
-          creditsUsed: data.creditsUsedToday,
-          activityScore: data.activityScore,
-          monthOverMonthChange: data.monthOverMonthChange
-        })
-      } catch (err) {
-        console.error('Error fetching user analytics:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load analytics')
-        
-        // Fallback to default values on error
-        setUserData({
-          totalOrders: 0,
-          totalSpent: 0,
-          wishlistItems: 0,
-          feedbackCount: 0,
-          avgRating: 0,
-          dailyCredits: 50,
-          creditsUsed: 0,
-          activityScore: 0,
-          monthOverMonthChange: 0
-        })
-      } finally {
-        setLoading(false)
+  const fetchUserAnalytics = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch('/api/user/analytics', {
+        cache: 'no-store'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch analytics: ${response.status}`)
       }
+      
+      const data = await response.json()
+      
+      setUserData({
+        totalOrders: data.totalOrders,
+        totalSpent: data.totalSpent,
+        wishlistItems: data.wishlistItems,
+        feedbackCount: data.feedbackCount,
+        avgRating: 4.2, // This would need to be calculated from actual feedback
+        dailyCredits: data.dailyCredits,
+        creditsUsed: data.creditsUsedToday,
+        activityScore: data.activityScore,
+        monthOverMonthChange: data.monthOverMonthChange,
+        orderStatusDistribution: data.orderStatusDistribution || {},
+        weeklyCreditsUsage: data.weeklyCreditsUsage || [],
+        wishlistBreakdown: data.wishlistBreakdown || { addedThisMonth: 0, addedLastMonth: 0, addedEarlier: 0 },
+        activityByMonth: data.activityByMonth || {},
+        monthLabels: data.monthLabels || []
+      })
+    } catch (err) {
+      console.error('Error fetching user analytics:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load analytics')
+      
+      // Fallback to default values on error
+      setUserData({
+        totalOrders: 0,
+        totalSpent: 0,
+        wishlistItems: 0,
+        feedbackCount: 0,
+        avgRating: 0,
+        dailyCredits: 50,
+        creditsUsed: 0,
+        activityScore: 0,
+        monthOverMonthChange: 0,
+        orderStatusDistribution: {},
+        weeklyCreditsUsage: [],
+        wishlistBreakdown: { addedThisMonth: 0, addedLastMonth: 0, addedEarlier: 0 },
+        activityByMonth: {},
+        monthLabels: []
+      })
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchUserAnalytics()
   }, [])
 
+  // Listen for credit usage events to refresh data
+  useEffect(() => {
+    const handleCreditsUsed = () => {
+      // Refresh analytics data when credits are used
+      fetchUserAnalytics()
+    }
 
-  // Order Status Distribution Chart Data
+    window.addEventListener('creditsUsed', handleCreditsUsed)
+    
+    return () => {
+      window.removeEventListener('creditsUsed', handleCreditsUsed)
+    }
+  }, [])
+
+
+  // Order Status Distribution Chart Data (from API)
+  const orderStatusLabels = ['PAID','PENDING','FAILED','CANCELLED']
   const orderStatusData = {
     labels: ['Paid', 'Pending', 'Failed', 'Cancelled'],
     datasets: [
       {
-        data: [8, 3, 1, 0],
+        data: orderStatusLabels.map(k => userData.orderStatusDistribution[k] || 0),
         backgroundColor: [
           getCssVariable('--color-green-500'),
           getCssVariable('--color-yellow-500'),
@@ -100,15 +130,14 @@ export default function PersonalAnalytics() {
   }
 
 
-  // Activity Categories Chart Data
+  // Activity Categories Chart Data (stacked across months)
+  const monthLabels = userData.monthLabels.length ? userData.monthLabels : ['Jan','Feb','Mar','Apr','May','Jun']
   const activityCategoriesData = {
-    labels: [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'
-    ],
+    labels: monthLabels,
     datasets: [
       {
         label: 'Navigation',
-        data: [15, 18, 12, 20, 25, 22],
+        data: monthLabels.map(m => (userData.activityByMonth[m]?.NAVIGATION) || 0),
         backgroundColor: getCssVariable('--color-violet-700'),
         hoverBackgroundColor: getCssVariable('--color-violet-800'),
         barPercentage: 0.7,
@@ -117,7 +146,7 @@ export default function PersonalAnalytics() {
       },
       {
         label: 'Orders',
-        data: [8, 12, 6, 15, 18, 14],
+        data: monthLabels.map(m => (userData.activityByMonth[m]?.ORDER) || 0),
         backgroundColor: getCssVariable('--color-violet-500'),
         hoverBackgroundColor: getCssVariable('--color-violet-600'),
         barPercentage: 0.7,
@@ -126,7 +155,7 @@ export default function PersonalAnalytics() {
       },
       {
         label: 'Profile',
-        data: [5, 7, 4, 8, 10, 9],
+        data: monthLabels.map(m => (userData.activityByMonth[m]?.PROFILE) || 0),
         backgroundColor: getCssVariable('--color-violet-300'),
         hoverBackgroundColor: getCssVariable('--color-violet-400'),
         barPercentage: 0.7,
@@ -135,7 +164,7 @@ export default function PersonalAnalytics() {
       },
       {
         label: 'Other',
-        data: [12, 15, 10, 18, 20, 16],
+        data: monthLabels.map(m => (userData.activityByMonth[m]?.OTHER) || 0),
         backgroundColor: getCssVariable('--color-violet-100'),
         hoverBackgroundColor: getCssVariable('--color-violet-200'),
         barPercentage: 0.7,
@@ -145,12 +174,16 @@ export default function PersonalAnalytics() {
     ],
   }
 
-  // Wishlist Activity Chart Data
+  // Wishlist Activity Chart Data (from API breakdown)
   const wishlistData = {
     labels: ['Added This Month', 'Added Last Month', 'Added Earlier'],
     datasets: [
       {
-        data: [3, 2, 3],
+        data: [
+          userData.wishlistBreakdown.addedThisMonth,
+          userData.wishlistBreakdown.addedLastMonth,
+          userData.wishlistBreakdown.addedEarlier,
+        ],
         backgroundColor: [
           getCssVariable('--color-green-500'),
           getCssVariable('--color-blue-500'),
@@ -166,14 +199,12 @@ export default function PersonalAnalytics() {
     ],
   }
 
-  // Credits Usage Chart Data
+  // Credits Usage Chart Data (from API weeklyCreditsUsage)
   const creditsChartData = {
-    labels: [
-      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
-    ],
+    labels: userData.weeklyCreditsUsage.map(d => d.day),
     datasets: [
       {
-        data: [8, 12, 6, 15, 18, 4, 7],
+        data: userData.weeklyCreditsUsage.map(d => d.credits),
         fill: true,
         backgroundColor: function(context: any) {
           const chart = context.chart;

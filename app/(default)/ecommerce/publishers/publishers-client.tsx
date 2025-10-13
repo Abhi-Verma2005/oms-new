@@ -95,8 +95,9 @@ function convertFiltersToAPI(f: Filters, searchQuery: string): APIFilters {
   if (f.drMax !== undefined) api.domainRating = { ...(api.domainRating || {}), max: f.drMax }
   if (f.spamMin !== undefined) api.spamScore = { ...(api.spamScore || {}), min: f.spamMin }
   if (f.spamMax !== undefined) api.spamScore = { ...(api.spamScore || {}), max: f.spamMax }
-  if (f.priceMin !== undefined) api.costPrice = { ...(api.costPrice || {}), min: f.priceMin }
-  if (f.priceMax !== undefined) api.costPrice = { ...(api.costPrice || {}), max: f.priceMax }
+  // Use sellingPrice for filtering, since UI displays publishing.price (selling price)
+  if (f.priceMin !== undefined) api.sellingPrice = { ...(api.sellingPrice || {}), min: f.priceMin }
+  if (f.priceMax !== undefined) api.sellingPrice = { ...(api.sellingPrice || {}), max: f.priceMax }
   if (f.semrushOverallTrafficMin !== undefined) api.semrushTraffic = { ...(api.semrushTraffic || {}), min: f.semrushOverallTrafficMin }
   if (f.semrushOrganicTrafficMin !== undefined) api.semrushOrganicTraffic = { ...(api.semrushOrganicTraffic || {}), min: f.semrushOrganicTrafficMin }
   if (f.niche) api.niche = f.niche
@@ -892,6 +893,13 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
 
+  // Limit number of rows shown based on row density setting so users see a visible change
+  const maxRowsByLevel: Record<1 | 2 | 3 | 4, number> = useMemo(() => ({ 1: 30, 2: 20, 3: 12, 4: 8 }), [])
+  const limitedSites = useMemo(() => {
+    const limit = maxRowsByLevel[rowLevel]
+    return Array.isArray(sites) ? sites.slice(0, limit) : sites
+  }, [sites, rowLevel, maxRowsByLevel])
+
   // Column visibility controller (modeled after OMS filter-page)
   type ColumnKey =
     | 'name'
@@ -1123,31 +1131,42 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
       case 'countryLang':
         return (
           <div className="text-sm leading-tight" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(s) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
-            {rowLevel === 1 ? (
+            {(() => {
+              const computedCountry = (s.country && s.country !== 'Not Specified')
+                ? s.country
+                : (s.toolScores?.topCountries && s.toolScores.topCountries[0]?.country) || ''
+              const hasCountry = Boolean(computedCountry)
+              const computedLanguage = (s.language && s.language !== 'Not Specified') ? s.language : ''
+              const titleText = `${hasCountry ? computedCountry : '—'}${computedLanguage ? ` • ${computedLanguage}` : ''}`
+              if (rowLevel === 1) {
               // Short: Just language with country flag, full info on hover
-              <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
-                <Flag country={s.country} withBg className="shrink-0" />
-                <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[8rem]">{s.language}</span>
-              </div>
-            ) : (
+                return (
+                  <div className="flex items-center gap-1.5 group relative" title={titleText}>
+                    {hasCountry ? <Flag country={computedCountry} withBg className="shrink-0" /> : null}
+                    <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[8rem]">{computedLanguage || (hasCountry ? computedCountry : '—')}</span>
+                  </div>
+                )
+              }
               // Medium and above: Show with additional details
-              <>
-                <div className="flex items-center gap-1.5 group relative" title={`${s.country} • ${s.language}`}>
-                  <Flag country={s.country} withBg className="shrink-0" />
-                  <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[8rem]">{s.language}</span>
-                </div>
-                {rowLevel >= 3 && (
-                  <div className="text-[11px] text-gray-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap" title={s.country}>
-                    <span className="text-gray-400">Country:</span> {s.country}
+              return (
+                <>
+                  <div className="flex items-center gap-1.5 group relative" title={titleText}>
+                    {hasCountry ? <Flag country={computedCountry} withBg className="shrink-0" /> : null}
+                    <span className="text-xs overflow-hidden text-ellipsis whitespace-nowrap max-w-[8rem]">{computedLanguage || (hasCountry ? computedCountry : '—')}</span>
                   </div>
-                )}
-                {rowLevel >= 4 && (
-                  <div className="text-[11px] text-gray-500 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" title={s.language}>
-                    <span className="text-gray-400">Language:</span> {s.language}
-                  </div>
-                )}
-              </>
-            )}
+                  {rowLevel >= 3 && hasCountry && (
+                    <div className="text-[11px] text-gray-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap" title={computedCountry}>
+                      <span className="text-gray-400">Country:</span> {computedCountry}
+                    </div>
+                  )}
+                  {rowLevel >= 4 && computedLanguage && (
+                    <div className="text-[11px] text-gray-500 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap" title={computedLanguage}>
+                      <span className="text-gray-400">Language:</span> {computedLanguage}
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         )
       case 'authority':
@@ -1395,8 +1414,8 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
         <header className="px-3 sm:px-4 py-2 sm:py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100 text-sm tracking-tight flex items-center gap-2">
             <span>All Publishers</span>
-            <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full text-[11px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
-              {sites.length}
+              <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full text-[11px] font-semibold bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700" title={`Showing ${limitedSites.length} of ${sites.length}`}>
+              {limitedSites.length}
             </span>
           </h2>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 sm:gap-2">
@@ -1585,23 +1604,34 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
 
       {/* Fixed top-center country preview panel */}
       {countryPreviewSite && (
-  <div className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
+  <div key={countryPreviewSite.id} className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
           <div className="flex items-start justify-between">
             <div className="text-base font-semibold mb-2">Organic traffic by country</div>
             <div className="text-[11px] text-gray-500 whitespace-nowrap ml-2">Last updated {countryPreviewSite.quality?.lastPublished || '—'}</div>
           </div>
           {(() => {
             const total = countryPreviewSite.toolScores.semrushOrganicTraffic || countryPreviewSite.toolScores.semrushOverallTraffic || 0
-            const breakdown = (countryPreviewSite.toolScores.targetCountryTraffic && countryPreviewSite.toolScores.targetCountryTraffic.length > 0)
-              ? countryPreviewSite.toolScores.targetCountryTraffic
-              : [
-                  { country: countryPreviewSite.country || 'United States', percent: 58 },
-                  { country: 'United Kingdom', percent: 11 },
-                  { country: 'India', percent: 7 },
-                  { country: 'Other countries', percent: 24 },
-                ]
-            const labels = breakdown.map(b => b.country)
-            const values = breakdown.map(b => Math.round(total * (b.percent / 100)))
+            // Prefer real data from toolScores: topCountries first, then targetCountryTraffic
+            let breakdown = (countryPreviewSite.toolScores.topCountries && countryPreviewSite.toolScores.topCountries.length > 0)
+              ? countryPreviewSite.toolScores.topCountries
+              : (countryPreviewSite.toolScores.targetCountryTraffic && countryPreviewSite.toolScores.targetCountryTraffic.length > 0)
+                ? countryPreviewSite.toolScores.targetCountryTraffic
+                : []
+
+            // If no breakdown available, fallback to a single slice for the site's country
+            if (breakdown.length === 0) {
+              const countryName = countryPreviewSite.country || 'Unknown'
+              breakdown = [{ country: countryName, percent: 100 }]
+            }
+
+            // Normalize percents to sum to 100 to avoid inconsistent API payloads
+            const percentSum = breakdown.reduce((s, b) => s + (Number(b.percent) || 0), 0)
+            const normalized = percentSum > 0
+              ? breakdown.map(b => ({ country: b.country, percent: (Number(b.percent) || 0) * (100 / percentSum) }))
+              : breakdown
+
+            const labels = normalized.map(b => b.country)
+            const values = normalized.map(b => Math.max(0, Math.round(total * ((Number(b.percent) || 0) / 100))))
             const data = {
               labels,
               datasets: [
@@ -1617,19 +1647,19 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             return (
               <div className="flex items-center gap-4">
                 <div className="relative w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]">
-                  <DoughnutChart data={data as any} width={220} height={220} />
+                  <DoughnutChart key={`${countryPreviewSite.id}-${labels.join('|')}-${values.join('|')}`} data={data as any} width={220} height={220} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-2xl sm:text-3xl font-extrabold tabular-nums mb-1">{total.toLocaleString()}</div>
                   <div className="text-xs text-gray-500 mb-2">Total Traffic</div>
                   <ul className="space-y-1 text-sm">
-                    {breakdown.map((b, idx) => (
+                    {normalized.map((b, idx) => (
                       <li key={b.country} className="flex items-center justify-between">
                         <span className="inline-flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: ['#3b82f6','#10b981','#f59e0b','#f97316'][idx % 4] }} />
                           {b.country}
                         </span>
-                        <span className="tabular-nums text-gray-700 dark:text-gray-300">{b.percent}%</span>
+                        <span className="tabular-nums text-gray-700 dark:text-gray-300">{Number((b.percent as number).toFixed(2))}%</span>
                       </li>
                     ))}
                   </ul>
@@ -1666,9 +1696,9 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             </TableRow>
           </UITableHeader>
           <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-            {sites.length === 0 ? (
+            {limitedSites.length === 0 ? (
               <TableRow><TableCell className="px-1.5 sm:px-2 md:px-5 py-3 sm:py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
-            ) : sites.map(s => (
+            ) : limitedSites.map(s => (
               <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
                   visibleColumns.includes(col.key) ? (
@@ -2032,37 +2062,53 @@ export default function PublishersClient() {
 
   useEffect(() => { fetchData() }, [])
 
-  // Load last-used filters for the selected project (if any)
+  // Load last-used filters for the selected project (server-persisted fallback to local)
   useEffect(() => {
     if (!selectedProjectId) return
-    try {
-      const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
-      if (!raw) {
-        // No saved context for this project: reset filters and URL
-        setFilters(defaultFilters)
-        setSearchQuery("")
-        try { router.replace(pathname || '/publishers', { scroll: false }) } catch {}
-        return
-      }
-      const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
-      if (saved && typeof saved === 'object') {
-        if (saved.filters && Object.keys(saved.filters).length > 0) {
-          setFilters({ ...defaultFilters, ...saved.filters })
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/projects/${encodeURIComponent(selectedProjectId)}/filters?page=publishers`, { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          const pref = data?.preference as any
+          if (pref && typeof pref === 'object') {
+            if (pref.filters && Object.keys(pref.filters).length > 0) setFilters({ ...defaultFilters, ...pref.filters })
+            if (typeof pref.q === 'string') setSearchQuery(pref.q)
+            return
+          }
         }
-        if (typeof saved.q === 'string') {
-          setSearchQuery(saved.q)
+      } catch {}
+      // Fallback to local storage
+      try {
+        const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
+        if (!raw) {
+          setFilters(defaultFilters)
+          setSearchQuery("")
+          try { router.replace(pathname || '/publishers', { scroll: false }) } catch {}
+          return
         }
-      }
-    } catch {}
-  }, [selectedProjectId])
+        const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
+        if (saved && typeof saved === 'object') {
+          if (saved.filters && Object.keys(saved.filters).length > 0) setFilters({ ...defaultFilters, ...saved.filters })
+          if (typeof saved.q === 'string') setSearchQuery(saved.q)
+        }
+      } catch {}
+    })()
+  }, [selectedProjectId, pathname, router])
 
-  // Persist last-used filters per project whenever filters/query change
+  // Persist last-used filters per project whenever filters/query change (server + local, debounced)
   useEffect(() => {
     if (!selectedProjectId) return
-    try {
-      const payload = { filters, q: searchQuery }
-      localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(payload))
-    } catch {}
+    const payload = { filters, q: searchQuery }
+    // Local cache
+    try { localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(payload)) } catch {}
+    // Server save (debounced)
+    const t = setTimeout(() => {
+      fetch(`/api/projects/${encodeURIComponent(selectedProjectId)}/filters?page=publishers`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: payload })
+      }).catch(() => {})
+    }, 500)
+    return () => clearTimeout(t)
   }, [filters, searchQuery, selectedProjectId])
 
   // Monitor URL parameter changes and update filters accordingly
@@ -2356,6 +2402,9 @@ function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site:
       if (!res.ok) throw new Error(data?.error || 'Failed')
       const website: string = data.website
       setRevealed(website)
+      
+      // Dispatch custom event to notify dashboard of credit usage
+      window.dispatchEvent(new CustomEvent('creditsUsed', { detail: { creditsUsed: 1 } }))
     } catch (err) {
       // optionally show toast
     } finally {

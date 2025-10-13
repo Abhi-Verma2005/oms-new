@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     // Get weekly credits usage (last 7 days) - simplified version
     // Since we don't track historical credit usage, we'll show current day usage for all days
-    const weeklyCreditsUsage = []
+    const weeklyCreditsUsage: { day: string; credits: number }[] = []
     for (let i = 6; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get wishlist activity (last 7 days)
-    const wishlistActivity = []
+    const wishlistActivity: { day: string; additions: number }[] = []
     for (let i = 6; i >= 0; i--) {
       const date = new Date()
       date.setDate(date.getDate() - i)
@@ -150,6 +150,55 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Wishlist breakdown by recency
+    const now = new Date()
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const startOfTwoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+
+    const [addedThisMonth, addedLastMonth, addedEarlier] = await Promise.all([
+      prisma.wishlistItem.count({
+        where: {
+          wishlist: { userId },
+          addedAt: { gte: startOfThisMonth }
+        }
+      }),
+      prisma.wishlistItem.count({
+        where: {
+          wishlist: { userId },
+          addedAt: { gte: startOfLastMonth, lt: startOfThisMonth }
+        }
+      }),
+      prisma.wishlistItem.count({
+        where: {
+          wishlist: { userId },
+          addedAt: { lt: startOfLastMonth }
+        }
+      })
+    ])
+
+    const wishlistBreakdown = { addedThisMonth, addedLastMonth, addedEarlier }
+
+    // Monthly activity breakdown by category for last 6 months
+    const categories = ['NAVIGATION','ORDER','PROFILE','OTHER','PAYMENT','CART','WISHLIST'] as const
+    const monthLabels: string[] = []
+    const activityByMonth: Record<string, Record<string, number>> = {}
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
+      const label = start.toLocaleString('en-US', { month: 'short' })
+      monthLabels.push(label)
+      activityByMonth[label] = {}
+      // count per category
+      const counts = await prisma.userActivity.groupBy({
+        by: ['category'],
+        where: { userId, createdAt: { gte: start, lt: end } },
+        _count: { _all: true }
+      })
+      for (const c of categories) activityByMonth[label][c] = 0
+      counts.forEach(c => { (activityByMonth[label] as any)[c.category] = c._count._all })
+    }
+
     const analytics = {
       totalOrders: orders.length,
       totalSpent: totalSpent / 100, // Convert cents to dollars
@@ -161,7 +210,10 @@ export async function GET(request: NextRequest) {
       monthOverMonthChange,
       orderStatusDistribution,
       weeklyCreditsUsage,
-      wishlistActivity
+      wishlistActivity,
+      wishlistBreakdown,
+      activityByMonth,
+      monthLabels
     }
 
     const res = NextResponse.json(analytics)

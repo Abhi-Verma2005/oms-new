@@ -19,14 +19,22 @@ export async function GET(request: NextRequest) {
   }
 
   const projectId = request.nextUrl.searchParams.get('projectId') || undefined
+  const limit = Math.min(Number(request.nextUrl.searchParams.get('limit') || '20'), 100)
+  const cursor = request.nextUrl.searchParams.get('cursor') || undefined
 
   const orders = await prisma.order.findMany({
     where: { userId, ...(projectId ? { projectId } : {}) },
     include: { items: true, transactions: true },
     orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   })
 
-  const res = NextResponse.json({ orders })
+  const hasMore = orders.length > limit
+  const pageItems = hasMore ? orders.slice(0, limit) : orders
+  const nextCursor = hasMore ? pageItems[pageItems.length - 1]?.id : null
+
+  const res = NextResponse.json({ orders: pageItems, nextCursor })
   addSecurityHeaders(res)
   return res
 }
