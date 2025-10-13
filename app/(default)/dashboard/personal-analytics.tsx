@@ -16,21 +16,63 @@ export default function PersonalAnalytics() {
     feedbackCount: 0,
     avgRating: 0,
     dailyCredits: 50,
-    creditsUsed: 0
+    creditsUsed: 0,
+    activityScore: 0,
+    monthOverMonthChange: 0
   })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Mock data - in real implementation, this would come from API/database
+  // Fetch real user analytics data
   useEffect(() => {
-    // Simulate loading user data
-    setUserData({
-      totalOrders: 12,
-      totalSpent: 2450,
-      wishlistItems: 8,
-      feedbackCount: 3,
-      avgRating: 4.2,
-      dailyCredits: 50,
-      creditsUsed: 23
-    })
+    const fetchUserAnalytics = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const response = await fetch('/api/user/analytics', {
+          cache: 'no-store'
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch analytics: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        setUserData({
+          totalOrders: data.totalOrders,
+          totalSpent: data.totalSpent,
+          wishlistItems: data.wishlistItems,
+          feedbackCount: data.feedbackCount,
+          avgRating: 4.2, // This would need to be calculated from actual feedback
+          dailyCredits: data.dailyCredits,
+          creditsUsed: data.creditsUsedToday,
+          activityScore: data.activityScore,
+          monthOverMonthChange: data.monthOverMonthChange
+        })
+      } catch (err) {
+        console.error('Error fetching user analytics:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load analytics')
+        
+        // Fallback to default values on error
+        setUserData({
+          totalOrders: 0,
+          totalSpent: 0,
+          wishlistItems: 0,
+          feedbackCount: 0,
+          avgRating: 0,
+          dailyCredits: 50,
+          creditsUsed: 0,
+          activityScore: 0,
+          monthOverMonthChange: 0
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUserAnalytics()
   }, [])
 
 
@@ -156,6 +198,40 @@ export default function PersonalAnalytics() {
     ],
   }
 
+  if (loading) {
+    return (
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+          <div className="px-5 py-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="text-center animate-pulse">
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+          <div className="px-5 py-4 text-center">
+            <div className="text-red-600 dark:text-red-400 mb-2">⚠️ Error loading analytics</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{error}</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-12 gap-6">
       {/* Key Metrics Summary */}
@@ -174,7 +250,7 @@ export default function PersonalAnalytics() {
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-800 dark:text-gray-100">{userData.creditsUsed}</div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Credits Used Today</div>
-              <div className="text-lg font-semibold text-blue-600 mt-1">{userData.dailyCredits - userData.creditsUsed}</div>
+              <div className="text-lg font-semibold text-blue-600 mt-1">{userData.dailyCredits}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">Remaining</div>
             </div>
             
@@ -188,9 +264,13 @@ export default function PersonalAnalytics() {
             
             {/* Activity Score */}
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-800 dark:text-gray-100">92</div>
+              <div className="text-3xl font-bold text-gray-800 dark:text-gray-100">{userData.activityScore}</div>
               <div className="text-sm text-gray-500 dark:text-gray-400">Activity Score</div>
-              <div className="text-lg font-semibold text-green-600 mt-1">+12%</div>
+              <div className={`text-lg font-semibold mt-1 ${
+                userData.monthOverMonthChange >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {userData.monthOverMonthChange >= 0 ? '+' : ''}{userData.monthOverMonthChange}%
+              </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">vs Last Month</div>
             </div>
           </div>

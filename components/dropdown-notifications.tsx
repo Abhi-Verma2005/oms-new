@@ -114,8 +114,9 @@ export default function DropdownNotifications({ align }: {
                 notifications.map((notification) => (
                   <MenuItem key={notification.id} as="li" className="border-b border-gray-200 dark:border-gray-700/60 last:border-0">
                     {({ active }) => (
-                      <div 
-                        className={`block py-2 px-4 cursor-pointer ${active && 'bg-gray-50 dark:bg-gray-700/20'} ${!notification.isRead && 'bg-blue-50 dark:bg-blue-900/20'}`}
+                      <Link
+                        href={`/notifications#notif-${notification.id}`}
+                        className={`block py-2 px-4 ${active && 'bg-gray-50 dark:bg-gray-700/20'} ${!notification.isRead && 'bg-blue-50 dark:bg-blue-900/20'}`}
                         onClick={() => markAsRead(notification.id)}
                       >
                         <div className="flex items-start space-x-3">
@@ -143,7 +144,7 @@ export default function DropdownNotifications({ align }: {
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     )}
                   </MenuItem>
                 ))
