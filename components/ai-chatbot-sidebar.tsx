@@ -240,6 +240,15 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       })
     })
 
+    // Remove boilerplate helper lines that are not user-useful
+    try {
+      cleanResponse = cleanResponse
+        // Strip generic platform/context helper note if present
+        .replace(/\bplease specify the platform or context to filter websites[^\n]*\n?/gi, '')
+        .replace(/\bif you need help navigating to[^\n]*\n?/gi, '')
+        .trim()
+    } catch {}
+
     // Add or update the assistant message
     if (options?.targetMessageId) {
       updateMessage(options.targetMessageId, { content: cleanResponse || 'Processing your request...' })
@@ -275,16 +284,31 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         let priceMin: number | undefined
         let priceMax: number | undefined
 
-        if (/min|minimum|at least|lowest/.test(source) && numbers.length > 0) {
-          priceMin = numbers[0]
+        // Extract explicit min and max phrases with nearest following number
+        const maxMatch = source.match(/(?:max|maximum|at\s*most|up\s*to|upto)[^\d]{0,16}(\d{2,7})/)
+        const minMatch = source.match(/(?:min|minimum|at\s*least|lowest)[^\d]{0,16}(\d{2,7})/)
+        if (minMatch) priceMin = parseInt(minMatch[1], 10)
+        if (maxMatch) priceMax = parseInt(maxMatch[1], 10)
+
+        // Handle range phrasing like "between X and Y", "from X to Y"
+        if ((/between|range|from/.test(source)) && numbers.length >= 2) {
+          const a = Math.min(numbers[0], numbers[1])
+          const b = Math.max(numbers[0], numbers[1])
+          priceMin = priceMin ?? a
+          priceMax = priceMax ?? b
         }
-        if (/max|maximum|at most|upto|up to/.test(source) && numbers.length > 0) {
-          priceMax = numbers[numbers.length - 1]
-        }
-        if ((/between|range|from/.test(source) || (!priceMin && !priceMax)) && numbers.length >= 2) {
+        // Fallback: if still missing, use overall min/max from detected numbers
+        if ((!priceMin && !priceMax) && numbers.length >= 2) {
           const sorted = [...numbers].sort((a,b)=>a-b)
-          priceMin = priceMin ?? sorted[0]
-          priceMax = priceMax ?? sorted[sorted.length - 1]
+          priceMin = sorted[0]
+          priceMax = sorted[sorted.length - 1]
+        }
+        if (!priceMin && numbers.length === 1 && /min|minimum|at\s*least|lowest/.test(source)) priceMin = numbers[0]
+        if (!priceMax && numbers.length === 1 && /max|maximum|at\s*most|up\s*to|upto/.test(source)) priceMax = numbers[0]
+
+        // Safety: swap if reversed
+        if (priceMin !== undefined && priceMax !== undefined && priceMin > priceMax) {
+          const tmp = priceMin; priceMin = priceMax; priceMax = tmp
         }
 
         if (priceMin !== undefined || priceMax !== undefined) {
