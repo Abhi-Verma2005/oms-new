@@ -22,7 +22,7 @@ import FintechCard14 from './fintech-card-14'
 
 export default function Fintech() {
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto min-w-0">
 
       {/* Page header */}
       <div className="sm:flex sm:justify-between sm:items-center mb-5">
@@ -51,7 +51,7 @@ export default function Fintech() {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid gap-6 min-w-0" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
 
         {/* Page Intro */}
         <FintechIntro />
