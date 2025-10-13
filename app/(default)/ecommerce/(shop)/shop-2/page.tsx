@@ -14,7 +14,7 @@ function ProductsGrid({ productsProp }: { productsProp: Product[] }) {
   return (
     <>
       {productsProp.map((p: any) => (
-        <div key={p.id} className="w-full min-w-0">
+        <div key={p.id} className="w-full min-w-0 max-w-sm mx-auto">
           <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-3 sm:p-4 flex flex-col min-w-0">
             <div className="text-xs text-gray-500 mb-1">{p.badge || 'Package'}</div>
             <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">{p.header}</h3>
@@ -162,7 +162,7 @@ export default function Shop2() {
         />
 
         {/* Content */}
-        <div>
+        <div className="flex-1 min-w-0">
 
           {/* Filters */}
           <div className="mb-4 sm:mb-5">
@@ -189,11 +189,11 @@ export default function Shop2() {
 
           {/* Cards 1 (Video Courses) */}
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 min-w-0">
+            <div className="grid gap-3 sm:gap-4 md:gap-6 min-w-0 auto-rows-fr" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
               {loading && (
                 <>
                   {Array.from({ length: 12 }).map((_, idx) => (
-                    <div key={idx} className="w-full min-w-0">
+                    <div key={idx} className="w-full min-w-0 max-w-sm mx-auto">
                       <div className="h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/60 rounded-xl p-3 sm:p-4 flex flex-col min-w-0">
                         <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
                         <div className="h-5 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />

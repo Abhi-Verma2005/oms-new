@@ -157,7 +157,7 @@ export default function PersonalAnalytics() {
   }
 
   return (
-    <div className="grid grid-cols-12 gap-6">
+    <div className="grid grid-cols-12 gap-6 min-w-0">
       {/* Key Metrics Summary */}
       <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
         <div className="px-5 py-4">
@@ -198,41 +198,47 @@ export default function PersonalAnalytics() {
       </div>
 
       {/* Order Status */}
-      <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+      <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Order Status</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Breakdown of your orders</p>
         </header>
-        <DoughnutChart data={orderStatusData} width={389} height={200} />
+        <div className="w-full overflow-hidden">
+          <DoughnutChart data={orderStatusData} width={400} height={200} />
+        </div>
       </div>
 
       {/* Credits Usage Pattern */}
-      <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+      <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Weekly Credits Usage</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your usage pattern this week</p>
         </header>
-        <div className="grow">
-          <LineChart01 data={creditsChartData} width={389} height={150} />
+        <div className="grow w-full overflow-hidden">
+          <LineChart01 data={creditsChartData} width={400} height={150} />
         </div>
       </div>
 
       {/* Wishlist Activity */}
-      <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+      <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Wishlist Activity</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">When you added items</p>
         </header>
-        <PieChart data={wishlistData} width={389} height={200} />
+        <div className="w-full overflow-hidden">
+          <PieChart data={wishlistData} width={400} height={200} />
+        </div>
       </div>
 
       {/* Activity Breakdown */}
-      <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
+      <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
         <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
           <h2 className="font-semibold text-gray-800 dark:text-gray-100">Activity Breakdown</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Different types of activities over time</p>
         </header>
-        <BarChart03 data={activityCategoriesData} width={1200} height={200} />
+        <div className="w-full overflow-hidden">
+          <BarChart03 data={activityCategoriesData} width={800} height={200} />
+        </div>
       </div>
     </div>
   )
