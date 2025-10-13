@@ -188,6 +188,11 @@ export default function ActivityFeed() {
 }
 
 function renderTitle(a: Activity) {
+  const humanize = (s: string) => s
+    .toLowerCase()
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
   switch (a.activity) {
     case 'ADD_TO_WISHLIST':
       return 'Added to wishlist'
@@ -195,12 +200,20 @@ function renderTitle(a: Activity) {
       return 'Removed from wishlist'
     case 'PAYMENT_INITIATED':
       return 'Payment initiated'
+    case 'PAYMENT_SUCCESS':
+      return 'Payment successful'
     case 'ORDER_CREATED':
       return 'Order placed'
+    case 'ADD_TO_CART':
+      return 'Added to cart'
+    case 'CLEAR_CART':
+      return 'Cleared cart'
+    case 'APPLY_FILTERS':
+      return 'Applied filters'
     case 'SEARCH':
       return 'Search'
     default:
-      return a.activity
+      return humanize(a.activity)
   }
 }
 
@@ -213,6 +226,11 @@ function renderSubtitle(a: Activity) {
       const itemCount = typeof m.itemCount === 'number' ? m.itemCount : undefined
       return amount ? `$${amount} ${currency} • ${itemCount ?? 0} item(s)` : a.description || ''
     }
+    case 'PAYMENT_SUCCESS': {
+      const amount = typeof m.amount === 'number' ? (m.amount / 100).toFixed(2) : undefined
+      const currency = typeof m.currency === 'string' ? m.currency.toUpperCase() : 'USD'
+      return amount ? `$${amount} ${currency}` : a.description || ''
+    }
     case 'ORDER_CREATED': {
       const total = typeof m.totalAmount === 'number' ? (m.totalAmount / 100).toFixed(2) : undefined
       const currency = typeof m.currency === 'string' ? m.currency.toUpperCase() : 'USD'
@@ -220,6 +238,9 @@ function renderSubtitle(a: Activity) {
       return total ? `$${total} ${currency} • ${count ?? 0} item(s)` : a.description || ''
     }
     case 'ADD_TO_WISHLIST': {
+      return m.siteName || a.description || ''
+    }
+    case 'ADD_TO_CART': {
       return m.siteName || a.description || ''
     }
     case 'REMOVE_FROM_WISHLIST': {

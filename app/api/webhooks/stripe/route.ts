@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         })
         
         // Extract metadata
-        const { userId, items, orderType, orderId } = paymentIntent.metadata
+        const { userId, items, orderType, orderId, projectId } = paymentIntent.metadata
         
         if (!userId || !items) {
           console.error('Missing required metadata in payment intent:', {
@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
               totalAmount: paymentIntent.amount,
               currency: paymentIntent.currency.toUpperCase(),
               status: 'PAID',
+              projectId: projectId || null,
               items: {
                 create: parsedItems.map((item: any) => ({
                   siteId: item.id,

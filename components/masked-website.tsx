@@ -33,6 +33,9 @@ export default function MaskedWebsite({ site, maxStars = 14, showRevealButton = 
       if (!res.ok) throw new Error(data?.error || 'Failed')
       const website: string = data.website
       setRevealed(website)
+      
+      // Dispatch custom event to notify dashboard of credit usage
+      window.dispatchEvent(new CustomEvent('creditsUsed', { detail: { creditsUsed: 1 } }))
     } catch (err) {
       // optionally show toast
     } finally {

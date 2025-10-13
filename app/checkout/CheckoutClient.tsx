@@ -13,6 +13,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 export default function CheckoutClient() {
   const { state } = useCart()
   const { openSidebar } = useLayout()
+  const { selectedProjectId } = require('@/stores/project-store').useProjectStore()
   const { addMessage } = useChat()
   const url = typeof window !== 'undefined' ? new URL(window.location.href) : null
   const priceCentsParam = url ? Number(url.searchParams.get('priceCents') || '0') : 0
@@ -82,7 +83,7 @@ export default function CheckoutClient() {
         const res = await fetch('/api/payment-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount, currency, items, productId }),
+          body: JSON.stringify({ amount, currency, items, productId, projectId: selectedProjectId || undefined }),
         })
         if (!res.ok) throw new Error('Failed to create payment intent')
         const j = await res.json()

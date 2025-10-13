@@ -80,6 +80,7 @@ model User {
   userTags                    UserTag[]
   user_topic_clusters         user_topic_clusters[]
   wishlists                   Wishlist[]
+  filterPrefs                 ProjectFilterPreference[]
 
   @@map("users")
 }
@@ -633,6 +634,7 @@ model Project {
   searchInterests SearchInterest[]
   activities      UserActivity[]
   wishlists       Wishlist[]
+  filterPrefs     ProjectFilterPreference[]
 
   @@index([userId, createdAt])
   @@map("projects")
@@ -651,6 +653,22 @@ model ProjectCompetitor {
 
   @@unique([projectId, domain])
   @@map("project_competitors")
+}
+
+model ProjectFilterPreference {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  projectId String   @map("project_id")
+  page      String
+  data      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, page])
+  @@index([projectId, page])
+  @@map("project_filter_preferences")
 }
 
 model Product {

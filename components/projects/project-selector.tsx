@@ -3,6 +3,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useProjectStore, type UserProject } from '@/stores/project-store'
 import { cn } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export function ProjectSelector({ className }: { className?: string }) {
   const { selectedProjectId, selectedProject, setSelectedProject, clearProject } = useProjectStore()
@@ -52,6 +59,10 @@ export function ProjectSelector({ className }: { className?: string }) {
   }, [fetchProjects])
 
   const onChange = (id: string) => {
+    if (!id || id === 'none') {
+      setSelectedProject(null as any)
+      return
+    }
     const proj = projects.find((p) => p.id === id) || null
     setSelectedProject(proj as any)
   }
@@ -59,22 +70,26 @@ export function ProjectSelector({ className }: { className?: string }) {
   return (
     <div className={cn('inline-flex items-center gap-2', className)}>
       <label className="text-sm text-gray-600 dark:text-gray-300">Project</label>
-      <select
-        className="text-sm rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1"
-        value={selectedProjectId ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={loading || !!error}
-      >
-        <option value="">No project</option>
-        {projects.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name || p.domain}
-          </option>
-        ))}
-      </select>
-      {selectedProject ? (
-        <span className="text-xs text-gray-500 dark:text-gray-400">{selectedProject.domain}</span>
-      ) : null}
+      <div className="min-w-[220px]">
+        <Select
+          value={selectedProjectId ?? 'none'}
+          onValueChange={(v) => onChange(v)}
+          disabled={loading || !!error}
+       >
+          <SelectTrigger className="h-9 px-3">
+            <SelectValue placeholder="Select a project" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No project</SelectItem>
+            {projects.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name || p.domain}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {/* Removed extra selected project label to keep UI clean */}
       {error ? <span className="text-xs text-red-500">{error}</span> : null}
     </div>
   )
