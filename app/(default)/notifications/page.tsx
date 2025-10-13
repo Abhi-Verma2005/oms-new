@@ -38,10 +38,27 @@ export default function NotificationsPage() {
   const { notifications, markAsRead, markAllAsRead, isWebSocketConnected } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchNotifications();
   }, []);
+
+  // When navigated with a hash like #notif-<id>, scroll to it and highlight
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith('#notif-')) return;
+    const id = hash.replace('#notif-', '');
+    const el = document.getElementById(`notif-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightId(id);
+      // Clear highlight after a short time
+      const t = setTimeout(() => setHighlightId(null), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [loading, notifications]);
 
   const fetchNotifications = async () => {
     try {
@@ -178,10 +195,11 @@ export default function NotificationsPage() {
           <div className="space-y-4">
             {filteredNotifications.map((notification) => (
               <Card 
-                key={notification.id} 
+                key={notification.id}
+                id={`notif-${notification.id}`}
                 className={`transition-all duration-200 hover:shadow-md ${
                   !notification.isRead ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''
-                }`}
+                } ${highlightId === notification.id ? 'animate-pulse ring-2 ring-violet-400 dark:ring-violet-600' : ''}`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">

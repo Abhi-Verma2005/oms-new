@@ -205,11 +205,7 @@ export default function Header({
                 </NavbarDropdownItem>
               </NavbarDropdown>
 
-              <NavbarDropdown
-                title="Inbox"
-                icon={<Inbox className="w-4 h-4" />}
-                href="/inbox"
-              />
+              {/* Inbox removed from nav (kept route for later use) */}
 
               <NavbarDropdown
                 title="Calendar"
@@ -381,9 +377,7 @@ export default function Header({
               <Link href="/ecommerce/link-building-packages" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Link Building Packages
               </Link>
-              <Link href="/inbox" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
-                Inbox
-              </Link>
+              {/* Inbox removed from mobile nav (kept route) */}
               <Link href="/calendar" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Calendar
               </Link>
