@@ -14,6 +14,18 @@ export interface APISite {
   // Value used for AS badge in UI; comes from outreach n8n payload
   similarwebTraffic?: number
   semrushOrganicTraffic?: number
+  // Top country fields from API (names may be ISO codes like 'us', 'in', etc.)
+  semrushFirstCountryName?: string
+  semrushFirstCountryTraffic?: number
+  semrushSecondCountryName?: string
+  semrushSecondCountryTraffic?: number
+  semrushThirdCountryName?: string
+  semrushThirdCountryTraffic?: number
+  semrushFourthCountryName?: string
+  semrushFourthCountryTraffic?: number
+  semrushFifthCountryName?: string
+  semrushFifthCountryTraffic?: number
+  ahrefTraffic?: number
   spamScore: number
   domainRating: number
   costPrice: number
@@ -459,14 +471,12 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<A
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: requestBody, // This will be undefined for the first request (no filters)
+      body: requestBody, 
     })
 
     if (!response.ok) {
-      // Fallback on non-OK
       return getFallbackSampleData(filters)
     }
-
     const responseText = await response.text()
     if (!responseText || responseText.trim() === '') {
       return getFallbackSampleData(filters)
@@ -474,6 +484,7 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<A
     let data: any
     try {
       data = JSON.parse(responseText)
+      console.log("data",data)
     } catch (e) {
       return getFallbackSampleData(filters)
     }
@@ -494,14 +505,38 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<A
 }
 
 export function transformAPISiteToSite(apiSite: APISite): Site {
+  // Build top countries array from API shape (first..fifth)
+  const pairs: Array<{ country?: string; traffic?: number }> = [
+    { country: apiSite.semrushFirstCountryName, traffic: apiSite.semrushFirstCountryTraffic },
+    { country: apiSite.semrushSecondCountryName, traffic: apiSite.semrushSecondCountryTraffic },
+    { country: apiSite.semrushThirdCountryName, traffic: apiSite.semrushThirdCountryTraffic },
+    { country: apiSite.semrushFourthCountryName, traffic: apiSite.semrushFourthCountryTraffic },
+    { country: apiSite.semrushFifthCountryName, traffic: apiSite.semrushFifthCountryTraffic },
+  ]
+  const codeToName: Record<string, string> = {
+    us: 'United States', uk: 'United Kingdom', in: 'India', au: 'Australia', ca: 'Canada', pk: 'Pakistan', de: 'Germany', fr: 'France', es: 'Spain', it: 'Italy', nl: 'Netherlands', jp: 'Japan', cn: 'China', sg: 'Singapore', ae: 'United Arab Emirates', mx: 'Mexico', za: 'South Africa', nz: 'New Zealand', ie: 'Ireland', se: 'Sweden'
+  }
+  const valid = pairs
+    .filter(p => !!p.country && typeof p.traffic === 'number' && (p.traffic as number) > 0)
+    .map(p => {
+      const raw = String(p.country || '').trim()
+      const key = raw.toLowerCase()
+      const name = codeToName[key] || raw || 'Other'
+      return { country: name, traffic: p.traffic as number }
+    })
+  const totalTrafficForBreakdown = valid.reduce((s, x) => s + x.traffic, 0)
+  const topCountries = totalTrafficForBreakdown > 0
+    ? valid.map(v => ({ country: v.country, percent: Math.max(0, Math.round((v.traffic / totalTrafficForBreakdown) * 100)) }))
+    : []
+
   return {
     id: apiSite.id.toString(),
     url: `https://${apiSite.website}`,
     name: apiSite.website,
     niche: apiSite.niche || 'Not Specified',
     category: apiSite.priceCategory || 'Not Specified',
-    language: apiSite.language || 'Not Specified',
-    country: apiSite.webCountry || 'Not Specified',
+    language: (apiSite.language && apiSite.language.trim()) ? apiSite.language : 'Not Specified',
+    country: (apiSite.webCountry && apiSite.webCountry.trim()) ? apiSite.webCountry : (topCountries[0]?.country || 'Not Specified'),
     da: apiSite.domainAuthority || 0,
     pa: apiSite.pageAuthority || 0,
     dr: apiSite.domainRating || 0,
@@ -512,6 +547,7 @@ export function transformAPISiteToSite(apiSite: APISite): Site {
       semrushOverallTraffic: parseInt(apiSite.semrushTraffic) || 0,
       semrushOrganicTraffic: apiSite.semrushOrganicTraffic || 0,
       trafficTrend: 'stable',
+      topCountries,
     },
     publishing: {
       price: apiSite.sellingPrice || 0,
