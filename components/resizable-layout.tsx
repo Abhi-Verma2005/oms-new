@@ -104,11 +104,11 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
   return (
     <ResizableLayoutContext.Provider value={contextValue}>
       {!isSidebarOpen ? (
-        <div className="h-[100dvh] overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
+        <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230] mt-14 sm:mt-16">
           {children}
         </div>
       ) : (
-        <div className="h-[100dvh] bg-gray-50 dark:bg-[#1f2230] flex resizable-container">
+        <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] bg-gray-50 dark:bg-[#1f2230] flex resizable-container mt-14 sm:mt-16">
           {/* Mobile: Stack vertically, Desktop: Side by side */}
           <div className="block lg:hidden flex-1">
             {/* Mobile: AI Sidebar takes full width */}
@@ -148,7 +148,7 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
 export function ResizableLayout({ children }: ResizableLayoutProps) {
   return (
     <Suspense fallback={
-      <div className="h-[100dvh] overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
+      <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230] mt-14 sm:mt-16">
         {children}
       </div>
     }>

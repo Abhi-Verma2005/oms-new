@@ -81,6 +81,9 @@ model User {
   user_topic_clusters         user_topic_clusters[]
   wishlists                   Wishlist[]
   filterPrefs                 ProjectFilterPreference[]
+  knowledgeBase               UserKnowledgeBase[]
+  semanticCache               SemanticCache[]
+  ragPerformanceMetrics       RAGPerformanceMetrics[]
 
   @@map("users")
 }
@@ -1105,4 +1108,62 @@ enum InteractionType {
   NAVIGATION
   PREFERENCE_CHANGE
   OTHER
+}
+
+// RAG System Models
+model UserKnowledgeBase {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @map("user_id")
+  content         String
+  contentType     String   @default("conversation") @map("content_type")
+  embedding       Unsupported("vector(1536)")?
+  metadata        Json     @default("{}")
+  topics          String[] @default([])
+  sentiment       String?
+  intent          String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  lastAccessed    DateTime @default(now()) @map("last_accessed")
+  accessCount     Int      @default(0) @map("access_count")
+  importanceScore Float    @default(1.0) @map("importance_score")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("user_knowledge_base")
+}
+
+model SemanticCache {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @map("user_id")
+  queryHash       String   @map("query_hash") @db.VarChar(64)
+  queryEmbedding  Unsupported("vector(1536)") @map("query_embedding")
+  cachedResponse  Json     @map("cached_response")
+  contextData     Json?    @map("context_data")
+  createdAt       DateTime @default(now()) @map("created_at")
+  expiresAt       DateTime @map("expires_at")
+  hitCount        Int      @default(0) @map("hit_count")
+  lastHit         DateTime? @map("last_hit")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, queryHash])
+  @@map("semantic_cache")
+}
+
+model RAGPerformanceMetrics {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String?  @map("user_id")
+  operation       String
+  durationMs      Int      @map("duration_ms")
+  success         Boolean
+  queryLength     Int?     @map("query_length")
+  contextLength   Int?     @map("context_length")
+  docsRetrieved   Int?     @map("docs_retrieved")
+  docsFinal       Int?     @map("docs_final")
+  timestamp       DateTime @default(now())
+  metadata        Json     @default("{}")
+  
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@map("rag_performance_metrics")
 }
