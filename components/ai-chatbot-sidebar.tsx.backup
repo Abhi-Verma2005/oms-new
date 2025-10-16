@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { 
   Send, 
   Bot, 
-  Trash2,
+  Trash2, 
   X, 
   Monitor, 
   Network, 
@@ -74,47 +74,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     isItemInCart 
   } = useCart()
   const { messages, addMessage, updateMessage, clearMessages, isLoading, setIsLoading } = useChat()
-  
-  // Clear chat function that preserves RAG data
-  const clearChat = async () => {
-    try {
-      // Call API to clear chat history while preserving knowledge base
-      const response = await fetch('/api/ai-chat/clear-history', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (response.ok) {
-        // Clear local messages
-        clearMessages()
-        // Clear RAG context
-        setRagContext(null)
-        console.log('✅ Chat history cleared while preserving knowledge base')
-      } else {
-        console.error('❌ Failed to clear chat history')
-      }
-    } catch (error) {
-      console.error('❌ Error clearing chat history:', error)
-      // Fallback: just clear local messages
-      clearMessages()
-      setRagContext(null)
-    }
-  }
-  
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inflightAbortRef = useRef<AbortController | null>(null)
   const [actionCards, setActionCards] = useState<ActionCard[]>([])
-  // RAG Integration Indicators
-  const [ragContext, setRagContext] = useState<{
-    sources: string[]
-    cacheHit: boolean
-    contextCount: number
-  } | null>(null)
-
   const prevCartCountRef = useRef<number>(cartState.items.length)
   const didMountRef = useRef<boolean>(false)
 
@@ -285,9 +249,8 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         .trim()
     } catch {}
 
-// Add or update the assistant message
+    // Add or update the assistant message
     if (options?.targetMessageId) {
-      // Always update with the clean response to ensure content is displayed
       updateMessage(options.targetMessageId, { content: cleanResponse || 'Processing your request...' })
     } else {
       const assistantMessage: Message = {
@@ -860,17 +823,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
       // Abort any previous streaming request to prevent overlap
       if (inflightAbortRef.current) {
-        try { 
-          inflightAbortRef.current.abort() 
-          console.log('🔄 Aborted previous request')
-        } catch (e) {
-          console.warn('Failed to abort previous request:', e)
-        }
+        try { inflightAbortRef.current.abort() } catch {}
       }
       inflightAbortRef.current = new AbortController()
-      console.log('🚀 Created new abort controller')
 
-      console.log('📤 Sending request to API...')
       const response = await fetch('/api/ai-chat?stream=1', {
         method: 'POST',
         headers: {
@@ -889,16 +845,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           cartState: cartStateForAPI
         })
       })
-      console.log(`📥 Received response: ${response.status}`)
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         // Try to parse JSON error, else generic
         let errText = 'Failed to send message'
         try { errText = await response.text() } catch {}
         throw new Error(errText)
-      }
-      
-      if (!response.body) {
-        throw new Error('No response body received')
       }
 
       // Create a placeholder assistant message to append chunks into
@@ -911,33 +862,22 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       }
       addMessage(assistantMessage)
 
-      // Simplified and reliable streaming implementation
-      console.log('🚀 Starting reliable stream processing...')
-      
+      // Read streamed chunks and append to the assistant message
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let done = false
       let accumulated = ''
       let controlBuffer = ''
-      const executedActions = new Set<string>()
       const toolRegex = /\[\[TOOL\]\]({[\s\S]*?})\n/g
-      const bracketToolTagRegex = /\[[A-Z_]+(?::[\s\S]*?)?\]/g
-      
-      try {
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        
-        while (true) {
-          const { done, value } = await reader.read()
-          
-          if (done) {
-            console.log('✅ Stream completed successfully')
-            break
-          }
-          
-          // Process the chunk
+      const executedActions = new Set<string>()
+      while (!done) {
+        const { value, done: readerDone } = await reader.read()
+        done = readerDone
+        if (value) {
           const chunk = decoder.decode(value, { stream: true })
-          console.log(`📦 Received chunk: "${chunk.substring(0, 50)}${chunk.length > 50 ? '...' : ''}"`)
-          
-          // Handle tool events
           controlBuffer += chunk
+
+          // Execute tool events as soon as they are fully received
           let match
           while ((match = toolRegex.exec(controlBuffer)) !== null) {
             try {
@@ -951,30 +891,22 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
               console.warn('Failed to handle tool event:', e)
             }
           }
+          // Remove processed tool events from buffer
           controlBuffer = controlBuffer.replace(toolRegex, '')
-          
-          // Clean and accumulate text
-          const cleanedChunk = chunk
-            .replace(toolRegex, '')
-            .replace(bracketToolTagRegex, '')
-          
-          accumulated += cleanedChunk
-          
-          // Update the message in real-time
+
+          // Append cleaned text (without tool markers) to the assistant message content
+          const cleanedToolEventsRemoved = chunk.replace(toolRegex, '')
+          // Strip any bracketed tool tags (e.g., [FILTER:...], [ACTION]) from visible text
+          const bracketToolTagRegex = /\[[A-Z_]+(?::[\s\S]*?)?\]/g
+          const cleaned = cleanedToolEventsRemoved.replace(bracketToolTagRegex, '')
+          accumulated += cleaned
           updateMessage(assistantId, { content: accumulated })
         }
-        
-        // Clean up
-        reader.releaseLock()
-        
-      } catch (error) {
-        console.error('❌ Stream processing error:', error)
-        updateMessage(assistantId, { content: 'Sorry, I encountered an error while processing your request. Please try again.' })
       }
 
-      // Stream processing completed - no need for additional processing
-      // The message has been updated in real-time during streaming
-      console.log('✅ Stream processing completed successfully')
+      // After stream completes, parse tool tags in the final text as a safety net
+      // This ensures actions still run even if the server did not emit tool events
+      await processAIResponse(accumulated, cartStateForAPI, { targetMessageId: assistantId, userText: userMessage.content })
     } catch (error) {
       // Handle AbortError gracefully - this is expected when requests are cancelled
       if (error instanceof Error && error.name === 'AbortError') {
@@ -1011,6 +943,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     }
   })
 
+  const clearChat = () => {
+    clearMessages()
+  }
 
   const applyFilters = (filterCommand: string) => {
     try {
@@ -1064,35 +999,20 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             </div>
             <div className="text-sm font-semibold text-white/90">Assistant</div>
           </div>
-          <div className="flex items-center gap-1">
-            {/* Clear Chat Button */}
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearChat}
-                className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
-                title="Clear chat history (keeps your personal data)"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-            {/* Close Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (onClose) {
-                  try { onClose() } catch {}
-                  return
-                }
-                try { toggleSidebar() } catch {}
-              }}
-              className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (onClose) {
+                try { onClose() } catch {}
+                return
+              }
+              try { toggleSidebar() } catch {}
+            }}
+            className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Welcome Section - Only show when no messages */}
