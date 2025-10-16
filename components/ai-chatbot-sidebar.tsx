@@ -1054,31 +1054,31 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/10">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
-              <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        {/* Header - minimal, balanced layout per HIG */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-black/10">
+          <div className="flex items-center gap-2" aria-label="Assistant">
+            <div className="h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+              <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="12" cy="12" r="8" />
               </svg>
             </div>
-            <div className="text-sm font-semibold text-white/90">Assistant</div>
+            <div className="text-[13px] font-medium tracking-[-0.01em] text-white/90">Assistant</div>
           </div>
-          <div className="flex items-center gap-1">
-            {/* Clear Chat Button */}
+          <div className="flex items-center gap-0.5">
             {messages.length > 0 && (
               <Button
+                aria-label="Clear chat"
                 variant="ghost"
                 size="sm"
                 onClick={clearChat}
-                className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
-                title="Clear chat history (keeps your personal data)"
+                className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/20"
+                title="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
-            {/* Close Button */}
             <Button
+              aria-label="Close assistant"
               variant="ghost"
               size="sm"
               onClick={() => {
@@ -1088,7 +1088,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 }
                 try { toggleSidebar() } catch {}
               }}
-              className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10"
+              className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/20"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -1097,19 +1097,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
         {/* Welcome Section - Only show when no messages */}
         {messages.length === 0 && (
-          <div className="p-6 pt-12">
-            <div className="flex items-center gap-2">
+          <div className="px-6 py-8">
+            <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
-                <div className="h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
-                  <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <div className="h-7 w-7 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+                  <svg className="w-4 h-4 text-white/70" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="12" cy="12" r="8" />
                   </svg>
                 </div>
               </div>
               <div className="flex-1 text-white">
-                <div className="text-xl font-semibold mb-0.5">Hi,</div>
-                <div className="text-sm text-white/70 mb-2">How can I assist you today?</div>
-                <div className="flex items-center gap-2 text-xs text-white/60">
+                <div className="text-[20px] font-semibold leading-6 mb-1 tracking-[-0.01em]">Hi,</div>
+                <div className="text-[13px] text-white/70 mb-3">How can I assist you today?</div>
+                <div className="flex items-center gap-2 text-[12px] text-white/60">
                   <span className="flex items-center gap-1">
                     <ShoppingCart className="h-3 w-3" />
                     Cart
@@ -1129,7 +1129,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         )}
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-4 space-y-4">
+        <div
+          className="flex-1 overflow-y-auto no-scrollbar px-6 py-3 space-y-3"
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions"
+        >
           {configLoading && messages.length === 0 && (
             <div className="text-center text-white/60 py-6">
               <Bot className="h-8 w-8 mx-auto mb-3 opacity-60" />
@@ -1141,23 +1146,23 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             <div key={message.id} className="space-y-2 max-w-full overflow-hidden">
               <div
                 className={cn(
-                  "flex gap-3",
+                  "flex gap-2.5",
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 )}
               >
                 {message.role === 'user' ? (
-                  <div className="max-w-full sm:max-w-[85%] rounded-xl px-3 py-2 select-text bg-indigo-600/90 text-white selection:bg-indigo-500/30 selection:text-white border border-indigo-400/30 shadow-sm break-words">
+                  <div className="max-w-full sm:max-w-[85%] rounded-[12px] px-3 py-2 select-text bg-indigo-600/95 text-white selection:bg-indigo-500/30 selection:text-white border border-indigo-300/40 shadow-sm break-words">
                     <MarkdownRenderer content={message.content} variant="chatbot" />
                   </div>
                 ) : (
                   <div className="w-full flex items-start gap-2">
-                    <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
-                      <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+                      <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor">
                         <circle cx="12" cy="12" r="8" />
                       </svg>
                     </div>
                     <div className="flex-1 select-text selection:bg-white/10 selection:text-white overflow-hidden">
-                      <div className="inline-block max-w-full sm:max-w-[90%] rounded-xl px-3 py-2 bg-white/5 border border-white/10 text-white/90 shadow-sm break-words">
+                      <div className="inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 bg-white/10 border border-white/10 text-white/95 shadow-sm break-words">
                         <MarkdownRenderer content={message.content} variant="chatbot" />
                       </div>
                     </div>
@@ -1172,16 +1177,16 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           {isLoading && (
             <div className="flex gap-3 justify-start">
               <div className="w-full flex items-start gap-2">
-                <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center">
-                  <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+                  <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="12" cy="12" r="8" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  <div className="flex gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                   </div>
                 </div>
               </div>
@@ -1205,28 +1210,33 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
           {/* Input Field */}
           <div className="relative">
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-white/5 rounded-[12px] p-3 border border-white/10 focus-within:border-white/20 focus-within:bg-white/[0.07] transition-colors">
               <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask anything, @models, / prompts"
+                placeholder="Message Assistant"
+                aria-label="Message Assistant"
                 disabled={isLoading}
-                className="w-full bg-transparent text-white placeholder-white/50 resize-none focus:outline-none text-sm border-0 selection:bg-white/10 selection:text-white focus:ring-0 focus:border-0"
+                className="w-full bg-transparent text-white placeholder-white/55 resize-none focus:outline-none text-[13px] leading-5 border-0 selection:bg-white/10 selection:text-white focus:ring-0 focus:border-0"
                 rows={2}
               />
               <div className="flex items-center justify-end mt-2">
                 
                 <div className="flex items-center gap-1.5">
-                  <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/70">
+                  <button
+                    aria-label="Voice input"
+                    className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/70 focus-visible:ring-2 focus-visible:ring-white/20"
+                  >
                     <Mic className="h-3 w-3" />
                   </button>
                   <Button
+                    aria-label="Send message"
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || isLoading}
                     size="sm"
-                    className="bg-indigo-600/90 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg border border-indigo-400/30"
+                    className="bg-indigo-600/90 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-md border border-indigo-400/30 focus-visible:ring-2 focus-visible:ring-indigo-300/30"
                   >
                     <Send className="h-3 w-3" />
                   </Button>
