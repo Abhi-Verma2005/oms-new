@@ -250,7 +250,7 @@ export default function PublishersHelpCarousel({
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col h-full">
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 px-3 pt-3 pb-0 sm:px-4 sm:pt-4 sm:pb-0 flex flex-col h-full">
             <div className="flex items-center justify-between mb-2 flex-shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">Your projects</div>

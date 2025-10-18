@@ -53,8 +53,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       </div>
       
       <div className="flex flex-1 flex-col overflow-hidden border-l border-gray-200 dark:border-gray-800">
-        <AdminHeader />
-        <AdminBreadcrumbs />
+        <div className="sticky top-0 z-40">
+          <AdminHeader />
+          <AdminBreadcrumbs />
+        </div>
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto space-y-6 text-gray-900 dark:text-gray-100">
             {children}

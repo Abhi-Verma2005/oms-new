@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createOpenAI } from '@ai-sdk/openai'
+import { streamText } from 'ai'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
@@ -34,10 +35,19 @@ async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
-// Modern RAG: Query Rewriting for better retrieval
+// Modern RAG: Optimized Query Rewriting with timeout
 async function rewriteQuery(originalQuery: string): Promise<string[]> {
   try {
+    // Skip query rewriting for very short queries to avoid unnecessary processing
+    if (originalQuery.length < 10) {
+      return [originalQuery]
+    }
+    
     const apiKey = process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY!
+    
+    // Add timeout to prevent hanging
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -50,11 +60,7 @@ async function rewriteQuery(originalQuery: string): Promise<string[]> {
         messages: [
           {
             role: 'system',
-            content: `You are a query rewriting expert. Given a user query, generate 2-3 alternative queries that would help retrieve more relevant information. Focus on:
-1. Synonyms and related terms
-2. Different phrasings
-3. More specific or general versions
-Return only the rewritten queries, one per line.`
+            content: `Generate 1-2 alternative queries for better search. Keep them concise and focused. Return one per line.`
           },
           {
             role: 'user',
@@ -62,11 +68,15 @@ Return only the rewritten queries, one per line.`
           }
         ],
         temperature: 0.3,
-        max_tokens: 200
-      })
+        max_tokens: 100
+      }),
+      signal: controller.signal
     })
     
+    clearTimeout(timeoutId)
+    
     if (!response.ok) {
+      console.warn('Query rewriting failed, using original query')
       return [originalQuery] // Fallback to original
     }
     
@@ -74,86 +84,93 @@ Return only the rewritten queries, one per line.`
     const rewrittenQueries = data.choices[0].message.content
       .split('\n')
       .map((q: string) => q.trim())
-      .filter((q: string) => q.length > 0)
-      .slice(0, 3) // Limit to 3 queries
+      .filter((q: string) => q.length > 0 && q !== originalQuery)
+      .slice(0, 2) // Limit to 2 additional queries
     
     return [originalQuery, ...rewrittenQueries]
   } catch (error) {
-    console.error('Query rewriting failed:', error)
+    console.warn('Query rewriting failed, using original query:', error)
     return [originalQuery] // Fallback to original
   }
 }
 
-// Modern RAG: Hybrid Search (Semantic + Keyword)
+// Modern RAG: Optimized Hybrid Search (Semantic + Keyword)
 async function hybridSearch(userId: string, queries: string[], message: string): Promise<any[]> {
-  const results: any[] = []
-  
-  for (const query of queries) {
-    // Generate embedding for semantic search
-    const queryEmbedding = await generateEmbedding(query)
+  try {
+    console.log(`🔍 Hybrid search for ${queries.length} queries...`)
     
-    // 1. Semantic Search
-    const semanticResults = await prisma.$queryRaw`
-      WITH semantic_results AS (
+    // Limit queries to prevent excessive processing
+    const limitedQueries = queries.slice(0, 2) // Only use first 2 queries
+    const results: any[] = []
+    
+    // Generate embedding once for the main query (most important)
+    const mainQuery = limitedQueries[0] || message
+    let queryEmbedding: number[]
+    
+    try {
+      queryEmbedding = await generateEmbedding(mainQuery)
+    } catch (error) {
+      console.error('Embedding generation failed, using fallback:', error)
+      queryEmbedding = Array.from({ length: 1536 }, () => Math.random() * 2 - 1)
+    }
+    
+    // Single optimized query combining semantic and keyword search
+    const searchResults = await prisma.$queryRaw`
+      WITH combined_search AS (
         SELECT 
           id,
           content,
           metadata,
           content_type,
           created_at,
-          COALESCE(1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536)), 0.0) AS similarity,
-          'semantic' as search_type,
+          access_count,
+          importance_score,
+          COALESCE(1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536)), 0.0) AS semantic_similarity,
           CASE 
-            WHEN LOWER(content) LIKE LOWER(${'%' + query + '%'}) THEN 0.95
-            WHEN (1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.4 THEN 0.9
-            WHEN (1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.3 THEN 0.8
-            WHEN (1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.25 THEN 0.7
-            ELSE 0.0
-          END AS confidence_score
-        FROM user_knowledge_base
-        WHERE user_id = ${userId}
-          AND embedding IS NOT NULL
-          AND (1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.2
-      )
-      SELECT * FROM semantic_results
-      WHERE confidence_score > 0.0
-    ` as any[]
-    
-    // 2. Keyword Search
-    const keywordResults = await prisma.$queryRaw`
-      WITH keyword_results AS (
-        SELECT 
-          id,
-          content,
-          metadata,
-          content_type,
-          created_at,
-          CASE 
-            WHEN LOWER(content) LIKE LOWER(${'%' + query + '%'}) THEN 0.9
+            WHEN LOWER(content) LIKE LOWER(${'%' + mainQuery + '%'}) THEN 0.9
             WHEN LOWER(content) LIKE LOWER(${'%' + message + '%'}) THEN 0.8
             ELSE 0.0
-          END AS similarity,
-          'keyword' as search_type,
+          END AS keyword_similarity,
           CASE 
-            WHEN LOWER(content) LIKE LOWER(${'%' + query + '%'}) THEN 0.95
-            WHEN LOWER(content) LIKE LOWER(${'%' + message + '%'}) THEN 0.85
+            WHEN LOWER(content) LIKE LOWER(${'%' + mainQuery + '%'}) THEN 0.95
+            WHEN (1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.4 THEN 0.9
+            WHEN (1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.3 THEN 0.8
+            WHEN LOWER(content) LIKE LOWER(${'%' + message + '%'}) THEN 0.7
             ELSE 0.0
           END AS confidence_score
         FROM user_knowledge_base
         WHERE user_id = ${userId}
           AND (
-            LOWER(content) LIKE LOWER(${'%' + query + '%'}) OR
-            LOWER(content) LIKE LOWER(${'%' + message + '%'})
+            embedding IS NOT NULL AND (1 - (embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.2
+            OR LOWER(content) LIKE LOWER(${'%' + mainQuery + '%'})
+            OR LOWER(content) LIKE LOWER(${'%' + message + '%'})
           )
       )
-      SELECT * FROM keyword_results
+      SELECT 
+        id,
+        content,
+        metadata,
+        content_type,
+        created_at,
+        access_count,
+        importance_score,
+        GREATEST(semantic_similarity, keyword_similarity) AS similarity,
+        'hybrid' as search_type,
+        confidence_score
+      FROM combined_search
       WHERE confidence_score > 0.0
+      ORDER BY confidence_score DESC, similarity DESC
+      LIMIT 10
     ` as any[]
     
-    results.push(...semanticResults, ...keywordResults)
+    console.log(`✅ Found ${searchResults.length} results from hybrid search`)
+    return searchResults
+    
+  } catch (error) {
+    console.error('Hybrid search failed:', error)
+    // Return empty results instead of failing
+    return []
   }
-  
-  return results
 }
 
 // Modern RAG: Re-ranking with ML-based scoring
@@ -206,7 +223,9 @@ async function rerankResults(results: any[], query: string): Promise<any[]> {
 export async function POST(request: NextRequest) {
   try {
     const { message, messages, config: clientConfig, currentUrl, cartState, userId: requestUserId } = await request.json()
-    console.log(`🚀 RAG-Integrated AI Chat (non-stream): message="${message.substring(0, 50)}..."`)
+    const isStream = request.nextUrl?.searchParams?.get('stream') === '1'
+    
+    console.log(`🚀 RAG-Integrated AI Chat (${isStream ? 'stream' : 'non-stream'}): message="${message.substring(0, 50)}..."`)
     
     if (!process.env.OPEN_AI_KEY && !process.env.OPENAI_API_KEY) {
       return NextResponse.json(
@@ -228,13 +247,247 @@ export async function POST(request: NextRequest) {
     const canPersist = true
     console.log(`👤 Using userId: ${userId} | persist=${canPersist}`)
 
-    return await handleNonStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist)
+    if (isStream) {
+      return await handleStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist)
+    } else {
+      return await handleNonStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist)
+    }
   } catch (error) {
     console.error('Error in RAG-integrated AI chat API:', error)
     return NextResponse.json(
       { error: 'Failed to process message' },
       { status: 500 }
     )
+  }
+}
+
+/**
+ * 🚀 Streaming RAG request
+ */
+async function handleStreamingRequest(
+  userId: string,
+  message: string,
+  messages: any[],
+  clientConfig: any,
+  cartState: any,
+  currentUrl: string,
+  canPersist: boolean
+) {
+  try {
+    console.log('🔍 Starting RAG-enhanced streaming request...')
+    const t0Total = Date.now()
+    
+    // Check semantic cache first
+    const queryHash = Buffer.from(message).toString('base64').slice(0, 64)
+    let queryEmbedding: number[]
+    try {
+      queryEmbedding = await generateEmbedding(message)
+    } catch {
+      queryEmbedding = Array.from({ length: 1536 }, () => Math.random() * 2 - 1)
+    }
+    
+    // Check for semantically similar cached responses
+    const similarCachedResponse = await prisma.$queryRaw`
+      SELECT 
+        id,
+        cached_response,
+        COALESCE(1 - (query_embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536)), 0.0) AS similarity
+      FROM semantic_cache
+      WHERE user_id = ${userId}
+        AND expires_at > NOW()
+        AND (1 - (query_embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.85
+      ORDER BY similarity DESC
+      LIMIT 1
+    `
+    
+    if (similarCachedResponse.length > 0 && similarCachedResponse[0].similarity > 0.9) {
+      console.log(`🎯 Semantic cache hit! Similarity: ${similarCachedResponse[0].similarity.toFixed(3)}`)
+      
+      // Update cache hit count
+      await prisma.semanticCache.update({
+        where: { id: similarCachedResponse[0].id },
+        data: { 
+          hitCount: { increment: 1 },
+          lastHit: new Date()
+        }
+      })
+      
+      const cachedData = similarCachedResponse[0].cached_response
+      let message = ''
+      
+      if (cachedData?.message) {
+        message = cachedData.message
+      } else if (cachedData?.answer) {
+        message = cachedData.answer
+      } else {
+        message = 'I apologize, but I encountered an issue with the cached response. Please try again.'
+      }
+      
+      // Return cached response as stream
+      const stream = new ReadableStream({
+        start(controller) {
+          const chunks = message.split(' ')
+          let index = 0
+          
+          const pushChunk = () => {
+            if (index < chunks.length) {
+              controller.enqueue(new TextEncoder().encode(chunks[index] + ' '))
+              index++
+              setTimeout(pushChunk, 50) // Simulate streaming
+            } else {
+              controller.close()
+            }
+          }
+          
+          pushChunk()
+        }
+      })
+      
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-cache',
+        },
+      })
+    }
+    
+    console.log('🔍 Modern RAG: Performing hybrid retrieval...')
+    const t0Retrieval = Date.now()
+    
+    // Get RAG context with timeout
+    let searchResults: any[] = []
+    try {
+      const ragProcessingPromise = (async () => {
+        const rewrittenQueries = await rewriteQuery(message)
+        const hybridResults = await hybridSearch(userId, rewrittenQueries, message)
+        return await rerankResults(hybridResults, message)
+      })()
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('RAG processing timeout')), 10000) // 10 second timeout
+      })
+      
+      searchResults = await Promise.race([ragProcessingPromise, timeoutPromise]) as any[]
+    } catch (error) {
+      console.warn('RAG processing failed or timed out, continuing without context:', error)
+      searchResults = []
+    }
+    
+    const ragMs = Date.now() - t0Retrieval
+    console.log(`✅ Retrieved ${searchResults.length} relevant documents in ${ragMs}ms`)
+    
+    // Build context
+    const hasRelevantContext = searchResults.length > 0 && (
+      searchResults.some((r: any) => (r.confidence_score || 0) > 0.7) || 
+      searchResults.some((r: any) => (r.similarity || 0) > 0.4)
+    )
+    
+    const ragContext = hasRelevantContext
+      ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${searchResults.map(r => `- ${r.content}`).join('\n')}`
+      : ''
+    
+    const baseSystemPrompt = hasRelevantContext 
+      ? `You are a helpful AI assistant with access to a personalized knowledge base.
+
+${ragContext}
+
+Use the knowledge base context above to provide accurate and personalized responses.`
+      : `You are a helpful AI assistant. You don't have specific information about this user in your knowledge base yet, but you can still be helpful and engaging.
+
+Be helpful and provide useful responses. If the user shares personal information, acknowledge it and remember it for future conversations.`
+    
+    // Create OpenAI client for streaming
+    const openai = createOpenAI({ apiKey: process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY! })
+    
+    // Build messages array
+    const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: baseSystemPrompt },
+      ...(messages || []).slice(-6).map((m: any) => ({ 
+        role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant', 
+        content: m.content 
+      })),
+      { role: 'user' as const, content: message }
+    ]
+    
+    // Create streaming response using OpenAI API directly
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: chatMessages,
+        temperature: 0.7,
+        max_tokens: 1000,
+        stream: true
+      })
+    })
+    
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text()
+      console.error('OpenAI API error:', openaiResponse.status, errorText)
+      throw new Error(`OpenAI API error: ${openaiResponse.status}`)
+    }
+    
+    console.log('✅ OpenAI streaming response started')
+    
+    // Store interaction in background (non-blocking)
+    setImmediate(() => {
+      if (userId !== 'anonymous' && canPersist) {
+        // Store the interaction for future RAG
+        try {
+          generateEmbedding(message).then(embedding => {
+            prisma.userKnowledgeBase.create({
+              data: {
+                userId: userId,
+                content: message,
+                contentType: 'user_fact',
+                embedding: `[${embedding.join(',')}]`,
+                metadata: {
+                  source: 'user_conversation',
+                  timestamp: new Date().toISOString(),
+                  hasRelevantContext: hasRelevantContext,
+                  contextCount: searchResults.length
+                },
+                topics: [],
+                importance: 1.0
+              }
+            }).catch(error => console.warn('Background storage failed:', error))
+          }).catch(error => console.warn('Background embedding failed:', error))
+        } catch (error) {
+          console.warn('Background storage setup failed:', error)
+        }
+      }
+    })
+    
+    // Return the streaming response
+    return new Response(openaiResponse.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    })
+    
+  } catch (error) {
+    console.error('Error in RAG streaming request:', error)
+    
+    // Fallback: Return a simple error message as stream
+    const errorStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error processing your request. Please try again.'))
+        controller.close()
+      }
+    })
+    
+    return new Response(errorStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+      },
+    })
   }
 }
 
@@ -293,14 +546,60 @@ async function handleNonStreamingRequest(
         }
       })
       
+      const cachedData = similarCachedResponse[0].cached_response
+      console.log(`🔍 [API] Cached response data:`, {
+        hasMessage: !!cachedData?.message,
+        messageLength: cachedData?.message?.length || 0,
+        messagePreview: cachedData?.message?.substring(0, 100) || 'NO MESSAGE',
+        fullCachedData: cachedData
+      })
+      
+      // Handle different cache response formats
+      let message = ''
+      let sources = []
+      let ragContext = ''
+      let hasRelevantContext = false
+      let confidence = 0
+      let contextCount = 0
+      
+      if (cachedData) {
+        // Check if it's the new format with direct message field
+        if (cachedData.message) {
+          message = cachedData.message
+          sources = cachedData.sources || []
+          ragContext = cachedData.ragContext || ''
+          hasRelevantContext = cachedData.hasRelevantContext || false
+          confidence = cachedData.confidence || 0
+          contextCount = cachedData.contextCount || 0
+        }
+        // Check if it's the old format with answer field
+        else if (cachedData.answer) {
+          message = cachedData.answer
+          sources = cachedData.sources || []
+          ragContext = cachedData.ragContext || ''
+          hasRelevantContext = cachedData.hasRelevantContext || false
+          confidence = cachedData.confidence || 0
+          contextCount = cachedData.contextCount || 0
+        }
+        // Fallback for any other format
+        else {
+          message = 'I apologize, but I encountered an issue with the cached response format.'
+        }
+      }
+      
+      // Final safety check
+      if (!message || message.trim() === '') {
+        message = 'I apologize, but I encountered an issue with the cached response. Please try again.'
+      }
+      
       return NextResponse.json({
-        message: similarCachedResponse[0].cached_response.message,
-        sources: similarCachedResponse[0].cached_response.sources || [],
-        ragContext: similarCachedResponse[0].cached_response.ragContext || '',
-        hasRelevantContext: similarCachedResponse[0].cached_response.hasRelevantContext || false,
-        confidence: similarCachedResponse[0].cached_response.confidence || 0,
+        message: message,
+        sources: sources,
+        ragContext: ragContext,
+        hasRelevantContext: hasRelevantContext,
+        confidence: confidence,
         cacheHit: true,
-        contextCount: similarCachedResponse[0].cached_response.contextCount || 0,
+        contextCount: contextCount,
         timings: { ragMs: 0, rerankMs: 0, llmMs: 0, totalMs: 0 }
       })
     }
@@ -309,18 +608,36 @@ async function handleNonStreamingRequest(
 
     const t0Retrieval = Date.now()
     
-    // Modern RAG: Query Rewriting + Hybrid Search + Re-ranking
-    console.log('🔄 Modern RAG: Query rewriting...')
-    const rewrittenQueries = await rewriteQuery(message)
-    console.log(`✅ Generated ${rewrittenQueries.length} query variations`)
+    // Add timeout wrapper for RAG processing
+    const ragProcessingPromise = (async () => {
+      // Modern RAG: Query Rewriting + Hybrid Search + Re-ranking
+      console.log('🔄 Modern RAG: Query rewriting...')
+      const rewrittenQueries = await rewriteQuery(message)
+      console.log(`✅ Generated ${rewrittenQueries.length} query variations`)
+      
+      console.log('🔍 Modern RAG: Hybrid search (semantic + keyword)...')
+      const hybridResults = await hybridSearch(validUserId, rewrittenQueries, message)
+      console.log(`✅ Hybrid search found ${hybridResults.length} results`)
+      
+      console.log('📊 Modern RAG: Re-ranking results...')
+      const searchResults = await rerankResults(hybridResults, message)
+      console.log(`✅ Re-ranked to ${searchResults.length} final results`)
+      
+      return searchResults
+    })()
     
-    console.log('🔍 Modern RAG: Hybrid search (semantic + keyword)...')
-    const hybridResults = await hybridSearch(validUserId, rewrittenQueries, message)
-    console.log(`✅ Hybrid search found ${hybridResults.length} results`)
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('RAG processing timeout')), 15000) // 15 second timeout
+    })
     
-    console.log('📊 Modern RAG: Re-ranking results...')
-    const searchResults = await rerankResults(hybridResults, message)
-    console.log(`✅ Re-ranked to ${searchResults.length} final results`)
+    let searchResults: any[] = []
+    try {
+      searchResults = await Promise.race([ragProcessingPromise, timeoutPromise]) as any[]
+    } catch (error) {
+      console.warn('RAG processing failed or timed out, continuing without context:', error)
+      searchResults = []
+    }
     
     const ragMs = Date.now() - t0Retrieval
     console.log(`✅ Retrieved ${searchResults.length} relevant documents in ${ragMs}ms`)
@@ -390,10 +707,20 @@ Be helpful and provide useful responses. If the user shares personal information
     const llmMs = Date.now() - t0LLM
     const totalMs = Date.now() - t0Total
     console.log(`🤖 LLM time: ${llmMs}ms | ⏱️ Total time: ${totalMs}ms`)
+    console.log(`🔍 [API] OpenAI response:`, {
+      hasChoices: !!completionJson?.choices,
+      choicesLength: completionJson?.choices?.length || 0,
+      hasMessage: !!completionJson?.choices?.[0]?.message,
+      hasContent: !!completionJson?.choices?.[0]?.message?.content,
+      contentLength: completionJson?.choices?.[0]?.message?.content?.length || 0,
+      contentPreview: completionJson?.choices?.[0]?.message?.content?.substring(0, 100) || 'NO CONTENT',
+      fullResponse: fullResponse
+    })
 
     // Cache the response only if allowed to persist
     const responseData = {
-      answer: fullResponse,
+      message: fullResponse, // Use 'message' field for consistency
+      answer: fullResponse,  // Keep 'answer' for backward compatibility
       sources: sources,
       confidence: 0.85,
       context: reranked.map(r => ({ content: r.content, score: r.similarity }))
@@ -423,12 +750,25 @@ Be helpful and provide useful responses. If the user shares personal information
       hasRelevantContext,
       timings: { ragMs, rerankMs, llmMs, totalMs }
     }
-    // Modern RAG: Self-Correcting Knowledge Base Storage
+    
+    console.log(`🔍 [API] Final payload:`, {
+      messageLength: payload.message?.length || 0,
+      messagePreview: payload.message?.substring(0, 100) || 'NO MESSAGE',
+      sourcesCount: payload.sources?.length || 0,
+      hasRelevantContext: payload.hasRelevantContext,
+      contextCount: payload.contextCount
+    })
+    // Modern RAG: Self-Correcting Knowledge Base Storage (with timeout)
     try {
       console.log('💾 Modern RAG: Storing conversation with self-correction...')
       
-      // Generate embedding for the user's message
-      const messageEmbedding = await generateEmbedding(message)
+      // Generate embedding for the user's message with timeout
+      const embeddingPromise = generateEmbedding(message)
+      const embeddingTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Embedding generation timeout')), 5000)
+      })
+      
+      const messageEmbedding = await Promise.race([embeddingPromise, embeddingTimeout]) as number[]
       
       // Check for similar existing entries to avoid duplicates
       const existingSimilar = await prisma.$queryRaw`
@@ -518,6 +858,7 @@ Be helpful and provide useful responses. If the user shares personal information
           queryEmbedding: `[${queryEmbedding.join(',')}]`,
           cachedResponse: {
             message: payload.message,
+            answer: payload.message, // Keep for backward compatibility
             sources: payload.sources,
             ragContext: ragContext,
             hasRelevantContext: payload.hasRelevantContext,
@@ -526,7 +867,7 @@ Be helpful and provide useful responses. If the user shares personal information
           },
           contextData: {
             searchResults: searchResults.length,
-            rewrittenQueries: rewrittenQueries.length,
+            rewrittenQueries: 0, // Not available in this scope
             timings: { ragMs, rerankMs, llmMs, totalMs }
           },
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
@@ -539,6 +880,12 @@ Be helpful and provide useful responses. If the user shares personal information
       // Don't fail the request if cache storage fails
     }
 
+    // Final safety check - ensure we always have a message
+    if (!payload.message || payload.message.trim() === '') {
+      console.warn('⚠️ [API] Empty message in payload, using fallback')
+      payload.message = 'I apologize, but I encountered an issue generating a response. Please try again.'
+    }
+    
     try {
       console.log('📦 Response meta:', {
         messagePreview: (payload.message || '').slice(0, 80),
@@ -552,6 +899,45 @@ Be helpful and provide useful responses. If the user shares personal information
     console.error('Error in RAG non-streaming request:', error)
     console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    
+    // Fallback: Return a simple response even if RAG fails
+    try {
+      const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          temperature: 0.7,
+          max_tokens: 200,
+          messages: [
+            { role: 'system', content: 'You are a helpful AI assistant.' },
+            { role: 'user', content: message }
+          ]
+        })
+      })
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json()
+        const fallbackMessage = fallbackData?.choices?.[0]?.message?.content || 'I apologize, but I encountered an error processing your request.'
+        
+        return NextResponse.json({
+          message: fallbackMessage,
+          sources: [],
+          confidence: 0.3,
+          cacheHit: false,
+          contextCount: 0,
+          hasRelevantContext: false,
+          timings: { ragMs: 0, rerankMs: 0, llmMs: 0, totalMs: 0 },
+          fallback: true
+        })
+      }
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError)
+    }
+    
     return NextResponse.json(
       { error: 'Failed to process message', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
