@@ -34,6 +34,7 @@ import {
   Bot
 } from "lucide-react"
 import { fetchSitesWithFilters, transformAPISiteToSite, type APIFilters, type Site, fetchCategoryRecommendations, type CategoryRecommendation } from "@/lib/sample-sites"
+import PaginationPublishers from "@/components/pagination-publishers"
 import { useCart } from "@/contexts/cart-context"
 import { useWishlist } from "@/contexts/wishlist-context"
 import { useSearchToChatStore } from '@/stores/search-to-chat-store'
@@ -85,7 +86,7 @@ type Filters = {
 
 const defaultFilters: Filters = { niche: "", language: "", country: "" }
 
-function convertFiltersToAPI(f: Filters, searchQuery: string): APIFilters {
+function convertFiltersToAPI(f: Filters, searchQuery: string, page: number = 1, limit: number = 8): APIFilters {
   const api: APIFilters = {}
   if (f.daMin !== undefined) api.domainAuthority = { ...(api.domainAuthority || {}), min: f.daMin }
   if (f.daMax !== undefined) api.domainAuthority = { ...(api.domainAuthority || {}), max: f.daMax }
@@ -107,11 +108,27 @@ function convertFiltersToAPI(f: Filters, searchQuery: string): APIFilters {
   if (typeof f.availability === 'boolean') api.availability = f.availability
   if (f.remarkIncludes) api.websiteRemark = f.remarkIncludes
   if (searchQuery.trim()) api.website = searchQuery.trim()
+  
+  // Add pagination parameters
+  api.page = page
+  api.limit = limit
+  api.offset = (page - 1) * limit
+  
   return api
 }
 
 
-function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilters: React.Dispatch<React.SetStateAction<Filters>>; loading: boolean }) {
+function FiltersUI({ 
+  filters, 
+  setFilters, 
+  loading, 
+  onRefresh 
+}: { 
+  filters: Filters
+  setFilters: React.Dispatch<React.SetStateAction<Filters>>
+  loading: boolean
+  onRefresh: () => void
+}) {
   const { log } = useActivityLogger()
   const [lastLogged, setLastLogged] = useState<any>(null)
   // debounce logging of filter changes
@@ -467,8 +484,8 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     { key: 'tool', label: 'SEO Tool', category: 'authority' },
 
     // Traffic & Performance
-    { key: 'semrushOverallTrafficMin', label: 'Overall Traffic', category: 'traffic' },
-    { key: 'semrushOrganicTrafficMin', label: 'Organic Traffic', category: 'traffic' },
+    { key: 'semrushOverallTrafficMin', label: 'Semrush Traffic', category: 'traffic' },
+    { key: 'semrushOrganicTrafficMin', label: 'Semrush Organic Traffic', category: 'traffic' },
     { key: 'trend', label: 'Traffic Trend', category: 'traffic' },
 
     // Publishing Details
@@ -613,7 +630,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         return (
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium">Overall Traffic (min)</span>
+              <span className="font-medium">Semrush Traffic (min)</span>
               <span className="tabular-nums">{(0/1000000).toFixed(1)}M – {(10000000/1000000).toFixed(1)}M</span>
             </div>
             <Slider
@@ -633,7 +650,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
         return (
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium">Organic Traffic (min)</span>
+              <span className="font-medium">Semrush Organic Traffic (min)</span>
               <span className="tabular-nums">{(0/1000000).toFixed(1)}M – {(10000000/1000000).toFixed(1)}M</span>
             </div>
             <Slider
@@ -771,8 +788,8 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
     add('drMax', `DR ≤ ${filters.drMax}`, filters.drMax)
     add('spamMax', `Spam ≤ ${filters.spamMax}`, filters.spamMax)
     add('spamMin', `Spam ≥ ${filters.spamMin}`, filters.spamMin)
-    add('semrushOverallTrafficMin', `Traffic ≥ ${filters.semrushOverallTrafficMin}`, filters.semrushOverallTrafficMin)
-    add('semrushOrganicTrafficMin', `Organic ≥ ${filters.semrushOrganicTrafficMin}`, filters.semrushOrganicTrafficMin)
+    add('semrushOverallTrafficMin', `Semrush Traffic ≥ ${filters.semrushOverallTrafficMin}`, filters.semrushOverallTrafficMin)
+    add('semrushOrganicTrafficMin', `Semrush Organic ≥ ${filters.semrushOrganicTrafficMin}`, filters.semrushOrganicTrafficMin)
     add('priceMin', `$ ≥ ${filters.priceMin}`, filters.priceMin)
     add('priceMax', `$ ≤ ${filters.priceMax}`, filters.priceMax)
     add('tatDaysMin', `TAT ≥ ${filters.tatDaysMin}`, filters.tatDaysMin)
@@ -819,7 +836,7 @@ function FiltersUI({ filters, setFilters, loading }: { filters: Filters; setFilt
               <CheckCircle className="w-3 h-3" />
               Save
             </Button>
-            <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" onClick={() => setFilters(defaultFilters)} disabled={loading}>
+            <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" onClick={onRefresh} disabled={loading}>
               <RefreshCw className="w-3 h-3" />
               Refresh
             </Button>
@@ -1283,7 +1300,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             <div className="tabular-nums leading-none">{(s.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</div>
             <div className="mt-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 whitespace-nowrap">
               <SemrushIcon className="w-3 h-3" />
-              Overall
+              Semrush Traffic
             </div>
           </div>
         )
@@ -1293,7 +1310,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             <div className="tabular-nums leading-none">{(s.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</div>
             <div className="mt-0 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 whitespace-nowrap">
               <SemrushIcon className="w-3 h-3" />
-              Organic
+              Semrush Organic
             </div>
           </div>
         )
@@ -1544,7 +1561,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
           </div>
           <div className="flex flex-col gap-2">
             <div>
-              <div className="text-[11px] text-gray-500 mb-0.5">Overall Traffic</div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Semrush Traffic</div>
               <LineChart01
                 width={260}
                 height={60}
@@ -1563,7 +1580,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
               />
             </div>
             <div>
-              <div className="text-[11px] text-gray-500 mb-0.5">Organic Traffic</div>
+              <div className="text-[11px] text-gray-500 mb-0.5">Semrush Organic Traffic</div>
               <LineChart01
                 width={260}
                 height={60}
@@ -1824,7 +1841,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                               hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 50)
                             }}
                           >
-                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Overall Traffic</span>
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Semrush Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOverallTraffic/1000000).toFixed(1)}M</span>
                           </div>
                           <div
@@ -1837,7 +1854,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
                               hideTimeoutRef.current = setTimeout(() => { setTrendPreviewSite(null) }, 50)
                             }}
                           >
-                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Organic Traffic</span>
+                            <span className="text-gray-600 dark:text-gray-400 inline-flex items-center gap-1.5"><SemrushIcon className="w-3.5 h-3.5" /> Semrush Organic Traffic</span>
                             <span className="font-semibold tabular-nums">{(selectedSite.toolScores.semrushOrganicTraffic/1000000).toFixed(1)}M</span>
                           </div>
                           <div className="flex items-center justify-between text-xs"><span className="text-gray-600 dark:text-gray-400">Traffic Trend</span><span className="font-semibold capitalize">{selectedSite.toolScores.trafficTrend}</span></div>
@@ -2029,6 +2046,13 @@ export default function PublishersClient() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(() => Number(searchParams?.get('page') || 1))
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const itemsPerPage = 8
+  const [isLoadingProjectFilters, setIsLoadingProjectFilters] = useState(false)
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastPostedQueryRef = useRef<string>("")
   // Suggestions state for website/url recommendations
@@ -2044,12 +2068,16 @@ export default function PublishersClient() {
     if (!skipLoading) setLoading(true)
     setError(null)
     try {
-      const apiSites = await fetchSitesWithFilters(apiFilters)
-      const transformed = apiSites.map(transformAPISiteToSite)
+      const result = await fetchSitesWithFilters(apiFilters)
+      const transformed = result.sites.map(transformAPISiteToSite)
       setSites(transformed)
+      setTotalItems(result.total)
+      setTotalPages(Math.ceil(result.total / itemsPerPage))
     } catch (e: any) {
       setError(e?.message || 'Failed to load')
       setSites([])
+      setTotalItems(0)
+      setTotalPages(0)
     } finally {
       if (!skipLoading) setLoading(false)
     }
@@ -2060,11 +2088,33 @@ export default function PublishersClient() {
     fetchTimeoutRef.current = setTimeout(() => { fetchData(apiFilters) }, delay)
   }, [])
 
-  useEffect(() => { fetchData() }, [])
+  // Handle page changes
+  const handlePageChange = useCallback((page: number) => {
+    // Update URL parameters first
+    const params = new URLSearchParams(searchParams?.toString() || "")
+    params.set('page', page.toString())
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    // The URL change will trigger the useEffect above to update currentPage
+  }, [router, pathname, searchParams])
+
+  // Initial data fetch and handle page changes
+  useEffect(() => { 
+    const apiFilters = convertFiltersToAPI(filters, searchQuery, currentPage, itemsPerPage)
+    fetchData(apiFilters) 
+  }, [currentPage, filters, searchQuery])
+
+  // Listen for URL parameter changes and update currentPage
+  useEffect(() => {
+    const pageFromUrl = Number(searchParams?.get('page') || 1)
+    if (pageFromUrl !== currentPage) {
+      setCurrentPage(pageFromUrl)
+    }
+  }, [searchParams])
 
   // Load last-used filters for the selected project (server-persisted fallback to local)
   useEffect(() => {
     if (!selectedProjectId) return
+    setIsLoadingProjectFilters(true)
     ;(async () => {
       try {
         const res = await fetch(`/api/projects/${encodeURIComponent(selectedProjectId)}/filters?page=publishers`, { cache: 'no-store' })
@@ -2072,8 +2122,13 @@ export default function PublishersClient() {
           const data = await res.json()
           const pref = data?.preference as any
           if (pref && typeof pref === 'object') {
-            if (pref.filters && Object.keys(pref.filters).length > 0) setFilters({ ...defaultFilters, ...pref.filters })
-            if (typeof pref.q === 'string') setSearchQuery(pref.q)
+          if (pref.filters && Object.keys(pref.filters).length > 0) {
+            setFilters({ ...defaultFilters, ...pref.filters })
+          }
+          if (typeof pref.q === 'string') {
+            setSearchQuery(pref.q)
+          }
+            setIsLoadingProjectFilters(false)
             return
           }
         }
@@ -2084,17 +2139,23 @@ export default function PublishersClient() {
         if (!raw) {
           setFilters(defaultFilters)
           setSearchQuery("")
-          try { router.replace(pathname || '/publishers', { scroll: false }) } catch {}
+          // Don't clear URL parameters - preserve page and other params
+          setIsLoadingProjectFilters(false)
           return
         }
         const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
         if (saved && typeof saved === 'object') {
-          if (saved.filters && Object.keys(saved.filters).length > 0) setFilters({ ...defaultFilters, ...saved.filters })
-          if (typeof saved.q === 'string') setSearchQuery(saved.q)
+          if (saved.filters && Object.keys(saved.filters).length > 0) {
+            setFilters({ ...defaultFilters, ...saved.filters })
+          }
+          if (typeof saved.q === 'string') {
+            setSearchQuery(saved.q)
+          }
         }
+        setIsLoadingProjectFilters(false)
       } catch {}
     })()
-  }, [selectedProjectId, pathname, router])
+  }, [selectedProjectId])
 
   // Persist last-used filters per project whenever filters/query change (server + local, debounced)
   useEffect(() => {
@@ -2142,9 +2203,16 @@ export default function PublishersClient() {
   }
 
   useEffect(() => {
-    const apiFilters = convertFiltersToAPI(filters, searchQuery)
-    debouncedFetch(apiFilters, 500)
-  }, [filters, searchQuery, debouncedFetch])
+    // Reset to page 1 when filters or search query change, but not when loading project filters
+    if (isLoadingProjectFilters) return
+    
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+      const params = new URLSearchParams(searchParams?.toString() || "")
+      params.set('page', '1')
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }
+  }, [filters, searchQuery, isLoadingProjectFilters])
 
   // Fetch search suggestions from external API (debounced)
   const fetchSuggestions = useCallback(async (q: string) => {
@@ -2313,7 +2381,7 @@ export default function PublishersClient() {
       if (!stillSameQuery || stillLoading || !stillZeroResults) return
       try {
         const controller = new AbortController()
-        const apiFilters = convertFiltersToAPI(filters, latestQuery)
+        const apiFilters = convertFiltersToAPI(filters, latestQuery, currentPage, itemsPerPage)
         await fetch('/api/search-interest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2340,7 +2408,15 @@ export default function PublishersClient() {
         <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[300px] sm:min-h-[400px]">
           <div className="lg:col-span-7 xl:col-span-7 flex flex-col">
             <div className="flex-1">
-              <FiltersUI filters={filters} setFilters={setFilters} loading={loading} />
+              <FiltersUI 
+                filters={filters} 
+                setFilters={setFilters} 
+                loading={loading}
+                onRefresh={() => {
+                  if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
+                  fetchData(convertFiltersToAPI(filters, searchQuery, currentPage, itemsPerPage))
+                }}
+              />
             </div>
           </div>
           <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col">
@@ -2359,15 +2435,6 @@ export default function PublishersClient() {
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     loading={loading}
-                    onRefresh={() => { 
-                      if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
-                      fetchData(convertFiltersToAPI(filters, searchQuery)) 
-                    }}
-                    onReset={() => { 
-                      setFilters(defaultFilters)
-                      setSearchQuery("")
-                      router.replace(pathname || '/publishers', { scroll: false })
-                    }}
                     hasCheckoutFab={hasCheckoutFab}
                     suggestions={suggestions}
                     suggestionsLoading={suggestionsLoading}
@@ -2385,6 +2452,19 @@ export default function PublishersClient() {
         {error && <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300">{error}</div>}
 
         <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <PaginationPublishers
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
 
       </div>
   )

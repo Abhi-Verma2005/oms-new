@@ -145,22 +145,18 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
             </blockquote>
           ),
 
-          // Links
+          // Links - render as plain text to prevent layout shifts
           a: ({ children, href, ...props }) => (
-            <a 
-              href={href} 
+            <span 
               className={cn(
-                "underline underline-offset-2",
                 isChatbot 
-                  ? "text-violet-300 hover:text-violet-200" 
-                  : "text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-              )} 
-              target="_blank" 
-              rel="noopener noreferrer"
+                  ? "text-white" 
+                  : "text-gray-700 dark:text-gray-300"
+              )}
               {...props}
             >
               {children}
-            </a>
+            </span>
           ),
 
           // Tables

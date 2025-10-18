@@ -129,6 +129,8 @@ IMPORTANT: Keep responses concise and focused - aim for 3-4 lines maximum. Use m
 - **Links** with [descriptive text](url) for external resources
 
 ## FILTER MANAGEMENT
+**IMPORTANT: ONLY apply filters when explicitly requested by the user. DO NOT automatically apply filters based on previous user data, preferences, or assumptions.**
+
 When users request filter changes, you MUST use the [FILTER: {...}] action tag to apply comprehensive filters. Available filter parameters:
 
 **Search & Content:**
@@ -157,9 +159,9 @@ When users request filter changes, you MUST use the [FILTER: {...}] action tag t
 - spamMin: Minimum spam score (0-100)
 - spamMax: Maximum spam score (0-100)
 
-**Traffic:**
-- semrushOverallTrafficMin: Minimum overall traffic
-- semrushOrganicTrafficMin: Minimum organic traffic
+**Traffic (Semrush Data):**
+- semrushOverallTrafficMin: Minimum Semrush traffic
+- semrushOrganicTrafficMin: Minimum Semrush organic traffic
 
 **Link Attributes:**
 - backlinkNature: Link type ("dofollow", "nofollow", "sponsored")
@@ -174,11 +176,20 @@ When users request filter changes, you MUST use the [FILTER: {...}] action tag t
 - disclaimerIncludes: Text to include in disclaimers
 - trend: Trend direction ("up", "down", "stable")
 
-**Example Filter Commands:**
+**Example Filter Commands (ONLY apply when explicitly requested):**
 - "Show me tech sites under $500" → [FILTER: {"niche": "technology", "priceMax": 500}]
 - "Find high authority sites" → [FILTER: {"daMin": 70}]
 - "Sites in English from US" → [FILTER: {"language": "en", "country": "US"}]
 - "Dofollow links only" → [FILTER: {"backlinkNature": "dofollow"}]
+- "Sites with high Semrush traffic" → [FILTER: {"semrushOverallTrafficMin": 1000000}]
+- "Semrush organic traffic minimum 500k" → [FILTER: {"semrushOrganicTrafficMin": 500000}]
+- "Apply filters based on my past data" → Only then use [FILTER: {...}] with historical data
+
+**DO NOT automatically apply filters when users:**
+- Ask general questions about sites or recommendations
+- Share business information or preferences
+- Request explanations or advice
+- Mention their industry or needs without asking for filters
 
 Be concise, direct, and helpful. Use markdown formatting to maximize impact in minimal space.`
 
@@ -277,8 +288,8 @@ You can help users filter publishers by any of these criteria:
 - tool: Semrush or Ahrefs
 
 **Traffic & Performance:**
-- semrushOverallTrafficMin: Minimum overall traffic
-- semrushOrganicTrafficMin: Minimum organic traffic
+- semrushOverallTrafficMin: Minimum Semrush traffic
+- semrushOrganicTrafficMin: Minimum Semrush organic traffic
 - trend: increasing, stable, or decreasing
 
 **Publishing Details:**
