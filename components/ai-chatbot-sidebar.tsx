@@ -315,17 +315,43 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       } catch {}
     }
 
-    // Heuristic: extract priceMin/priceMax from user text when AI didn't emit [FILTER:...] tag
+    // Enhanced heuristic: extract comprehensive filters from user text when AI didn't emit [FILTER:...] tag
     if (actions.length === 0) {
       try {
         const source = (options?.userText || cleanResponse || '').toLowerCase().replace(/,/g, '')
-        const numbers = Array.from(source.matchAll(/(?:\$|usd|inr|rs\.?|€)?\s*(\d{2,7})(?:\.\d+)?/g)).map(m => parseInt(m[1], 10)).filter(n => !isNaN(n))
+        
+        // Check for clear/reset commands first
+        if (/(?:clear\s*filters?|reset\s*filters?|remove\s*all\s*filters?|no\s*filters?)/i.test(source)) {
+          actions.push({ type: 'filter', data: 'RESET' })
+          return
+        }
+        
+        const qp = new URLSearchParams()
+        
+        // Extract TAT filters FIRST to avoid interference with price extraction
+        const tatDaysMatch = source.match(/(?:tat\s*days?|tat\s*day|turnaround\s*days?|turnaround|tat)\s*(?:min|minimum|at\s*least)?\s*(\d+)/i)
+        if (tatDaysMatch) {
+          qp.set('tatDaysMin', tatDaysMatch[1])
+        }
+
+        const tatDaysMaxMatch = source.match(/(?:tat\s*days?|tat\s*day|turnaround\s*days?|turnaround|tat)\s*(?:max|maximum|at\s*most|up\s*to)\s*(\d+)/i)
+        if (tatDaysMaxMatch) {
+          qp.set('tatDaysMax', tatDaysMaxMatch[1])
+        }
+
+        const simpleTatMatch = source.match(/\btat\s+(?:min\s+)?(\d+)/i)
+        if (simpleTatMatch) {
+          qp.set('tatDaysMin', simpleTatMatch[1])
+        }
+        
+        // Extract price filters - be more specific to avoid false positives
+        const numbers = Array.from(source.matchAll(/(?:\$|usd|inr|rs\.?|€|price|cost)\s*(\d{2,7})(?:\.\d+)?/g)).map(m => parseInt(m[1], 10)).filter(n => !isNaN(n))
         let priceMin: number | undefined
         let priceMax: number | undefined
 
-        // Extract explicit min and max phrases with nearest following number
-        const maxMatch = source.match(/(?:max|maximum|at\s*most|up\s*to|upto)[^\d]{0,16}(\d{2,7})/)
-        const minMatch = source.match(/(?:min|minimum|at\s*least|lowest)[^\d]{0,16}(\d{2,7})/)
+        // Extract explicit price min and max phrases with nearest following number
+        const maxMatch = source.match(/(?:price\s*max|price\s*maximum|cost\s*max|cost\s*maximum|max\s*price|maximum\s*price|at\s*most|up\s*to|upto)\s*(?:is\s*)?(\d{2,7})/i)
+        const minMatch = source.match(/(?:price\s*min|price\s*minimum|cost\s*min|cost\s*minimum|min\s*price|minimum\s*price|at\s*least|lowest)\s*(?:is\s*)?(\d{2,7})/i)
         if (minMatch) priceMin = parseInt(minMatch[1], 10)
         if (maxMatch) priceMax = parseInt(maxMatch[1], 10)
 
@@ -350,11 +376,199 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           const tmp = priceMin; priceMin = priceMax; priceMax = tmp
         }
 
-        if (priceMin !== undefined || priceMax !== undefined) {
-          const qp = new URLSearchParams()
-          if (priceMin !== undefined) qp.set('priceMin', String(priceMin))
-          if (priceMax !== undefined) qp.set('priceMax', String(priceMax))
+        if (priceMin !== undefined) qp.set('priceMin', String(priceMin))
+        if (priceMax !== undefined) qp.set('priceMax', String(priceMax))
+
+        // Extract niche/category filters
+        const nichePatterns = [
+          { pattern: /(?:tech|technology|tech\s*sites?|tech\s*websites?)/i, value: 'technology' },
+          { pattern: /(?:health|healthcare|medical|health\s*sites?)/i, value: 'health' },
+          { pattern: /(?:finance|financial|fintech|finance\s*sites?)/i, value: 'finance' },
+          { pattern: /(?:business|corporate|business\s*sites?)/i, value: 'business' },
+          { pattern: /(?:lifestyle|fashion|beauty|lifestyle\s*sites?)/i, value: 'lifestyle' },
+          { pattern: /(?:travel|tourism|travel\s*sites?)/i, value: 'travel' },
+          { pattern: /(?:food|cooking|recipe|food\s*sites?)/i, value: 'food' },
+          { pattern: /(?:sports|fitness|sports\s*sites?)/i, value: 'sports' },
+          { pattern: /(?:education|learning|academic|education\s*sites?)/i, value: 'education' },
+          { pattern: /(?:entertainment|gaming|music|entertainment\s*sites?)/i, value: 'entertainment' },
+          { pattern: /(?:news|news\s*sites?|media)/i, value: 'news' },
+          { pattern: /(?:blog|blogs?|blogging)/i, value: 'blog' },
+          { pattern: /(?:ecommerce|e-commerce|shop|shopping)/i, value: 'ecommerce' }
+        ]
+        
+        for (const { pattern, value } of nichePatterns) {
+          if (pattern.test(source)) {
+            qp.set('niche', value)
+            break
+          }
+        }
+
+        // Extract language filters - be more specific to avoid false positives
+        const languagePatterns = [
+          { pattern: /(?:english|english\s*language|language\s*english)/i, value: 'en' },
+          { pattern: /(?:spanish|spanish\s*language|language\s*spanish)/i, value: 'es' },
+          { pattern: /(?:french|french\s*language|language\s*french)/i, value: 'fr' },
+          { pattern: /(?:german|german\s*language|language\s*german)/i, value: 'de' },
+          { pattern: /(?:italian|italian\s*language|language\s*italian)/i, value: 'it' },
+          { pattern: /(?:portuguese|portuguese\s*language|language\s*portuguese)/i, value: 'pt' }
+        ]
+        
+        for (const { pattern, value } of languagePatterns) {
+          if (pattern.test(source)) {
+            qp.set('language', value)
+            break
+          }
+        }
+
+        // Extract country filters
+        const countryPatterns = [
+          { pattern: /(?:us|usa|united\s*states|america)/i, value: 'US' },
+          { pattern: /(?:uk|united\s*kingdom|britain|british)/i, value: 'UK' },
+          { pattern: /(?:canada|canadian)/i, value: 'CA' },
+          { pattern: /(?:australia|australian)/i, value: 'AU' },
+          { pattern: /(?:germany|german)/i, value: 'DE' },
+          { pattern: /(?:france|french)/i, value: 'FR' },
+          { pattern: /(?:spain|spanish)/i, value: 'ES' },
+          { pattern: /(?:italy|italian)/i, value: 'IT' },
+          { pattern: /(?:india|indian)/i, value: 'IN' },
+          { pattern: /(?:japan|japanese)/i, value: 'JP' },
+          { pattern: /(?:china|chinese)/i, value: 'CN' },
+          { pattern: /(?:brazil|brazilian)/i, value: 'BR' },
+          { pattern: /(?:mexico|mexican)/i, value: 'MX' },
+          { pattern: /(?:russia|russian)/i, value: 'RU' },
+          { pattern: /(?:south\s*korea|korean)/i, value: 'KR' }
+        ]
+        
+        for (const { pattern, value } of countryPatterns) {
+          if (pattern.test(source)) {
+            qp.set('country', value)
+            break
+          }
+        }
+
+        // Extract domain authority filters
+        const daMatch = source.match(/(?:da|domain\s*authority|authority)\s*(?:min|minimum|at\s*least)?\s*(\d+)/i)
+        if (daMatch) {
+          qp.set('daMin', daMatch[1])
+        }
+
+        // Extract page authority filters
+        const paMatch = source.match(/(?:pa|page\s*authority)\s*(?:min|minimum|at\s*least)?\s*(\d+)/i)
+        if (paMatch) {
+          qp.set('paMin', paMatch[1])
+        }
+
+        // Extract domain rating filters
+        const drMatch = source.match(/(?:dr|domain\s*rating)\s*(?:min|minimum|at\s*least)?\s*(\d+)/i)
+        if (drMatch) {
+          qp.set('drMin', drMatch[1])
+        }
+
+        // Extract spam score filters
+        const spamMatch = source.match(/(?:spam\s*score|spam)\s*(?:max|maximum|at\s*most)?\s*(\d+)/i)
+        if (spamMatch) {
+          qp.set('spamMax', spamMatch[1])
+        }
+
+        // Extract traffic filters
+        const trafficMatch = source.match(/(?:traffic|visitors?)\s*(?:min|minimum|at\s*least)?\s*(\d+)/i)
+        if (trafficMatch) {
+          qp.set('semrushOverallTrafficMin', trafficMatch[1])
+        }
+
+        // Extract link type filters
+        if (/(?:dofollow|do\s*follow)/i.test(source)) {
+          qp.set('backlinkNature', 'dofollow')
+        } else if (/(?:nofollow|no\s*follow)/i.test(source)) {
+          qp.set('backlinkNature', 'nofollow')
+        } else if (/(?:sponsored|sponsor)/i.test(source)) {
+          qp.set('backlinkNature', 'sponsored')
+        }
+
+        // Extract availability filters
+        if (/(?:available|availability)/i.test(source)) {
+          qp.set('availability', 'true')
+        }
+
+        // Extract days/time-based filters
+        const daysMatch = source.match(/(?:min|minimum|at\s*least)\s*(\d+)\s*(?:days?|day)/i)
+        if (daysMatch) {
+          // This could be for various time-based filters, let's set a generic one
+          qp.set('lastPublishedAfter', new Date(Date.now() - parseInt(daysMatch[1]) * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+        }
+
+
+        // Extract backlinks allowed minimum
+        const backlinksMatch = source.match(/(?:backlinks?\s*allowed?|backlinks?)\s*(?:min|minimum|at\s*least)?\s*(\d+)/i)
+        if (backlinksMatch) {
+          qp.set('backlinksAllowedMin', backlinksMatch[1])
+        }
+
+        // Extract outbound link limits
+        const outboundMatch = source.match(/(?:outbound\s*links?|outbound)\s*(?:max|maximum|at\s*most|limit)\s*(\d+)/i)
+        if (outboundMatch) {
+          qp.set('outboundLinkLimitMax', outboundMatch[1])
+        }
+
+        // Extract link placement filters
+        if (/(?:in\s*content|content\s*placement|article\s*content)/i.test(source)) {
+          qp.set('linkPlacement', 'in-content')
+        } else if (/(?:author\s*bio|bio\s*placement|author\s*section)/i.test(source)) {
+          qp.set('linkPlacement', 'author-bio')
+        } else if (/(?:footer\s*placement|footer\s*link)/i.test(source)) {
+          qp.set('linkPlacement', 'footer')
+        }
+
+        // Extract permanence filters
+        if (/(?:lifetime|permanent|forever)/i.test(source)) {
+          qp.set('permanence', 'lifetime')
+        } else if (/(?:12\s*months?|twelve\s*months?|12\s*month|temporary)/i.test(source)) {
+          qp.set('permanence', '12-months')
+        }
+
+        // Extract traffic trend filters
+        if (/(?:increasing\s*traffic|trending\s*up|growth|growing)/i.test(source)) {
+          qp.set('trend', 'increasing')
+        } else if (/(?:stable\s*traffic|steady|consistent)/i.test(source)) {
+          qp.set('trend', 'stable')
+        } else if (/(?:decreasing\s*traffic|trending\s*down|declining|decline)/i.test(source)) {
+          qp.set('trend', 'decreasing')
+        }
+
+        // Extract SEO tool filters
+        if (/(?:semrush|sem\s*rush)/i.test(source)) {
+          qp.set('tool', 'Semrush')
+        } else if (/(?:ahrefs|ah\s*refs)/i.test(source)) {
+          qp.set('tool', 'Ahrefs')
+        }
+
+        // Extract organic traffic filters
+        const organicTrafficMatch = source.match(/(?:organic\s*traffic|organic)\s*(?:min|minimum|at\s*least)?\s*(\d+)/i)
+        if (organicTrafficMatch) {
+          qp.set('semrushOrganicTrafficMin', organicTrafficMatch[1])
+        }
+
+        // Extract high authority patterns
+        if (/(?:high\s*authority|high\s*da|authority\s*70\+|da\s*70\+)/i.test(source)) {
+          qp.set('daMin', '70')
+        }
+
+        // Extract low spam patterns
+        if (/(?:low\s*spam|spam\s*score\s*low|clean\s*sites?)/i.test(source)) {
+          qp.set('spamMax', '3')
+        }
+
+        // Extract dofollow patterns
+        if (/(?:dofollow\s*only|only\s*dofollow|dofollow\s*links?)/i.test(source)) {
+          qp.set('backlinkNature', 'dofollow')
+        }
+
+        // Apply filters if any were found
+        if (qp.toString()) {
+          console.log('🔍 [AI] Detected filters from text:', qp.toString())
           actions.push({ type: 'filter', data: qp.toString() })
+        } else {
+          console.log('🔍 [AI] No filters detected from text:', source)
         }
       } catch {}
     }
@@ -398,11 +612,38 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           const niche = fp.get('niche')
           const language = fp.get('language')
           const country = fp.get('country')
+          const daMin = fp.get('daMin')
+          const paMin = fp.get('paMin')
+          const drMin = fp.get('drMin')
+          const spamMax = fp.get('spamMax')
+          const tatDaysMin = fp.get('tatDaysMin')
+          const tatDaysMax = fp.get('tatDaysMax')
+          const backlinkNature = fp.get('backlinkNature')
+          const linkPlacement = fp.get('linkPlacement')
+          const permanence = fp.get('permanence')
+          const trend = fp.get('trend')
+          const tool = fp.get('tool')
+          const trafficMin = fp.get('semrushOverallTrafficMin')
+          const organicTrafficMin = fp.get('semrushOrganicTrafficMin')
+          
           if (priceMin) parts.push(`min price $${priceMin}`)
           if (priceMax) parts.push(`max price $${priceMax}`)
           if (niche) parts.push(`niche ${niche}`)
           if (language) parts.push(`language ${language}`)
           if (country) parts.push(`country ${country}`)
+          if (daMin) parts.push(`min DA ${daMin}`)
+          if (paMin) parts.push(`min PA ${paMin}`)
+          if (drMin) parts.push(`min DR ${drMin}`)
+          if (spamMax) parts.push(`max spam ${spamMax}`)
+          if (tatDaysMin) parts.push(`min TAT ${tatDaysMin} days`)
+          if (tatDaysMax) parts.push(`max TAT ${tatDaysMax} days`)
+          if (backlinkNature) parts.push(`${backlinkNature} links`)
+          if (linkPlacement) parts.push(`${linkPlacement.replace('-', ' ')} placement`)
+          if (permanence) parts.push(`${permanence} links`)
+          if (trend) parts.push(`${trend} traffic`)
+          if (tool) parts.push(`${tool} tool`)
+          if (trafficMin) parts.push(`min traffic ${trafficMin}`)
+          if (organicTrafficMin) parts.push(`min organic ${organicTrafficMin}`)
 
           const confirmation: Message = {
             id: (Date.now() + 2).toString(),
@@ -1046,6 +1287,15 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             if (fallbackData.message) {
               updateMessage(assistantMessage.id, { content: fallbackData.message })
               console.log('✅ [AI] Fallback successful')
+              // Process actions from fallback response
+              try {
+                await processAIResponse(fallbackData.message, cartStateForAPI, { 
+                  targetMessageId: assistantMessage.id,
+                  userText: content // Pass the original user message for heuristic extraction
+                })
+              } catch (e) {
+                console.error('[AI] processAIResponse failed in fallback:', e)
+              }
               return
             }
           }
@@ -1061,7 +1311,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       
       // Process the final response for any actions
       try {
-        await processAIResponse(fullText, cartStateForAPI, { targetMessageId: assistantMessage.id })
+        await processAIResponse(fullText, cartStateForAPI, { 
+          targetMessageId: assistantMessage.id,
+          userText: content // Pass the original user message for heuristic extraction
+        })
       } catch (e) {
         console.error('[AI] processAIResponse failed:', e)
         try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'processError', ts: Date.now(), error: String(e) } })) } catch {}
@@ -1329,7 +1582,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         <div className="px-6 pb-4">
           {/* Action Dock */}
           {actionCards.length > 0 && (
-            <div className="mb-3 space-y-2">
+            <div className="mb-3 space-y-2 pt-4">
               {actionCards.map((card) => (
                 <ChatActionCard key={card.id} card={card} onDismiss={() => dismissActionCard(card.id)} />
               ))}

@@ -128,6 +128,58 @@ IMPORTANT: Keep responses concise and focused - aim for 3-4 lines maximum. Use m
 - Tables for structured data
 - **Links** with [descriptive text](url) for external resources
 
+## FILTER MANAGEMENT
+When users request filter changes, you MUST use the [FILTER: {...}] action tag to apply comprehensive filters. Available filter parameters:
+
+**Search & Content:**
+- q: Search query/website name
+- niche: Content category (e.g., "technology", "health", "finance")
+- language: Website language (e.g., "en", "es", "fr")
+- country: Website country (e.g., "US", "UK", "CA")
+
+**Pricing:**
+- priceMin: Minimum price (number)
+- priceMax: Maximum price (number)
+
+**Domain Authority:**
+- daMin: Minimum domain authority (0-100)
+- daMax: Maximum domain authority (0-100)
+
+**Page Authority:**
+- paMin: Minimum page authority (0-100)
+- paMax: Maximum page authority (0-100)
+
+**Domain Rating:**
+- drMin: Minimum domain rating (0-100)
+- drMax: Maximum domain rating (0-100)
+
+**Spam Score:**
+- spamMin: Minimum spam score (0-100)
+- spamMax: Maximum spam score (0-100)
+
+**Traffic:**
+- semrushOverallTrafficMin: Minimum overall traffic
+- semrushOrganicTrafficMin: Minimum organic traffic
+
+**Link Attributes:**
+- backlinkNature: Link type ("dofollow", "nofollow", "sponsored")
+- linkPlacement: Placement ("header", "footer", "content", "sidebar")
+- permanence: Permanence ("permanent", "temporary")
+
+**Other:**
+- availability: Boolean (true/false)
+- remarkIncludes: Text to include in remarks
+- lastPublishedAfter: Date (YYYY-MM-DD)
+- outboundLinkLimitMax: Maximum outbound links
+- disclaimerIncludes: Text to include in disclaimers
+- trend: Trend direction ("up", "down", "stable")
+
+**Example Filter Commands:**
+- "Show me tech sites under $500" → [FILTER: {"niche": "technology", "priceMax": 500}]
+- "Find high authority sites" → [FILTER: {"daMin": 70}]
+- "Sites in English from US" → [FILTER: {"language": "en", "country": "US"}]
+- "Dofollow links only" → [FILTER: {"backlinkNature": "dofollow"}]
+
 Be concise, direct, and helpful. Use markdown formatting to maximize impact in minimal space.`
 
     // 🧠 MEMORY ENHANCEMENT: Add memory context to system prompt
@@ -191,8 +243,13 @@ Be concise, direct, and helpful. Use markdown formatting to maximize impact in m
       }
     }
 
-    // Build enhanced system prompt with all context
+    // Build enhanced system prompt with all context - ensure base context is preserved
     const enhancedSystemPrompt = `${systemPrompt}
+
+## CRITICAL CONTEXT REMINDER
+You are working in a PUBLISHERS/SITES MARKETPLACE platform. Users are looking for publisher websites for link building and content marketing. When they mention filters, pricing, TAT (turnaround time), or site criteria, they are referring to filtering publisher websites, not generic products or services.
+
+${memoryContext}
 
 ## CURRENT CONTEXT
 - **Current URL:** ${currentUrl || 'Not provided'}
@@ -202,7 +259,62 @@ Be concise, direct, and helpful. Use markdown formatting to maximize impact in m
 - **Cart State:** ${cartState?.totalItems || 0} items, $${cartState?.totalPrice || 0}
 
 ${isOnPublishersPage ? `## CURRENT FILTERS
-${Object.entries(currentFilters).map(([key, value]) => `- **${key}:** ${value || 'None'}`).join('\n')}` : ''}
+${Object.entries(currentFilters).map(([key, value]) => `- **${key}:** ${value || 'None'}`).join('\n')}
+
+## AVAILABLE FILTERS FOR PUBLISHERS
+You can help users filter publishers by any of these criteria:
+
+**Basic Info:**
+- niche: technology, health, finance, business, lifestyle, travel, food, sports, education, entertainment, news, blog, ecommerce
+- language: en, es, fr, de, it, pt (English, Spanish, French, German, Italian, Portuguese)
+- country: US, UK, CA, AU, DE, FR, ES, IT, IN, JP, CN, BR, MX, RU, KR
+
+**Authority & SEO:**
+- daMin/daMax: Domain Authority (0-100)
+- paMin/paMax: Page Authority (0-100) 
+- drMin/drMax: Domain Rating (0-100)
+- spamMin/spamMax: Spam Score (0-10, lower is better)
+- tool: Semrush or Ahrefs
+
+**Traffic & Performance:**
+- semrushOverallTrafficMin: Minimum overall traffic
+- semrushOrganicTrafficMin: Minimum organic traffic
+- trend: increasing, stable, or decreasing
+
+**Publishing Details:**
+- priceMin/priceMax: Price range in dollars
+- tatDaysMin/tatDaysMax: Turnaround time in days
+- backlinkNature: dofollow, nofollow, or sponsored
+- linkPlacement: in-content, author-bio, or footer
+- permanence: lifetime or 12-months
+- backlinksAllowedMin: Minimum backlinks allowed
+- outboundLinkLimitMax: Maximum outbound links
+- availability: true for available only
+
+**Examples of natural language that should trigger filters:**
+- "Show me tech sites with DA above 50" → daMin: 50, niche: technology
+- "Find sites under $100 with dofollow links" → priceMax: 100, backlinkNature: dofollow
+- "Show increasing traffic sites in English" → trend: increasing, language: en
+- "Find health sites with low spam score" → niche: health, spamMax: 3
+- "TAT min I want 6" → tatDaysMin: 6
+- "Turnaround time maximum 10 days" → tatDaysMax: 10
+- "I need sites with 5 day turnaround" → tatDaysMax: 5
+
+**Clear/Reset Commands:**
+When users say "clear filters", "reset filters", "remove all filters", or "no filters", use:
+- [FILTER: RESET] - This will clear all filters and show all publishers
+
+**IMPORTANT FILTER INSTRUCTIONS:**
+When users request filter changes, ALWAYS use the [FILTER: ...] tag format. Examples:
+- "change country to india" → [FILTER: country=IN]
+- "show tech sites" → [FILTER: niche=technology]  
+- "price under $100" → [FILTER: priceMax=100]
+- "tat min i want 6" → [FILTER: tatDaysMin=6]
+- "turnaround time 5 days" → [FILTER: tatDaysMax=5]
+- "clear filters" → [FILTER: RESET]
+
+**FILTER FORMAT:** Use URL parameter format: [FILTER: key1=value1&key2=value2]
+Example: [FILTER: niche=technology&country=US&priceMax=500]` : ''}
 
 ## NAVIGATION OPTIONS
 ${navigationData.map(nav => `- **${nav.name}:** ${nav.description} (${nav.route})`).join('\n')}
@@ -217,7 +329,7 @@ ${navigationData.map(nav => `- **${nav.name}:** ${nav.description} (${nav.route}
 ## TOOL ACTIONS
 Use these action tags to trigger UI interactions:
 - [NAVIGATE: {"route": "/path", "description": "Navigate to..."}] - Navigate to a page
-- [FILTER: {"filters": {...}, "description": "Apply filters..."}] - Apply search filters
+- [FILTER: "key1=value1&key2=value2"] - Apply search filters (URL parameter format)
 - [ADD_TO_CART: {"item": {...}, "description": "Add to cart..."}] - Add item to cart
 - [REMOVE_FROM_CART: {"itemId": "...", "description": "Remove from cart..."}] - Remove item from cart
 - [VIEW_CART] - Show cart contents
@@ -231,10 +343,11 @@ Use these action tags to trigger UI interactions:
 
 Remember to use these tools when appropriate to enhance user experience.`
 
-    // Build chat messages
+    // Build chat messages - include more conversation history for better context
+    const recentMessages = messages.slice(-10) // Include last 10 messages for better context
     const chatMessages = [
       { role: 'system', content: enhancedSystemPrompt },
-      ...messages.map((m: any) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+      ...recentMessages.map((m: any) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
       { role: 'user', content: message },
     ]
 
@@ -387,14 +500,13 @@ Remember to use these tools when appropriate to enhance user experience.`
     } else {
       // Non-streaming response (fallback)
       const openai = createOpenAI({ apiKey: process.env.OPEN_AI_KEY! })
-      const result = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      const result = await openai(process.env.OPENAI_MODEL || 'gpt-4o-mini').generateText({
         messages: chatMessages,
         temperature: 0.7,
-        max_tokens: 1024,
+        maxTokens: 1024,
       })
 
-      const fullText = result.choices[0]?.message?.content || ''
+      const fullText = result.text || ''
 
       // 🧠 MEMORY ENHANCEMENT: Store conversation memory
       try {
