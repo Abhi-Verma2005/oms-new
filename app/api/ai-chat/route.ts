@@ -399,10 +399,10 @@ Be helpful and provide useful responses. If the user shares personal information
     // Create OpenAI client for streaming
     const openai = createOpenAI({ apiKey: process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY! })
     
-    // Build messages array
+    // Build messages array - include more conversation history for better context
     const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: baseSystemPrompt },
-      ...(messages || []).slice(-6).map((m: any) => ({ 
+      ...(messages || []).slice(-10).map((m: any) => ({ 
         role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant', 
         content: m.content 
       })),
@@ -667,14 +667,38 @@ async function handleNonStreamingRequest(
     const sources = reranked.map(r => r.metadata?.source || 'Knowledge Base').filter((v, i, a) => a.indexOf(v) === i)
 
     const baseSystemPrompt = hasRelevantContext 
-      ? `You are a helpful AI assistant with access to a personalized knowledge base.
+      ? `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your primary role is to help users find and filter publisher websites for link building and content marketing.
+
+## CRITICAL CONTEXT
+You are working within a publishers marketplace where users can:
+- Browse and filter publisher websites by various criteria (niche, authority, traffic, pricing, etc.)
+- Add publisher sites to their cart for purchasing publishing opportunities
+- Filter sites by technical metrics like Domain Authority, Page Authority, traffic, pricing, turnaround time (TAT), etc.
+
+When users mention filters, pricing, TAT (turnaround time), or site criteria, they are referring to filtering publisher websites, not generic products or services.
 
 ${ragContext}
 
-Use the knowledge base context above to provide accurate and personalized responses.`
-      : `You are a helpful AI assistant. You don't have specific information about this user in your knowledge base yet, but you can still be helpful and engaging.
+Use the knowledge base context above to provide accurate and personalized responses about publisher websites and filtering.`
+      : `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your primary role is to help users find and filter publisher websites for link building and content marketing.
 
-Be helpful and provide useful responses. If the user shares personal information, acknowledge it and remember it for future conversations.`
+## CRITICAL CONTEXT
+You are working within a publishers marketplace where users can:
+- Browse and filter publisher websites by various criteria (niche, authority, traffic, pricing, etc.)
+- Add publisher sites to their cart for purchasing publishing opportunities
+- Filter sites by technical metrics like Domain Authority, Page Authority, traffic, pricing, turnaround time (TAT), etc.
+
+When users mention filters, pricing, TAT (turnaround time), or site criteria, they are referring to filtering publisher websites, not generic products or services.
+
+## FILTER INSTRUCTIONS
+When users request filter changes, you should help them understand what filters are available and how to apply them. Common filter requests include:
+- "TAT min I want 6" → Minimum turnaround time of 6 days
+- "Show me tech sites" → Filter by technology niche
+- "Price under $100" → Filter by maximum price
+- "High authority sites" → Filter by minimum domain authority
+- "Clear filters" → Remove all current filters
+
+Be helpful and provide useful responses about publisher websites and filtering. If the user shares personal information, acknowledge it and remember it for future conversations.`
 
     // Always call the LLM, with or without context
     console.log(`🤖 Calling LLM with ${hasRelevantContext ? 'context' : 'no context'}...`)
@@ -693,7 +717,7 @@ Be helpful and provide useful responses. If the user shares personal information
         max_tokens: 256,
         messages: [
           { role: 'system', content: baseSystemPrompt },
-          ...messages.slice(-6),
+          ...messages.slice(-10),
           { role: 'user', content: message }
         ]
       })

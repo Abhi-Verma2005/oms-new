@@ -2419,7 +2419,7 @@ function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site:
   }
 
   // Cap masked length to avoid overflow
-  const masked = '★'.repeat(maxStars)
+  const masked = '*'.repeat(maxStars)
   const display = revealed ? revealed : masked
   return (
     <div
