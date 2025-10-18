@@ -25,7 +25,6 @@ export function ZustandProvider({ children }: { children: React.ReactNode }) {
 
   // Handle notification WebSocket
   const handleNewNotification = (notification: any) => {
-    console.log('🔔 ZustandProvider: Received new notification via WebSocket:', notification)
     addNotification(notification)
   }
 
@@ -35,12 +34,8 @@ export function ZustandProvider({ children }: { children: React.ReactNode }) {
     error 
   } = useNotificationWebSocket({
     onNotification: handleNewNotification,
-    onConnect: () => {
-      console.log('Notification WebSocket connected via Zustand provider')
-    },
-    onDisconnect: () => {
-      console.log('Notification WebSocket disconnected via Zustand provider')
-    }
+    onConnect: () => {},
+    onDisconnect: () => {}
   })
 
   // Update WebSocket status in store

@@ -1,0 +1,1366 @@
+{
+  "timestamp": "2025-10-17T06:04:38.271Z",
+  "config": {
+    "baseUrl": "http://localhost:3000",
+    "testUsers": [
+      "test-user-1",
+      "test-user-2",
+      "test-user-3",
+      "test-user-quick"
+    ],
+    "testCases": [
+      {
+        "id": "personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts"
+      },
+      {
+        "id": "conversation_context",
+        "query": "What did we discuss about websites?",
+        "expectedContent": [
+          "websites",
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Conversation Memory"
+      },
+      {
+        "id": "pricing_info",
+        "query": "What are the pricing options?",
+        "expectedContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Pricing Information"
+      },
+      {
+        "id": "website_recommendations",
+        "query": "Show me high-traffic websites",
+        "expectedContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Website Recommendations"
+      },
+      {
+        "id": "repeat_personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts (Repeat)",
+        "isRepeat": true
+      },
+      {
+        "id": "complex_query",
+        "query": "I need a website for my restaurant business with good SEO",
+        "expectedContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "expectedSources": [
+          "conversation",
+          "user_fact"
+        ],
+        "category": "Complex Business Query"
+      },
+      {
+        "id": "similar_websites",
+        "query": "Find me sites similar to the ones I bought before",
+        "expectedContent": [
+          "similar",
+          "sites",
+          "purchased",
+          "recommendations"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Similarity Search"
+      }
+    ],
+    "performanceThresholds": {
+      "excellent": 1000,
+      "good": 3000,
+      "acceptable": 6000,
+      "slow": 10000
+    }
+  },
+  "results": [
+    {
+      "testCase": {
+        "id": "personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts"
+      },
+      "userId": "test-user-1",
+      "success": true,
+      "response": "Your name is *Quick Test User* and you are *28 years old*.",
+      "timing": {
+        "total": 3559,
+        "firstByte": 3410,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 0,
+        "maxScore": 2,
+        "foundContent": [],
+        "missingContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "accuracyPercentage": 0,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 3559,
+        "firstByteTime": 3410,
+        "streamingTime": 149,
+        "performance": "acceptable",
+        "grade": "B"
+      },
+      "responseLength": 58
+    },
+    {
+      "testCase": {
+        "id": "conversation_context",
+        "query": "What did we discuss about websites?",
+        "expectedContent": [
+          "websites",
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Conversation Memory"
+      },
+      "userId": "test-user-1",
+      "success": true,
+      "response": "We discussed **high-traffic websites** like NewsHub.com, TechDaily.net, and BusinessInsider.org, along with **pricing options** ranging from $99/month to $499/month for different website packages.",
+      "timing": {
+        "total": 2729,
+        "firstByte": 2215,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 4,
+        "foundContent": [
+          "websites"
+        ],
+        "missingContent": [
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "accuracyPercentage": 25,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2729,
+        "firstByteTime": 2215,
+        "streamingTime": 514,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 196
+    },
+    {
+      "testCase": {
+        "id": "pricing_info",
+        "query": "What are the pricing options?",
+        "expectedContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Pricing Information"
+      },
+      "userId": "test-user-1",
+      "success": true,
+      "response": "Our website packages range from *$99/month* for basic sites to *$499/month* for premium packages with advanced SEO features.",
+      "timing": {
+        "total": 2408,
+        "firstByte": 2049,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2408,
+        "firstByteTime": 2049,
+        "streamingTime": 359,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 124
+    },
+    {
+      "testCase": {
+        "id": "website_recommendations",
+        "query": "Show me high-traffic websites",
+        "expectedContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Website Recommendations"
+      },
+      "userId": "test-user-1",
+      "success": true,
+      "response": "Here are some high-traffic websites in our catalog: NewsHub.com (500K monthly visitors), TechDaily.net (300K visitors), and BusinessInsider.org (750K visitors).",
+      "timing": {
+        "total": 2314,
+        "firstByte": 1905,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2314,
+        "firstByteTime": 1905,
+        "streamingTime": 409,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 160
+    },
+    {
+      "testCase": {
+        "id": "repeat_personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts (Repeat)",
+        "isRepeat": true
+      },
+      "userId": "test-user-1",
+      "success": true,
+      "response": "Your name is *Quick Test User* and you are *28 years old*.",
+      "timing": {
+        "total": 2678,
+        "firstByte": 2526,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 0,
+        "maxScore": 2,
+        "foundContent": [],
+        "missingContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "accuracyPercentage": 0,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2678,
+        "firstByteTime": 2526,
+        "streamingTime": 152,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 58
+    },
+    {
+      "testCase": {
+        "id": "complex_query",
+        "query": "I need a website for my restaurant business with good SEO",
+        "expectedContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "expectedSources": [
+          "conversation",
+          "user_fact"
+        ],
+        "category": "Complex Business Query"
+      },
+      "userId": "test-user-1",
+      "success": true,
+      "response": "For your restaurant business with a focus on SEO, I recommend our premium website package at *$499/month* which includes advanced SEO features to boost your online visibility.",
+      "timing": {
+        "total": 2851,
+        "firstByte": 2392,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 3,
+        "maxScore": 3,
+        "foundContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2851,
+        "firstByteTime": 2392,
+        "streamingTime": 459,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 175
+    },
+    {
+      "testCase": {
+        "id": "similar_websites",
+        "query": "Find me sites similar to the ones I bought before",
+        "expectedContent": [
+          "similar",
+          "sites",
+          "purchased",
+          "recommendations"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Similarity Search"
+      },
+      "userId": "test-user-1",
+      "success": true,
+      "response": "Based on your previous purchase of a premium website package for your restaurant business, some similar high-traffic websites you might be interested in are NewsHub.com, TechDaily.net, and BusinessInsider.org.",
+      "timing": {
+        "total": 2993,
+        "firstByte": 2434,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 2,
+        "maxScore": 4,
+        "foundContent": [
+          "similar",
+          "sites"
+        ],
+        "missingContent": [
+          "purchased",
+          "recommendations"
+        ],
+        "accuracyPercentage": 50,
+        "quality": "fair"
+      },
+      "performance": {
+        "totalTime": 2993,
+        "firstByteTime": 2434,
+        "streamingTime": 559,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 209
+    },
+    {
+      "testCase": {
+        "id": "personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts"
+      },
+      "userId": "test-user-2",
+      "success": true,
+      "response": "Your name is Quick Test User and you are 28 years old.",
+      "timing": {
+        "total": 2385,
+        "firstByte": 2234,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 0,
+        "maxScore": 2,
+        "foundContent": [],
+        "missingContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "accuracyPercentage": 0,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2385,
+        "firstByteTime": 2234,
+        "streamingTime": 151,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 54
+    },
+    {
+      "testCase": {
+        "id": "conversation_context",
+        "query": "What did we discuss about websites?",
+        "expectedContent": [
+          "websites",
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Conversation Memory"
+      },
+      "userId": "test-user-2",
+      "success": true,
+      "response": "We discussed high-traffic websites like NewsHub.com, TechDaily.net, and BusinessInsider.org, along with pricing options ranging from $99/month to $499/month for different website packages.",
+      "timing": {
+        "total": 3842,
+        "firstByte": 3333,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 4,
+        "foundContent": [
+          "websites"
+        ],
+        "missingContent": [
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "accuracyPercentage": 25,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 3842,
+        "firstByteTime": 3333,
+        "streamingTime": 509,
+        "performance": "acceptable",
+        "grade": "B"
+      },
+      "responseLength": 188
+    },
+    {
+      "testCase": {
+        "id": "pricing_info",
+        "query": "What are the pricing options?",
+        "expectedContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Pricing Information"
+      },
+      "userId": "test-user-2",
+      "success": true,
+      "response": "Our website packages range from *$99/month* for basic sites to *$499/month* for premium packages with advanced SEO features.",
+      "timing": {
+        "total": 2661,
+        "firstByte": 2346,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2661,
+        "firstByteTime": 2346,
+        "streamingTime": 315,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 124
+    },
+    {
+      "testCase": {
+        "id": "website_recommendations",
+        "query": "Show me high-traffic websites",
+        "expectedContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Website Recommendations"
+      },
+      "userId": "test-user-2",
+      "success": true,
+      "response": "Here are some high-traffic websites in our catalog: NewsHub.com (500K monthly visitors), TechDaily.net (300K visitors), and BusinessInsider.org (750K visitors).",
+      "timing": {
+        "total": 2614,
+        "firstByte": 2207,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2614,
+        "firstByteTime": 2207,
+        "streamingTime": 407,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 160
+    },
+    {
+      "testCase": {
+        "id": "repeat_personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts (Repeat)",
+        "isRepeat": true
+      },
+      "userId": "test-user-2",
+      "success": true,
+      "response": "Your name is Quick Test User and you are 28 years old.",
+      "timing": {
+        "total": 2535,
+        "firstByte": 2385,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 0,
+        "maxScore": 2,
+        "foundContent": [],
+        "missingContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "accuracyPercentage": 0,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2535,
+        "firstByteTime": 2385,
+        "streamingTime": 150,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 54
+    },
+    {
+      "testCase": {
+        "id": "complex_query",
+        "query": "I need a website for my restaurant business with good SEO",
+        "expectedContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "expectedSources": [
+          "conversation",
+          "user_fact"
+        ],
+        "category": "Complex Business Query"
+      },
+      "userId": "test-user-2",
+      "success": true,
+      "response": "For your restaurant business with a focus on SEO, I recommend our premium website package at *$499/month*. This package includes advanced SEO features to boost your online visibility effectively.",
+      "timing": {
+        "total": 2675,
+        "firstByte": 2161,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 3,
+        "maxScore": 3,
+        "foundContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2675,
+        "firstByteTime": 2161,
+        "streamingTime": 514,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 195
+    },
+    {
+      "testCase": {
+        "id": "similar_websites",
+        "query": "Find me sites similar to the ones I bought before",
+        "expectedContent": [
+          "similar",
+          "sites",
+          "purchased",
+          "recommendations"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Similarity Search"
+      },
+      "userId": "test-user-2",
+      "success": true,
+      "response": "Based on your previous purchase, you might be interested in websites with high traffic like NewsHub.com, TechDaily.net, and BusinessInsider.org.",
+      "timing": {
+        "total": 2619,
+        "firstByte": 2211,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 4,
+        "foundContent": [
+          "sites"
+        ],
+        "missingContent": [
+          "similar",
+          "purchased",
+          "recommendations"
+        ],
+        "accuracyPercentage": 25,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2619,
+        "firstByteTime": 2211,
+        "streamingTime": 408,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 144
+    },
+    {
+      "testCase": {
+        "id": "personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts"
+      },
+      "userId": "test-user-3",
+      "success": true,
+      "response": "Your name is *Quick Test User* and you are *28 years old*.",
+      "timing": {
+        "total": 2761,
+        "firstByte": 2588,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 0,
+        "maxScore": 2,
+        "foundContent": [],
+        "missingContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "accuracyPercentage": 0,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2761,
+        "firstByteTime": 2588,
+        "streamingTime": 173,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 58
+    },
+    {
+      "testCase": {
+        "id": "conversation_context",
+        "query": "What did we discuss about websites?",
+        "expectedContent": [
+          "websites",
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Conversation Memory"
+      },
+      "userId": "test-user-3",
+      "success": true,
+      "response": "We discussed **high-traffic websites** in our catalog like NewsHub.com, TechDaily.net, and BusinessInsider.org, along with **pricing options** ranging from $99/month to $499/month for different packages.",
+      "timing": {
+        "total": 2785,
+        "firstByte": 2223,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 4,
+        "foundContent": [
+          "websites"
+        ],
+        "missingContent": [
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "accuracyPercentage": 25,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2785,
+        "firstByteTime": 2223,
+        "streamingTime": 562,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 203
+    },
+    {
+      "testCase": {
+        "id": "pricing_info",
+        "query": "What are the pricing options?",
+        "expectedContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Pricing Information"
+      },
+      "userId": "test-user-3",
+      "success": true,
+      "response": "Our website packages range from *$99/month* for basic sites to *$499/month* for premium packages with advanced SEO features.",
+      "timing": {
+        "total": 2573,
+        "firstByte": 2221,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2573,
+        "firstByteTime": 2221,
+        "streamingTime": 352,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 124
+    },
+    {
+      "testCase": {
+        "id": "website_recommendations",
+        "query": "Show me high-traffic websites",
+        "expectedContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Website Recommendations"
+      },
+      "userId": "test-user-3",
+      "success": true,
+      "response": "Here are some high-traffic websites in our catalog: NewsHub.com (500K monthly visitors), TechDaily.net (300K visitors), and BusinessInsider.org (750K visitors).",
+      "timing": {
+        "total": 3822,
+        "firstByte": 3416,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 3822,
+        "firstByteTime": 3416,
+        "streamingTime": 406,
+        "performance": "acceptable",
+        "grade": "B"
+      },
+      "responseLength": 160
+    },
+    {
+      "testCase": {
+        "id": "repeat_personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts (Repeat)",
+        "isRepeat": true
+      },
+      "userId": "test-user-3",
+      "success": true,
+      "response": "Your name is *Quick Test User* and you are *28 years old*.",
+      "timing": {
+        "total": 2052,
+        "firstByte": 1899,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 0,
+        "maxScore": 2,
+        "foundContent": [],
+        "missingContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "accuracyPercentage": 0,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2052,
+        "firstByteTime": 1899,
+        "streamingTime": 153,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 58
+    },
+    {
+      "testCase": {
+        "id": "complex_query",
+        "query": "I need a website for my restaurant business with good SEO",
+        "expectedContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "expectedSources": [
+          "conversation",
+          "user_fact"
+        ],
+        "category": "Complex Business Query"
+      },
+      "userId": "test-user-3",
+      "success": true,
+      "response": "For your restaurant business with a focus on SEO, I recommend our premium website package at *$499/month*. This package includes advanced SEO features to help boost your online visibility.",
+      "timing": {
+        "total": 2626,
+        "firstByte": 2126,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 3,
+        "maxScore": 3,
+        "foundContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2626,
+        "firstByteTime": 2126,
+        "streamingTime": 500,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 188
+    },
+    {
+      "testCase": {
+        "id": "similar_websites",
+        "query": "Find me sites similar to the ones I bought before",
+        "expectedContent": [
+          "similar",
+          "sites",
+          "purchased",
+          "recommendations"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Similarity Search"
+      },
+      "userId": "test-user-3",
+      "success": true,
+      "response": "Based on your previous purchase, you might be interested in websites with high traffic like NewsHub.com, TechDaily.net, and BusinessInsider.org.",
+      "timing": {
+        "total": 2604,
+        "firstByte": 2196,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 4,
+        "foundContent": [
+          "sites"
+        ],
+        "missingContent": [
+          "similar",
+          "purchased",
+          "recommendations"
+        ],
+        "accuracyPercentage": 25,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2604,
+        "firstByteTime": 2196,
+        "streamingTime": 408,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 144
+    },
+    {
+      "testCase": {
+        "id": "personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts"
+      },
+      "userId": "test-user-quick",
+      "success": true,
+      "response": "I don't have access to your age information. Your name is **Test User One**.",
+      "timing": {
+        "total": 2806,
+        "firstByte": 2595,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 2,
+        "foundContent": [
+          "Test User One"
+        ],
+        "missingContent": [
+          "25 years old"
+        ],
+        "accuracyPercentage": 50,
+        "quality": "fair"
+      },
+      "performance": {
+        "totalTime": 2806,
+        "firstByteTime": 2595,
+        "streamingTime": 211,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 76
+    },
+    {
+      "testCase": {
+        "id": "conversation_context",
+        "query": "What did we discuss about websites?",
+        "expectedContent": [
+          "websites",
+          "recommendations",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Conversation Memory"
+      },
+      "userId": "test-user-quick",
+      "success": true,
+      "response": "We discussed website recommendations including *Reddit*, *Medium*, and *TED Talks* for a variety of interesting content and discussions.",
+      "timing": {
+        "total": 2741,
+        "firstByte": 2335,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 4,
+        "foundContent": [
+          "recommendations"
+        ],
+        "missingContent": [
+          "websites",
+          "TechCrunch",
+          "Product Hunt"
+        ],
+        "accuracyPercentage": 25,
+        "quality": "poor"
+      },
+      "performance": {
+        "totalTime": 2741,
+        "firstByteTime": 2335,
+        "streamingTime": 406,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 136
+    },
+    {
+      "testCase": {
+        "id": "pricing_info",
+        "query": "What are the pricing options?",
+        "expectedContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Pricing Information"
+      },
+      "userId": "test-user-quick",
+      "success": true,
+      "response": "Our website packages range from **$99/month** for basic sites to **$499/month** for premium packages with advanced SEO features.",
+      "timing": {
+        "total": 2263,
+        "firstByte": 1908,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "$99",
+          "month",
+          "packages",
+          "premium"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2263,
+        "firstByteTime": 1908,
+        "streamingTime": 355,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 128
+    },
+    {
+      "testCase": {
+        "id": "website_recommendations",
+        "query": "Show me high-traffic websites",
+        "expectedContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Website Recommendations"
+      },
+      "userId": "test-user-quick",
+      "success": true,
+      "response": "Here are some high-traffic websites in our catalog: NewsHub.com (500K monthly visitors), TechDaily.net (300K visitors), and BusinessInsider.org (750K visitors).",
+      "timing": {
+        "total": 2665,
+        "firstByte": 2242,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 4,
+        "maxScore": 4,
+        "foundContent": [
+          "NewsHub",
+          "TechDaily",
+          "BusinessInsider",
+          "visitors"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2665,
+        "firstByteTime": 2242,
+        "streamingTime": 423,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 160
+    },
+    {
+      "testCase": {
+        "id": "repeat_personal_facts",
+        "query": "What is my name and age?",
+        "expectedContent": [
+          "Test User One",
+          "25 years old"
+        ],
+        "expectedSources": [
+          "user_fact",
+          "personal"
+        ],
+        "category": "User Facts (Repeat)",
+        "isRepeat": true
+      },
+      "userId": "test-user-quick",
+      "success": true,
+      "response": "I don't have access to your age information. Your name is **Test User One**.",
+      "timing": {
+        "total": 2428,
+        "firstByte": 2226,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 1,
+        "maxScore": 2,
+        "foundContent": [
+          "Test User One"
+        ],
+        "missingContent": [
+          "25 years old"
+        ],
+        "accuracyPercentage": 50,
+        "quality": "fair"
+      },
+      "performance": {
+        "totalTime": 2428,
+        "firstByteTime": 2226,
+        "streamingTime": 202,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 76
+    },
+    {
+      "testCase": {
+        "id": "complex_query",
+        "query": "I need a website for my restaurant business with good SEO",
+        "expectedContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "expectedSources": [
+          "conversation",
+          "user_fact"
+        ],
+        "category": "Complex Business Query"
+      },
+      "userId": "test-user-quick",
+      "success": true,
+      "response": "For your restaurant business with a focus on SEO, I recommend our premium website package priced at **$499/month**. This package includes advanced SEO features to help boost your online visibility and attract more customers.",
+      "timing": {
+        "total": 2839,
+        "firstByte": 2240,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 3,
+        "maxScore": 3,
+        "foundContent": [
+          "restaurant",
+          "SEO",
+          "business"
+        ],
+        "missingContent": [],
+        "accuracyPercentage": 100,
+        "quality": "excellent"
+      },
+      "performance": {
+        "totalTime": 2839,
+        "firstByteTime": 2240,
+        "streamingTime": 599,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 224
+    },
+    {
+      "testCase": {
+        "id": "similar_websites",
+        "query": "Find me sites similar to the ones I bought before",
+        "expectedContent": [
+          "similar",
+          "sites",
+          "purchased",
+          "recommendations"
+        ],
+        "expectedSources": [
+          "conversation"
+        ],
+        "category": "Similarity Search"
+      },
+      "userId": "test-user-quick",
+      "success": true,
+      "response": "Based on your previous purchases, you might be interested in websites like *Reddit*, *Medium*, and *TED Talks*. These platforms offer a variety of content and discussions similar to your previous choices.",
+      "timing": {
+        "total": 2442,
+        "firstByte": 1883,
+        "firstChunk": null
+      },
+      "accuracy": {
+        "score": 2,
+        "maxScore": 4,
+        "foundContent": [
+          "similar",
+          "sites"
+        ],
+        "missingContent": [
+          "purchased",
+          "recommendations"
+        ],
+        "accuracyPercentage": 50,
+        "quality": "fair"
+      },
+      "performance": {
+        "totalTime": 2442,
+        "firstByteTime": 1883,
+        "streamingTime": 559,
+        "performance": "good",
+        "grade": "A"
+      },
+      "responseLength": 204
+    }
+  ],
+  "executionTime": 104543
+}

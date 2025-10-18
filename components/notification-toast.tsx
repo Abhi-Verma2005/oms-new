@@ -213,11 +213,7 @@ export function NotificationToast({
 export function NotificationToastContainer() {
   const { toasts, removeToast, markAsRead } = useNotificationStore();
 
-  // Debug logging
-  console.log('🔔 NotificationToastContainer: Rendering with toasts:', {
-    count: toasts.length,
-    toasts: toasts.map(t => ({ id: t.id, title: t.title }))
-  });
+  // Debug logging disabled
 
   return (
     <div className="fixed bottom-4 right-4 z-50 space-y-2">

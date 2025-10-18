@@ -54,24 +54,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [initialLoad, setInitialLoad] = useState(false);
 
   const handleNewNotification = useCallback((notification: NotificationData) => {
-    console.log('🔔 NotificationContext: Received new notification via WebSocket:', {
-      id: notification.id,
-      title: notification.title,
-      hasType: !!notification.type,
-      isGlobal: notification.isGlobal,
-      fullNotification: notification
-    });
-    
     // Add to notifications list
     setNotifications(prev => {
       // Check if notification already exists
       const exists = prev.some(n => n.id === notification.id);
       if (exists) {
-        console.log('⚠️ Notification already exists in list, skipping:', notification.title);
         return prev;
       }
-      
-      console.log('✅ Adding notification to list:', notification.title);
       return [notification, ...prev];
     });
 
@@ -80,11 +69,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       // Check if toast already exists
       const exists = prev.some(n => n.id === notification.id);
       if (exists) {
-        console.log('⚠️ Toast already exists, skipping:', notification.title);
         return prev;
       }
-      
-      console.log('✅ Adding notification to toast queue:', notification.title);
       return [...prev, notification];
     });
   }, []);
@@ -144,18 +130,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     error: webSocketError 
   } = useNotificationWebSocket({
     onNotification: handleNewNotification,
-    onConnect: () => {
-      console.log('Notification WebSocket connected in context');
-    },
-    onDisconnect: () => {
-      console.log('Notification WebSocket disconnected in context');
-    }
+    onConnect: () => {},
+    onDisconnect: () => {}
   });
 
-  // Debug WebSocket connection status
-  useEffect(() => {
-    console.log('WebSocket status:', { isConnected: isWebSocketConnected, isConnecting: isWebSocketConnecting, error: webSocketError });
-  }, [isWebSocketConnected, isWebSocketConnecting, webSocketError]);
+  // Debug WebSocket connection status disabled
 
   const addNotification = useCallback((notification: NotificationData) => {
     setNotifications(prev => {
