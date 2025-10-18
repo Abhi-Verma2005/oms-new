@@ -113,6 +113,8 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     sources: string[]
     cacheHit: boolean
     contextCount: number
+    hasRelevantContext?: boolean
+    confidence?: number
   } | null>(null)
 
   const prevCartCountRef = useRef<number>(cartState.items.length)
@@ -870,11 +872,29 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       inflightAbortRef.current = new AbortController()
       console.log('🚀 Created new abort controller')
 
-      console.log('📤 Sending request to API...')
-      const response = await fetch('/api/ai-chat?stream=1', {
+      const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      console.log('📤 [AI] Starting send flow (non-stream)')
+      console.time && console.time('AI_FETCH')
+      console.time && console.time('AI_TOTAL')
+      console.time && console.time('AI_JSON_PARSE')
+      console.timeEnd && console.timeEnd('AI_JSON_PARSE') // reset placeholder
+      console.time && console.time('AI_PROCESS_RESPONSE')
+      console.timeEnd && console.timeEnd('AI_PROCESS_RESPONSE') // reset placeholder
+      console.log('📤 [AI] Sending request to API (non-stream)...')
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'beforeFetch', ts: Date.now() } })) } catch {}
+      const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Provide a stable client id for ephemeral isolation without server persistence
+          'x-client-id': (() => {
+            try {
+              const k = 'ai_client_id'
+              let v = localStorage.getItem(k)
+              if (!v) { v = Math.random().toString(36).slice(2); localStorage.setItem(k, v) }
+              return v
+            } catch { return 'ephemeral' }
+          })()
         },
         cache: 'no-store',
         signal: inflightAbortRef.current.signal,
@@ -889,92 +909,71 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           cartState: cartStateForAPI
         })
       })
-      console.log(`📥 Received response: ${response.status}`)
+      console.log(`📥 [AI] Received response: ${response.status}`)
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterFetch', status: response.status, ok: response.ok, ts: Date.now() } })) } catch {}
       if (!response.ok) {
         // Try to parse JSON error, else generic
         let errText = 'Failed to send message'
         try { errText = await response.text() } catch {}
         throw new Error(errText)
       }
-      
-      if (!response.body) {
-        throw new Error('No response body received')
-      }
+      console.timeEnd && console.timeEnd('AI_FETCH')
 
-      // Create a placeholder assistant message to append chunks into
-      const assistantId = (Date.now() + 1).toString()
-      const assistantMessage: Message = {
-        id: assistantId,
-        content: '',
-        role: 'assistant',
-        timestamp: new Date()
-      }
-      addMessage(assistantMessage)
+      // Parse JSON and handle full response without streaming
+      console.time && console.time('AI_JSON_PARSE')
+      const data = await response.json().catch((e) => { console.error('[AI] JSON parse failed', e); return ({ message: '' }) })
+      console.timeEnd && console.timeEnd('AI_JSON_PARSE')
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterJson', hasMessage: typeof data?.message === 'string', ts: Date.now(), timings: data?.timings } })) } catch {}
 
-      // Simplified and reliable streaming implementation
-      console.log('🚀 Starting reliable stream processing...')
-      
-      let accumulated = ''
-      let controlBuffer = ''
-      const executedActions = new Set<string>()
-      const toolRegex = /\[\[TOOL\]\]({[\s\S]*?})\n/g
-      const bracketToolTagRegex = /\[[A-Z_]+(?::[\s\S]*?)?\]/g
-      
+      // Log backend timings if provided
       try {
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        
-        while (true) {
-          const { done, value } = await reader.read()
-          
-          if (done) {
-            console.log('✅ Stream completed successfully')
-            break
-          }
-          
-          // Process the chunk
-          const chunk = decoder.decode(value, { stream: true })
-          console.log(`📦 Received chunk: "${chunk.substring(0, 50)}${chunk.length > 50 ? '...' : ''}"`)
-          
-          // Handle tool events
-          controlBuffer += chunk
-          let match
-          while ((match = toolRegex.exec(controlBuffer)) !== null) {
-            try {
-              const payload = JSON.parse(match[1])
-              const key = `${payload.type}:${payload.data}`
-              if (!executedActions.has(key)) {
-                executedActions.add(key)
-                await executeAction({ type: payload.type, data: payload.data }, cartStateForAPI)
-              }
-            } catch (e) {
-              console.warn('Failed to handle tool event:', e)
-            }
-          }
-          controlBuffer = controlBuffer.replace(toolRegex, '')
-          
-          // Clean and accumulate text
-          const cleanedChunk = chunk
-            .replace(toolRegex, '')
-            .replace(bracketToolTagRegex, '')
-          
-          accumulated += cleanedChunk
-          
-          // Update the message in real-time
-          updateMessage(assistantId, { content: accumulated })
+        if (data?.timings) {
+          console.log('⏱️ [AI] Backend timings:', data.timings)
+        } else {
+          console.log('⏱️ [AI] No backend timings provided')
         }
-        
-        // Clean up
-        reader.releaseLock()
-        
-      } catch (error) {
-        console.error('❌ Stream processing error:', error)
-        updateMessage(assistantId, { content: 'Sorry, I encountered an error while processing your request. Please try again.' })
-      }
+      } catch {}
 
-      // Stream processing completed - no need for additional processing
-      // The message has been updated in real-time during streaming
-      console.log('✅ Stream processing completed successfully')
+      // Update RAG context indicators in UI if available
+      try {
+        if (Array.isArray(data?.sources) || typeof data?.contextCount === 'number' || typeof data?.hasRelevantContext === 'boolean') {
+          setRagContext({
+            sources: Array.isArray(data.sources) ? data.sources : [],
+            cacheHit: !!data.cacheHit,
+            contextCount: typeof data.contextCount === 'number' ? data.contextCount : 0,
+            hasRelevantContext: typeof data.hasRelevantContext === 'boolean' ? data.hasRelevantContext : true,
+            confidence: typeof data.confidence === 'number' ? data.confidence : 0.85
+          })
+        }
+      } catch {}
+
+      const tBeforeProcess = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      console.time && console.time('AI_PROCESS_RESPONSE')
+      const finalText = typeof data?.message === 'string' ? data.message : ''
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'beforeProcess', hasFinalText: !!finalText, ts: Date.now() } })) } catch {}
+      try {
+        await processAIResponse(finalText, cartStateForAPI)
+      } catch (e) {
+        console.error('[AI] processAIResponse failed:', e)
+        try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'processError', ts: Date.now(), error: String(e) } })) } catch {}
+        throw e
+      }
+      console.timeEnd && console.timeEnd('AI_PROCESS_RESPONSE')
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterProcess', ts: Date.now() } })) } catch {}
+
+      const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now()
+      const totalMs = Math.round((t1 - t0))
+      const fetchMs = (() => {
+        try {
+          const navEntries = (performance?.getEntriesByType && performance.getEntriesByType('resource')) || []
+          const last = Array.from(navEntries).reverse().find((e: any) => typeof e.name === 'string' && e.name.includes('/api/ai-chat')) as any
+          if (last && typeof last.duration === 'number') return Math.round(last.duration)
+        } catch {}
+        return undefined
+      })()
+      const processMs = Math.round((t1 - tBeforeProcess))
+      console.log('✅ [AI] Frontend timings:', { totalMs, fetchMs, processMs })
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'frontendTimings', totalMs, fetchMs, processMs, ts: Date.now() } })) } catch {}
     } catch (error) {
       // Handle AbortError gracefully - this is expected when requests are cancelled
       if (error instanceof Error && error.name === 'AbortError') {

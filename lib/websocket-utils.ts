@@ -99,17 +99,7 @@ export function getFullClientWebSocketUrl(): string {
   const separator = baseUrl.endsWith('/') ? '' : '/';
   const fullUrl = `${baseUrl}${separator}${endpoint.replace(/^\//, '')}`;
   
-  // Debug logging in development
-  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.log('🔌 WebSocket URL generated:', {
-      baseUrl,
-      endpoint,
-      fullUrl,
-      hostname: window.location.hostname,
-      protocol: window.location.protocol,
-      NEXT_PUBLIC_WEBSOCKET_URL: process.env.NEXT_PUBLIC_WEBSOCKET_URL
-    });
-  }
+  // Debug logging disabled to reduce noise
   
   return fullUrl;
 }

@@ -46,6 +46,13 @@ interface UseNotificationWebSocketOptions {
 
 export function useNotificationWebSocket(options: UseNotificationWebSocketOptions = {}) {
   const { data: session } = useSession();
+  // Silence verbose websocket logs by default
+  const wsLog = (..._args: any[]) => {};
+  // Default: DISABLE websocket unless explicitly enabled
+  const websocketEnabled = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_ENABLE_WEBSOCKET === '1'
+  const websocketDisabled = !websocketEnabled || (
+    typeof process !== 'undefined' && (process.env.NEXT_PUBLIC_DISABLE_WEBSOCKET === '1' || process.env.NEXT_PUBLIC_DISABLE_NOTIFICATIONS === '1')
+  )
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -61,6 +68,9 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
   } = options;
 
   const connect = useCallback(() => {
+    if (websocketDisabled) {
+      return;
+    }
     if (wsRef.current?.readyState === WebSocket.OPEN || isConnecting) {
       return;
     }
@@ -80,7 +90,7 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('WebSocket connected to:', wsUrl);
+        wsLog('WebSocket connected to:', wsUrl);
         setIsConnected(true);
         setIsConnecting(false);
         setError(null);
@@ -90,7 +100,7 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
           const userId = (session.user as any).id;
           const isAdmin = (session.user as any).roles?.includes('admin') || (session.user as any).roles?.includes('super_admin') || (session.user as any).isAdmin;
           
-          console.log('Authenticating WebSocket with user:', userId, 'isAdmin:', isAdmin);
+          wsLog('Authenticating WebSocket with user:', userId, 'isAdmin:', isAdmin);
           
           ws.send(JSON.stringify({
             type: 'authenticate',
@@ -105,7 +115,7 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log('🔔 WebSocket message received:', {
+          wsLog('🔔 WebSocket message received:', {
             type: message.type,
             hasData: !!message.data,
             dataKeys: message.data ? Object.keys(message.data) : [],
@@ -114,17 +124,17 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
           
           switch (message.type) {
             case 'connected':
-              console.log('✅ WebSocket client connected:', message.clientId);
+              wsLog('✅ WebSocket client connected:', message.clientId);
               break;
               
             case 'authenticated':
-              console.log('✅ WebSocket authenticated for user:', message.userId);
+              wsLog('✅ WebSocket authenticated for user:', message.userId);
               break;
               
             case 'notification':
-              console.log('🔔 Processing notification message...');
+              wsLog('🔔 Processing notification message...');
               if (message.data && onNotification) {
-                console.log('✅ Calling onNotification with data:', {
+                wsLog('✅ Calling onNotification with data:', {
                   id: message.data.id,
                   title: message.data.title,
                   hasType: !!message.data.type,
@@ -132,7 +142,7 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
                 });
                 onNotification(message.data);
               } else {
-                console.log('❌ No onNotification handler or no data in message:', {
+                wsLog('❌ No onNotification handler or no data in message:', {
                   hasData: !!message.data,
                   hasOnNotification: !!onNotification,
                   data: message.data
@@ -141,11 +151,11 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
               break;
               
             case 'pong':
-              console.log('🏓 Pong received');
+              wsLog('🏓 Pong received');
               break;
               
             default:
-              console.log('❓ Unknown WebSocket message type:', message.type);
+              wsLog('❓ Unknown WebSocket message type:', message.type);
           }
         } catch (error) {
           console.error('❌ Error parsing WebSocket message:', error, 'Raw data:', event.data);
@@ -153,14 +163,14 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
       };
 
       ws.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
+        wsLog('WebSocket disconnected:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
         onDisconnect?.();
 
         // Auto-reconnect if enabled and not a manual close
         if (autoReconnect && event.code !== 1000) {
-          console.log('Attempting to reconnect in', reconnectInterval, 'ms');
+          wsLog('Attempting to reconnect in', reconnectInterval, 'ms');
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, reconnectInterval);
@@ -173,7 +183,7 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
                           readyState === WebSocket.OPEN ? 'OPEN' :
                           readyState === WebSocket.CLOSING ? 'CLOSING' :
                           readyState === WebSocket.CLOSED ? 'CLOSED' : 'UNKNOWN';
-        console.error('WebSocket error: diagnostic', {
+        wsLog('WebSocket error: diagnostic', {
           url: wsUrl,
           readyState,
           stateText,
@@ -190,7 +200,7 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
       setError('Failed to create WebSocket connection');
       setIsConnecting(false);
     }
-  }, [session, onNotification, onConnect, onDisconnect, autoReconnect, reconnectInterval, isConnecting]);
+  }, [session, onNotification, onConnect, onDisconnect, autoReconnect, reconnectInterval, isConnecting, websocketDisabled]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -217,10 +227,13 @@ export function useNotificationWebSocket(options: UseNotificationWebSocketOption
 
   // Connect when session is available
   useEffect(() => {
+    if (websocketDisabled) {
+      return;
+    }
     if (session?.user && !isConnected && !isConnecting) {
       connect();
     }
-  }, [session, isConnected, isConnecting, connect]);
+  }, [session, isConnected, isConnecting, connect, websocketDisabled]);
 
   // Cleanup on unmount
   useEffect(() => {
