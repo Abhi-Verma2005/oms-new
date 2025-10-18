@@ -30,7 +30,7 @@ const nextConfig = {
   },
   
   // Font optimization settings for Docker builds
-  optimizeFonts: false,
+  // optimizeFonts: false, // Removed - not a valid Next.js config option
   
   // Force webpack for production builds
   webpack: (config, { isServer }) => {
