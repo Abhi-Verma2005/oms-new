@@ -43,8 +43,6 @@ export type PublishersHelpCarouselProps = {
   searchQuery?: string
   setSearchQuery?: (query: string) => void
   loading?: boolean
-  onRefresh?: () => void
-  onReset?: () => void
   hasCheckoutFab?: boolean
   // Suggestions controls (optional, provided by parent)
   suggestions?: string[]
@@ -60,8 +58,6 @@ export default function PublishersHelpCarousel({
   searchQuery = '',
   setSearchQuery, 
   loading = false, 
-  onRefresh, 
-  onReset,
   hasCheckoutFab = false,
   suggestions = [],
   suggestionsLoading = false,
@@ -161,23 +157,6 @@ export default function PublishersHelpCarousel({
             )}
           </div>
           
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline" 
-              className="h-8 text-xs px-3 flex-1" 
-              onClick={onRefresh} 
-              disabled={loading}
-            >
-              {loading ? 'Loading…' : 'Refresh'}
-            </Button>
-            <Button 
-              className="h-8 text-xs px-3 flex-1 bg-violet-600 hover:bg-violet-700 text-white" 
-              onClick={onReset}
-            >
-              Reset
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -243,6 +222,23 @@ export default function PublishersHelpCarousel({
                 <li className="flex items-start gap-2"><Check className="h-3 w-3 text-emerald-500 mt-0.5" /><span>Each project is a separate website & has its own metrics & statistics.</span></li>
                 <li className="flex items-start gap-2"><Check className="h-3 w-3 text-emerald-500 mt-0.5" /><span>Add your project competitors and automatically analyze their backlinks.</span></li>
               </ul>
+              
+              {/* Individual Purchase Option */}
+              <div className="mt-4 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/60">
+                <button
+                  onClick={() => clearProject()}
+                  className={`w-full flex items-center gap-2 text-left px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 rounded-lg transition-colors ${!selectedProjectId
+                    ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                    : 'hover:bg-gray-100 text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+                  aria-current={!selectedProjectId ? 'true' : undefined}
+                >
+                  <span className={`shrink-0 inline-flex items-center justify-center size-3 rounded-full border ${!selectedProjectId ? 'border-gray-600 bg-gray-600' : 'border-gray-300 dark:border-white/10'}`} />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">Individual Purchase</div>
+                    <div className="text-[10px] text-gray-500 truncate">No project assigned</div>
+                  </div>
+                </button>
+              </div>
             </div>
             <button onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-violet-700">
               <Plus className="h-3 w-3" />
@@ -250,7 +246,7 @@ export default function PublishersHelpCarousel({
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 px-3 pt-3 pb-0 sm:px-4 sm:pt-4 sm:pb-0 flex flex-col h-full">
+          <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-2 flex flex-col h-full min-h-0">
             <div className="flex items-center justify-between mb-2 flex-shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">Your projects</div>
@@ -271,8 +267,24 @@ export default function PublishersHelpCarousel({
             ) : error ? (
               <div className="text-[10px] text-red-600 dark:text-red-400 flex-1">{error}</div>
             ) : (
-              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 no-scrollbar max-h-[120px]">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 no-scrollbar">
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                  {/* Unselect Project Option */}
+                  <li>
+                    <button
+                      onClick={() => clearProject()}
+                      className={`w-full flex items-center gap-2 mt-1 text-left px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/60 rounded-lg transition-colors ${!selectedProjectId
+                        ? 'bg-gray-50 text-gray-800 dark:bg-gray-800/60 dark:text-gray-200'
+                        : 'hover:bg-gray-50 text-gray-700 dark:text-gray-300 dark:hover:bg-gray-800/60'}`}
+                      aria-current={!selectedProjectId ? 'true' : undefined}
+                    >
+                      <span className={`shrink-0 inline-flex items-center justify-center size-3 rounded-full border ${!selectedProjectId ? 'border-gray-600 bg-gray-600' : 'border-gray-300 dark:border-white/10'}`} />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">Individual Purchase</div>
+                        <div className="text-[10px] text-gray-500 truncate">No project assigned</div>
+                      </div>
+                    </button>
+                  </li>
                   {projects.map((p) => (
                     <li key={p.id}>
                       <button
@@ -291,9 +303,9 @@ export default function PublishersHelpCarousel({
                     </li>
                   ))}
                 </ul>
-                {projects.length > 2 && (
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400 text-center py-1 mt-1 border-t border-gray-100 dark:border-gray-800/60">
-                    Scroll to see {projects.length - 2} more project{projects.length - 2 !== 1 ? 's' : ''}
+                {projects.length > 1 && (
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 text-center py-0.5 mt-0.5 border-t border-gray-100 dark:border-gray-800/60">
+                    Scroll to see {projects.length - 1} more project{projects.length - 1 !== 1 ? 's' : ''}
                   </div>
                 )}
               </div>

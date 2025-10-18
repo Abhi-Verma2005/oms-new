@@ -5,6 +5,89 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
+// User Context Helper Functions
+function formatUserContextFromRequest(userContext: any): string {
+  if (!userContext) {
+    return ''
+  }
+
+  const contextParts: string[] = []
+
+  // Basic user info
+  if (userContext.basic) {
+    const { name } = userContext.basic
+    if (name) {
+      contextParts.push(`User Name: ${name}`)
+    }
+    // Email removed to prevent layout issues during streaming
+  }
+
+  // Profile information
+  if (userContext.profile) {
+    const profile = userContext.profile
+    if (profile.companyName) contextParts.push(`Company: ${profile.companyName}`)
+    if (profile.companySize) contextParts.push(`Company Size: ${profile.companySize}`)
+    if (profile.industry) contextParts.push(`Industry: ${profile.industry}`)
+    if (profile.role) contextParts.push(`Role: ${profile.role}`)
+    if (profile.department) contextParts.push(`Department: ${profile.department}`)
+    if (profile.experience) contextParts.push(`Experience: ${profile.experience}`)
+    if (profile.website) contextParts.push(`Website: ${profile.website}`)
+    if (profile.primaryGoals && profile.primaryGoals.length > 0) {
+      contextParts.push(`Primary Goals: ${profile.primaryGoals.join(', ')}`)
+    }
+    if (profile.budget) contextParts.push(`Budget: ${profile.budget}`)
+    if (profile.teamSize) contextParts.push(`Team Size: ${profile.teamSize}`)
+    if (profile.timezone) contextParts.push(`Timezone: ${profile.timezone}`)
+    if (profile.language) contextParts.push(`Language: ${profile.language}`)
+  }
+
+  // User context
+  if (userContext.context) {
+    const context = userContext.context
+    if (context.preferences) {
+      const prefs = Object.entries(context.preferences)
+      if (prefs.length > 0) {
+        contextParts.push(`Preferences: ${prefs.map(([k, v]) => `${k}: ${v}`).join(', ')}`)
+      }
+    }
+    if (context.settings) {
+      const settings = Object.entries(context.settings)
+      if (settings.length > 0) {
+        contextParts.push(`Settings: ${settings.map(([k, v]) => `${k}: ${v}`).join(', ')}`)
+      }
+    }
+  }
+
+  // AI insights
+  if (userContext.aiInsights) {
+    const insights = userContext.aiInsights
+    if (insights.conversationTone) contextParts.push(`Communication Style: ${insights.conversationTone}`)
+    if (insights.expertiseLevel) contextParts.push(`Expertise Level: ${insights.expertiseLevel}`)
+    if (insights.learningStyle) contextParts.push(`Learning Style: ${insights.learningStyle}`)
+    if (insights.topicInterests && insights.topicInterests.length > 0) {
+      contextParts.push(`Topic Interests: ${insights.topicInterests.join(', ')}`)
+    }
+    if (insights.painPoints && insights.painPoints.length > 0) {
+      contextParts.push(`Pain Points: ${insights.painPoints.join(', ')}`)
+    }
+  }
+
+  // User roles
+  if (userContext.roles && userContext.roles.length > 0) {
+    contextParts.push(`Roles: ${userContext.roles.join(', ')}`)
+  }
+
+  // Account age
+  if (userContext.basic?.createdAt) {
+    const accountAge = Math.floor((Date.now() - new Date(userContext.basic.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+    contextParts.push(`Account Age: ${accountAge} days`)
+  }
+
+  console.log('👤 DEBUG: Formatted user context:', contextParts.join('\n'))
+
+  return contextParts.length > 0 ? `\n\nUSER CONTEXT:\n${contextParts.join('\n')}` : ''
+}
+
 // Modern RAG Helper Functions
 async function generateEmbedding(text: string): Promise<number[]> {
   try {
@@ -222,10 +305,17 @@ async function rerankResults(results: any[], query: string): Promise<any[]> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, messages, config: clientConfig, currentUrl, cartState, userId: requestUserId } = await request.json()
+    const { message, messages, config: clientConfig, currentUrl, cartState, userId: requestUserId, userContext } = await request.json()
     const isStream = request.nextUrl?.searchParams?.get('stream') === '1'
     
     console.log(`🚀 RAG-Integrated AI Chat (${isStream ? 'stream' : 'non-stream'}): message="${message.substring(0, 50)}..."`)
+    console.log('👤 DEBUG: Received user context:', {
+      hasUserContext: !!userContext,
+      userBasic: userContext?.basic,
+      userProfile: userContext?.profile,
+      userRoles: userContext?.roles,
+      isAdmin: userContext?.isAdmin
+    })
     
     if (!process.env.OPEN_AI_KEY && !process.env.OPENAI_API_KEY) {
       return NextResponse.json(
@@ -248,10 +338,8 @@ export async function POST(request: NextRequest) {
     console.log(`👤 Using userId: ${userId} | persist=${canPersist}`)
 
     if (isStream) {
-      return await handleStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist)
-    } else {
-      return await handleNonStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist)
-    }
+      return await handleStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist, userContext)
+    } 
   } catch (error) {
     console.error('Error in RAG-integrated AI chat API:', error)
     return NextResponse.json(
@@ -271,7 +359,8 @@ async function handleStreamingRequest(
   clientConfig: any,
   cartState: any,
   currentUrl: string,
-  canPersist: boolean
+  canPersist: boolean,
+  userContext: any
 ) {
   try {
     console.log('🔍 Starting RAG-enhanced streaming request...')
@@ -354,8 +443,9 @@ async function handleStreamingRequest(
     console.log('🔍 Modern RAG: Performing hybrid retrieval...')
     const t0Retrieval = Date.now()
     
-    // Get RAG context with timeout
+    // Get RAG context and user context with timeout
     let searchResults: any[] = []
+    let userContextStr = ''
     try {
       const ragProcessingPromise = (async () => {
         const rewrittenQueries = await rewriteQuery(message)
@@ -363,14 +453,24 @@ async function handleStreamingRequest(
         return await rerankResults(hybridResults, message)
       })()
       
+      // Format user context directly - no need for promises for simple formatting
+      userContextStr = formatUserContextFromRequest(userContext)
+      console.log('👤 DEBUG: Formatted user context:', userContextStr)
+      
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('RAG processing timeout')), 10000) // 10 second timeout
       })
       
-      searchResults = await Promise.race([ragProcessingPromise, timeoutPromise]) as any[]
+      const ragResults = await Promise.race([
+        ragProcessingPromise,
+        timeoutPromise
+      ]) as any[]
+      
+      searchResults = ragResults
     } catch (error) {
       console.warn('RAG processing failed or timed out, continuing without context:', error)
       searchResults = []
+      userContextStr = ''
     }
     
     const ragMs = Date.now() - t0Retrieval
@@ -386,29 +486,41 @@ async function handleStreamingRequest(
       ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${searchResults.map(r => `- ${r.content}`).join('\n')}`
       : ''
     
-    const baseSystemPrompt = hasRelevantContext 
-      ? `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your primary role is to help users find and filter publisher websites for link building and content marketing.
+    // Single, clean system prompt template
+    const baseSystemPrompt = `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your primary role is to help users find and filter publisher websites for link building and content marketing.
 
 ## CRITICAL CONTEXT
 You are working within a publishers marketplace where users can:
 - Browse and filter publisher websites by various criteria (niche, authority, traffic, pricing, etc.)
 - Add publisher sites to their cart for purchasing publishing opportunities
-- Filter sites by technical metrics like Domain Authority, Page Authority, traffic, pricing, turnaround time (TAT), etc.
+- Filter sites by technical metrics like Domain Authority, Page Authority, traffic (Semrush data), pricing, turnaround time (TAT), etc.
 
 When users mention filters, pricing, TAT (turnaround time), or site criteria, they are referring to filtering publisher websites, not generic products or services.
 
 ## CRITICAL FILTER INSTRUCTIONS
+**IMPORTANT: ONLY apply filters recommended by the user. DO NOT automatically apply filters based on previous user data, preferences, or assumptions.**
+
 When users request filter changes, you MUST use the [FILTER:...] tool tag. Do not give generic responses about not having access - you have full filtering capabilities through the tool system.
 
-Examples of when to use [FILTER:...]:
+**ONLY apply filters when users explicitly ask for them, such as:**
 - "Filter websites with price between 500-2000" → [FILTER:priceMin=500&priceMax=2000]
 - "Find tech sites with high DA" → [FILTER:niche=technology&daMin=50]
 - "Show me sites under $1000" → [FILTER:priceMax=1000]
 - "Filter by country and language" → [FILTER:country=US&language=en]
 - "TAT min I want 6" → [FILTER:tatDaysMin=6]
+- "Sites with high overall traffic" → [FILTER:semrushOverallTrafficMin=1000000]
+- "Organic traffic minimum 500k" → [FILTER:semrushOrganicTrafficMin=500000]
+- "Apply filters based on my past data" → Only then use [FILTER:...] with historical data
 - "Clear filters" → [FILTER:RESET]
 
-Available filters: q, niche, language, country, priceMin/priceMax, daMin/daMax, paMin/paMax, drMin/drMax, spamMin/spamMax, availability, tool, backlinkNature, linkPlacement, permanence, remarkIncludes, lastPublishedAfter, outboundLinkLimitMax, disclaimerIncludes, trend, tatDaysMin/tatDaysMax
+**DO NOT automatically apply filters when users:**
+- Ask general questions about sites
+- Request recommendations without specific filter criteria
+- Mention preferences without asking for filters
+- Share information about their business or needs
+- Ask for explanations or advice
+
+Available filters: q, niche, language, country, priceMin/priceMax, daMin/daMax, paMin/paMax, drMin/drMax, spamMin/spamMax, semrushOverallTrafficMin (Semrush Traffic), semrushOrganicTrafficMin (Semrush Organic Traffic), availability, tool, backlinkNature, linkPlacement, permanence, remarkIncludes, lastPublishedAfter, outboundLinkLimitMax, disclaimerIncludes, trend, tatDaysMin/tatDaysMax
 
 ALWAYS use tool tags for filtering requests. Never say you don't have access to filtering.
 
@@ -455,76 +567,8 @@ AI: "I'll set the minimum turnaround time to 6 days for you."
 [FILTER:tatDaysMin=6]
 "Done! I've filtered the sites to show only those with a minimum turnaround time of 6 days."
 
+${userContextStr}
 ${ragContext}
-
-Use the knowledge base context above to provide accurate and personalized responses about publisher websites and filtering.`
-      : `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your primary role is to help users find and filter publisher websites for link building and content marketing.
-
-## CRITICAL CONTEXT
-You are working within a publishers marketplace where users can:
-- Browse and filter publisher websites by various criteria (niche, authority, traffic, pricing, etc.)
-- Add publisher sites to their cart for purchasing publishing opportunities
-- Filter sites by technical metrics like Domain Authority, Page Authority, traffic, pricing, turnaround time (TAT), etc.
-
-When users mention filters, pricing, TAT (turnaround time), or site criteria, they are referring to filtering publisher websites, not generic products or services.
-
-## CRITICAL FILTER INSTRUCTIONS
-When users request filter changes, you MUST use the [FILTER:...] tool tag. Do not give generic responses about not having access - you have full filtering capabilities through the tool system.
-
-Examples of when to use [FILTER:...]:
-- "Filter websites with price between 500-2000" → [FILTER:priceMin=500&priceMax=2000]
-- "Find tech sites with high DA" → [FILTER:niche=technology&daMin=50]
-- "Show me sites under $1000" → [FILTER:priceMax=1000]
-- "Filter by country and language" → [FILTER:country=US&language=en]
-- "TAT min I want 6" → [FILTER:tatDaysMin=6]
-- "Clear filters" → [FILTER:RESET]
-
-Available filters: q, niche, language, country, priceMin/priceMax, daMin/daMax, paMin/paMax, drMin/drMax, spamMin/spamMax, availability, tool, backlinkNature, linkPlacement, permanence, remarkIncludes, lastPublishedAfter, outboundLinkLimitMax, disclaimerIncludes, trend, tatDaysMin/tatDaysMax
-
-ALWAYS use tool tags for filtering requests. Never say you don't have access to filtering.
-
-## AVAILABLE TOOLS & ACTIONS
-1. FILTERING & DISCOVERY:
-   - [FILTER:param=value] - Apply specific filters to publishers/products
-   - [NAVIGATE:/publishers?filters] - Navigate with pre-applied filters
-
-2. CART MANAGEMENT:
-   - [ADD_TO_CART:itemId] - Add specific item to cart
-   - [REMOVE_FROM_CART:itemId] - Remove item from cart
-   - [VIEW_CART] - Show current cart contents
-   - [CLEAR_CART] - Clear all items from cart
-   - [CART_SUMMARY] - Get detailed cart summary with pricing
-
-3. CHECKOUT & PAYMENT:
-   - [PROCEED_TO_CHECKOUT] - Navigate to checkout page
-   - [VIEW_ORDERS] - Navigate to orders page
-
-4. SMART RECOMMENDATIONS:
-   - [RECOMMEND:criteria] - Suggest items based on criteria
-   - [SIMILAR_ITEMS:itemId] - Find similar items
-   - [BEST_DEALS] - Show current best deals
-
-## INTELLIGENT FLOW ORCHESTRATION
-When a tool action is applicable (e.g., filtering or navigation), OUTPUT THE TOOL TAG FIRST on its own line before any natural language. This allows the UI to apply the action immediately. Then provide a short confirmation line.
-
-CONVERSATION FLOW EXAMPLES:
-Example 1 - Complete Purchase Flow:
-User: "I need high DA sites for tech content"
-AI: "I'll find high Domain Authority sites perfect for tech content! Let me filter those for you."
-[FILTER:daMin=50&niche=technology]
-"Great! I found 15 high-quality tech sites with DA 50+. Would you like me to add the best matches to your cart?"
-
-Example 2 - Direct Filtering:
-User: "Filter websites with minimum price of 500 dollars and maximum budget of 2000 dollars"
-AI: "I'll filter the websites to show those between $500-$2000 for you."
-[FILTER:priceMin=500&priceMax=2000]
-"Perfect! I've applied the price filter. You should now see websites in your specified budget range."
-
-Example 3 - TAT Filtering:
-User: "I want min tat days to be 6"
-AI: "I'll set the minimum turnaround time to 6 days for you."
-[FILTER:tatDaysMin=6]
-"Done! I've filtered the sites to show only those with a minimum turnaround time of 6 days."
 
 Be helpful and provide useful responses about publisher websites and filtering. If the user shares personal information, acknowledge it and remember it for future conversations.`
     
@@ -623,538 +667,5 @@ Be helpful and provide useful responses about publisher websites and filtering. 
         'Cache-Control': 'no-cache',
       },
     })
-  }
-}
-
-/**
- * 📝 Non-streaming RAG request
- */
-async function handleNonStreamingRequest(
-  userId: string,
-  message: string,
-  messages: any[],
-  clientConfig: any,
-  cartState: any,
-  currentUrl: string,
-  canPersist: boolean
-) {
-  try {
-    console.log('🔍 Starting RAG-enhanced non-streaming request...')
-    const t0Total = Date.now()
-    
-    // Respect persistence flag; never auto-create
-    const validUserId = userId
-    
-    // Modern RAG: Enhanced Semantic Caching with Query Similarity
-    console.log('🔍 Modern RAG: Checking semantic cache...')
-    const queryHash = Buffer.from(message).toString('base64').slice(0, 64)
-    let queryEmbedding: number[]
-    try {
-      queryEmbedding = await generateEmbedding(message)
-    } catch {
-      queryEmbedding = Array.from({ length: 1536 }, () => Math.random() * 2 - 1)
-    }
-    
-    // Check for semantically similar cached responses
-    const similarCachedResponse = await prisma.$queryRaw`
-      SELECT 
-        id,
-        cached_response,
-        COALESCE(1 - (query_embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536)), 0.0) AS similarity
-      FROM semantic_cache
-      WHERE user_id = ${validUserId}
-        AND expires_at > NOW()
-        AND (1 - (query_embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.85
-      ORDER BY similarity DESC
-      LIMIT 1
-    `
-    
-    if (similarCachedResponse.length > 0 && similarCachedResponse[0].similarity > 0.9) {
-      console.log(`🎯 Semantic cache hit! Similarity: ${similarCachedResponse[0].similarity.toFixed(3)}`)
-      
-      // Update cache hit count
-      await prisma.semanticCache.update({
-        where: { id: similarCachedResponse[0].id },
-        data: { 
-          hitCount: { increment: 1 },
-          lastHit: new Date()
-        }
-      })
-      
-      const cachedData = similarCachedResponse[0].cached_response
-      console.log(`🔍 [API] Cached response data:`, {
-        hasMessage: !!cachedData?.message,
-        messageLength: cachedData?.message?.length || 0,
-        messagePreview: cachedData?.message?.substring(0, 100) || 'NO MESSAGE',
-        fullCachedData: cachedData
-      })
-      
-      // Handle different cache response formats
-      let message = ''
-      let sources = []
-      let ragContext = ''
-      let hasRelevantContext = false
-      let confidence = 0
-      let contextCount = 0
-      
-      if (cachedData) {
-        // Check if it's the new format with direct message field
-        if (cachedData.message) {
-          message = cachedData.message
-          sources = cachedData.sources || []
-          ragContext = cachedData.ragContext || ''
-          hasRelevantContext = cachedData.hasRelevantContext || false
-          confidence = cachedData.confidence || 0
-          contextCount = cachedData.contextCount || 0
-        }
-        // Check if it's the old format with answer field
-        else if (cachedData.answer) {
-          message = cachedData.answer
-          sources = cachedData.sources || []
-          ragContext = cachedData.ragContext || ''
-          hasRelevantContext = cachedData.hasRelevantContext || false
-          confidence = cachedData.confidence || 0
-          contextCount = cachedData.contextCount || 0
-        }
-        // Fallback for any other format
-        else {
-          message = 'I apologize, but I encountered an issue with the cached response format.'
-        }
-      }
-      
-      // Final safety check
-      if (!message || message.trim() === '') {
-        message = 'I apologize, but I encountered an issue with the cached response. Please try again.'
-      }
-      
-      return NextResponse.json({
-        message: message,
-        sources: sources,
-        ragContext: ragContext,
-        hasRelevantContext: hasRelevantContext,
-        confidence: confidence,
-        cacheHit: true,
-        contextCount: contextCount,
-        timings: { ragMs: 0, rerankMs: 0, llmMs: 0, totalMs: 0 }
-      })
-    }
-    
-    console.log('🔍 Modern RAG: Performing hybrid retrieval...')
-
-    const t0Retrieval = Date.now()
-    
-    // Add timeout wrapper for RAG processing
-    const ragProcessingPromise = (async () => {
-      // Modern RAG: Query Rewriting + Hybrid Search + Re-ranking
-      console.log('🔄 Modern RAG: Query rewriting...')
-      const rewrittenQueries = await rewriteQuery(message)
-      console.log(`✅ Generated ${rewrittenQueries.length} query variations`)
-      
-      console.log('🔍 Modern RAG: Hybrid search (semantic + keyword)...')
-      const hybridResults = await hybridSearch(validUserId, rewrittenQueries, message)
-      console.log(`✅ Hybrid search found ${hybridResults.length} results`)
-      
-      console.log('📊 Modern RAG: Re-ranking results...')
-      const searchResults = await rerankResults(hybridResults, message)
-      console.log(`✅ Re-ranked to ${searchResults.length} final results`)
-      
-      return searchResults
-    })()
-    
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('RAG processing timeout')), 15000) // 15 second timeout
-    })
-    
-    let searchResults: any[] = []
-    try {
-      searchResults = await Promise.race([ragProcessingPromise, timeoutPromise]) as any[]
-    } catch (error) {
-      console.warn('RAG processing failed or timed out, continuing without context:', error)
-      searchResults = []
-    }
-    
-    const ragMs = Date.now() - t0Retrieval
-    console.log(`✅ Retrieved ${searchResults.length} relevant documents in ${ragMs}ms`)
-
-    // Fast similarity-based ranking (no LLM reranking for performance)
-    const t0Rerank = Date.now()
-    const reranked = searchResults.sort((a, b) => {
-      // Sort by confidence score first, then by similarity
-      const aConf = a.confidence_score || 0
-      const bConf = b.confidence_score || 0
-      if (aConf !== bConf) return bConf - aConf
-      return (b.similarity || 0) - (a.similarity || 0)
-    })
-    const rerankMs = Date.now() - t0Rerank
-    console.log(`🧮 Sort time: ${rerankMs}ms`)
-
-    // Check if we have sufficient relevant context with improved logic
-    const hasRelevantContext = reranked.length > 0 && (
-      reranked.some((r: any) => (r.confidence_score || 0) > 0.7) || 
-      reranked.some((r: any) => (r.similarity || 0) > 0.4)
-    )
-    
-    const ragContext = hasRelevantContext
-      ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${reranked.map(r => `- ${r.content}`).join('\n')}`
-      : ''
-
-    const sources = reranked.map(r => r.metadata?.source || 'Knowledge Base').filter((v, i, a) => a.indexOf(v) === i)
-
-    const baseSystemPrompt = hasRelevantContext 
-      ? `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your primary role is to help users find and filter publisher websites for link building and content marketing.
-
-## CRITICAL CONTEXT
-You are working within a publishers marketplace where users can:
-- Browse and filter publisher websites by various criteria (niche, authority, traffic, pricing, etc.)
-- Add publisher sites to their cart for purchasing publishing opportunities
-- Filter sites by technical metrics like Domain Authority, Page Authority, traffic, pricing, turnaround time (TAT), etc.
-
-When users mention filters, pricing, TAT (turnaround time), or site criteria, they are referring to filtering publisher websites, not generic products or services.
-
-${ragContext}
-
-Use the knowledge base context above to provide accurate and personalized responses about publisher websites and filtering.`
-      : `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your primary role is to help users find and filter publisher websites for link building and content marketing.
-
-## CRITICAL CONTEXT
-You are working within a publishers marketplace where users can:
-- Browse and filter publisher websites by various criteria (niche, authority, traffic, pricing, etc.)
-- Add publisher sites to their cart for purchasing publishing opportunities
-- Filter sites by technical metrics like Domain Authority, Page Authority, traffic, pricing, turnaround time (TAT), etc.
-
-When users mention filters, pricing, TAT (turnaround time), or site criteria, they are referring to filtering publisher websites, not generic products or services.
-
-## CRITICAL FILTER INSTRUCTIONS
-When users request filter changes, you MUST use the [FILTER:...] tool tag. Do not give generic responses about not having access - you have full filtering capabilities through the tool system.
-
-Examples of when to use [FILTER:...]:
-- "Filter websites with price between 500-2000" → [FILTER:priceMin=500&priceMax=2000]
-- "Find tech sites with high DA" → [FILTER:niche=technology&daMin=50]
-- "Show me sites under $1000" → [FILTER:priceMax=1000]
-- "Filter by country and language" → [FILTER:country=US&language=en]
-- "TAT min I want 6" → [FILTER:tatDaysMin=6]
-- "Clear filters" → [FILTER:RESET]
-
-Available filters: q, niche, language, country, priceMin/priceMax, daMin/daMax, paMin/paMax, drMin/drMax, spamMin/spamMax, availability, tool, backlinkNature, linkPlacement, permanence, remarkIncludes, lastPublishedAfter, outboundLinkLimitMax, disclaimerIncludes, trend, tatDaysMin/tatDaysMax
-
-ALWAYS use tool tags for filtering requests. Never say you don't have access to filtering.
-
-## AVAILABLE TOOLS & ACTIONS
-1. FILTERING & DISCOVERY:
-   - [FILTER:param=value] - Apply specific filters to publishers/products
-   - [NAVIGATE:/publishers?filters] - Navigate with pre-applied filters
-
-2. CART MANAGEMENT:
-   - [ADD_TO_CART:itemId] - Add specific item to cart
-   - [REMOVE_FROM_CART:itemId] - Remove item from cart
-   - [VIEW_CART] - Show current cart contents
-   - [CLEAR_CART] - Clear all items from cart
-   - [CART_SUMMARY] - Get detailed cart summary with pricing
-
-3. CHECKOUT & PAYMENT:
-   - [PROCEED_TO_CHECKOUT] - Navigate to checkout page
-   - [VIEW_ORDERS] - Navigate to orders page
-
-4. SMART RECOMMENDATIONS:
-   - [RECOMMEND:criteria] - Suggest items based on criteria
-   - [SIMILAR_ITEMS:itemId] - Find similar items
-   - [BEST_DEALS] - Show current best deals
-
-## INTELLIGENT FLOW ORCHESTRATION
-When a tool action is applicable (e.g., filtering or navigation), OUTPUT THE TOOL TAG FIRST on its own line before any natural language. This allows the UI to apply the action immediately. Then provide a short confirmation line.
-
-CONVERSATION FLOW EXAMPLES:
-Example 1 - Complete Purchase Flow:
-User: "I need high DA sites for tech content"
-AI: "I'll find high Domain Authority sites perfect for tech content! Let me filter those for you."
-[FILTER:daMin=50&niche=technology]
-"Great! I found 15 high-quality tech sites with DA 50+. Would you like me to add the best matches to your cart?"
-
-Example 2 - Direct Filtering:
-User: "Filter websites with minimum price of 500 dollars and maximum budget of 2000 dollars"
-AI: "I'll filter the websites to show those between $500-$2000 for you."
-[FILTER:priceMin=500&priceMax=2000]
-"Perfect! I've applied the price filter. You should now see websites in your specified budget range."
-
-Example 3 - TAT Filtering:
-User: "I want min tat days to be 6"
-AI: "I'll set the minimum turnaround time to 6 days for you."
-[FILTER:tatDaysMin=6]
-"Done! I've filtered the sites to show only those with a minimum turnaround time of 6 days."
-
-Be helpful and provide useful responses about publisher websites and filtering. If the user shares personal information, acknowledge it and remember it for future conversations.`
-
-    // Always call the LLM, with or without context
-    console.log(`🤖 Calling LLM with ${hasRelevantContext ? 'context' : 'no context'}...`)
-
-    // Non-streaming completion request
-    const t0LLM = Date.now()
-    const nonStreamingMessages = [
-      { role: 'system', content: baseSystemPrompt },
-      ...messages.slice(-10),
-      { role: 'user', content: message }
-    ]
-    
-    // 🔍 DEBUG: Log final context being sent to AI
-    console.log('🤖 FINAL AI CONTEXT (non-streaming):', JSON.stringify(nonStreamingMessages, null, 2))
-    
-    const completionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        temperature: 0,
-        max_tokens: 256,
-        messages: nonStreamingMessages
-      })
-    })
-    if (!completionResponse.ok) {
-      const errText = await completionResponse.text().catch(() => 'Failed to call OpenAI')
-      throw new Error(`OpenAI error: ${completionResponse.status} ${errText}`)
-    }
-    const completionJson = await completionResponse.json()
-    const fullResponse: string = completionJson?.choices?.[0]?.message?.content || ''
-    const llmMs = Date.now() - t0LLM
-    const totalMs = Date.now() - t0Total
-    console.log(`🤖 LLM time: ${llmMs}ms | ⏱️ Total time: ${totalMs}ms`)
-    console.log(`🔍 [API] OpenAI response:`, {
-      hasChoices: !!completionJson?.choices,
-      choicesLength: completionJson?.choices?.length || 0,
-      hasMessage: !!completionJson?.choices?.[0]?.message,
-      hasContent: !!completionJson?.choices?.[0]?.message?.content,
-      contentLength: completionJson?.choices?.[0]?.message?.content?.length || 0,
-      contentPreview: completionJson?.choices?.[0]?.message?.content?.substring(0, 100) || 'NO CONTENT',
-      fullResponse: fullResponse
-    })
-
-    // Cache the response only if allowed to persist
-    const responseData = {
-      message: fullResponse, // Use 'message' field for consistency
-      answer: fullResponse,  // Keep 'answer' for backward compatibility
-      sources: sources,
-      confidence: 0.85,
-      context: reranked.map(r => ({ content: r.content, score: r.similarity }))
-    }
-
-    if (canPersist) {
-      const queryHash = require('crypto').createHash('sha256').update(message).digest('hex')
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
-      await prisma.$executeRaw`
-        INSERT INTO semantic_cache (user_id, query_hash, query_embedding, cached_response, expires_at)
-        VALUES (${validUserId}, ${queryHash}, ${`[${queryEmbedding.join(',')}]`}::vector(1536), ${JSON.stringify(responseData)}::jsonb, ${expiresAt})
-        ON CONFLICT (user_id, query_hash) 
-        DO UPDATE SET 
-          cached_response = EXCLUDED.cached_response,
-          expires_at = EXCLUDED.expires_at,
-          hit_count = 0,
-          last_hit = NULL
-      `
-    }
-
-    const payload = {
-      message: fullResponse,
-      sources: sources,
-      confidence: hasRelevantContext ? 0.85 : 0.3,
-      cacheHit: false,
-      contextCount: searchResults.length,
-      hasRelevantContext,
-      timings: { ragMs, rerankMs, llmMs, totalMs }
-    }
-    
-    console.log(`🔍 [API] Final payload:`, {
-      messageLength: payload.message?.length || 0,
-      messagePreview: payload.message?.substring(0, 100) || 'NO MESSAGE',
-      sourcesCount: payload.sources?.length || 0,
-      hasRelevantContext: payload.hasRelevantContext,
-      contextCount: payload.contextCount
-    })
-    // Modern RAG: Self-Correcting Knowledge Base Storage (with timeout)
-    try {
-      console.log('💾 Modern RAG: Storing conversation with self-correction...')
-      
-      // Generate embedding for the user's message with timeout
-      const embeddingPromise = generateEmbedding(message)
-      const embeddingTimeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Embedding generation timeout')), 5000)
-      })
-      
-      const messageEmbedding = await Promise.race([embeddingPromise, embeddingTimeout]) as number[]
-      
-      // Check for similar existing entries to avoid duplicates
-      const existingSimilar = await prisma.$queryRaw`
-        SELECT id, content, similarity
-        FROM (
-          SELECT 
-            id,
-            content,
-            COALESCE(1 - (embedding <=> ${`[${messageEmbedding.join(',')}]`}::vector(1536)), 0.0) AS similarity
-          FROM user_knowledge_base
-          WHERE user_id = ${validUserId}
-            AND embedding IS NOT NULL
-        ) ranked
-        WHERE similarity > 0.8
-        ORDER BY similarity DESC
-        LIMIT 1
-      `
-      
-      if (existingSimilar.length > 0 && existingSimilar[0].similarity > 0.9) {
-        console.log('🔄 Self-correction: Updating existing similar entry')
-        // Update existing entry instead of creating duplicate
-        await prisma.$executeRaw`
-          UPDATE user_knowledge_base 
-          SET 
-            content = ${message},
-            embedding = ${`[${messageEmbedding.join(',')}]`}::vector(1536),
-            updated_at = NOW(),
-            access_count = access_count + 1,
-            importance_score = GREATEST(importance_score, 1.0)
-          WHERE id = ${existingSimilar[0].id}
-        `
-      } else {
-        // Store new user message as a fact
-        await prisma.$executeRaw`
-          INSERT INTO user_knowledge_base (
-            user_id, 
-            content, 
-            content_type, 
-            embedding, 
-            metadata, 
-            topics,
-            sentiment,
-            intent,
-            created_at,
-            updated_at,
-            last_accessed,
-            access_count,
-            importance_score
-          )
-          VALUES (
-            ${validUserId},
-            ${message},
-            'user_fact',
-            ${`[${messageEmbedding.join(',')}]`}::vector(1536),
-            ${JSON.stringify({
-              source: 'user_conversation',
-              timestamp: new Date().toISOString(),
-              sessionId: 'current_session',
-              hasRelevantContext: hasRelevantContext,
-              contextCount: searchResults.length
-            })}::jsonb,
-            ARRAY[]::text[],
-            NULL,
-            NULL,
-            NOW(),
-            NOW(),
-            NOW(),
-            0,
-            1.0
-          )
-        `
-      }
-      
-      console.log('✅ Stored/updated user message in knowledge base')
-    } catch (storageError) {
-      console.error('⚠️ Failed to store in knowledge base:', storageError)
-      // Don't fail the request if storage fails
-    }
-    
-    // Modern RAG: Store response in semantic cache
-    try {
-      console.log('💾 Modern RAG: Storing response in semantic cache...')
-      await prisma.semanticCache.create({
-        data: {
-          userId: validUserId,
-          queryHash,
-          queryEmbedding: `[${queryEmbedding.join(',')}]`,
-          cachedResponse: {
-            message: payload.message,
-            answer: payload.message, // Keep for backward compatibility
-            sources: payload.sources,
-            ragContext: ragContext,
-            hasRelevantContext: payload.hasRelevantContext,
-            confidence: payload.confidence,
-            contextCount: payload.contextCount
-          },
-          contextData: {
-            searchResults: searchResults.length,
-            rewrittenQueries: 0, // Not available in this scope
-            timings: { ragMs, rerankMs, llmMs, totalMs }
-          },
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-          hitCount: 0
-        }
-      })
-      console.log('✅ Stored response in semantic cache')
-    } catch (cacheError) {
-      console.error('⚠️ Failed to store in semantic cache:', cacheError)
-      // Don't fail the request if cache storage fails
-    }
-
-    // Final safety check - ensure we always have a message
-    if (!payload.message || payload.message.trim() === '') {
-      console.warn('⚠️ [API] Empty message in payload, using fallback')
-      payload.message = 'I apologize, but I encountered an issue generating a response. Please try again.'
-    }
-    
-    try {
-      console.log('📦 Response meta:', {
-        messagePreview: (payload.message || '').slice(0, 80),
-        sources: payload.sources,
-        timings: payload.timings,
-      })
-    } catch {}
-    return NextResponse.json(payload)
-
-  } catch (error) {
-    console.error('Error in RAG non-streaming request:', error)
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-    
-    // Fallback: Return a simple response even if RAG fails
-    try {
-      const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-          temperature: 0.7,
-          max_tokens: 200,
-          messages: [
-            { role: 'system', content: 'You are a helpful AI assistant.' },
-            { role: 'user', content: message }
-          ]
-        })
-      })
-      
-      if (fallbackResponse.ok) {
-        const fallbackData = await fallbackResponse.json()
-        const fallbackMessage = fallbackData?.choices?.[0]?.message?.content || 'I apologize, but I encountered an error processing your request.'
-        
-        return NextResponse.json({
-          message: fallbackMessage,
-          sources: [],
-          confidence: 0.3,
-          cacheHit: false,
-          contextCount: 0,
-          hasRelevantContext: false,
-          timings: { ragMs: 0, rerankMs: 0, llmMs: 0, totalMs: 0 },
-          fallback: true
-        })
-      }
-    } catch (fallbackError) {
-      console.error('Fallback also failed:', fallbackError)
-    }
-    
-    return NextResponse.json(
-      { error: 'Failed to process message', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
   }
 }

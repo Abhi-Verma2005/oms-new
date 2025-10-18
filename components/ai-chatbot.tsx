@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { Send, Bot, Minimize2, Trash2 } from 'lucide-react'
 import { useAIChatbot } from './ai-chatbot-provider'
+import { useUserContextForAI, useUserContextStore } from '@/stores/user-context-store'
 
 interface Message {
   id: string
@@ -23,11 +24,20 @@ interface AIChatbotProps {
 export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const router = useRouter()
   const { config, configLoading } = useAIChatbot()
+  const { getUserContextForAI, refreshUserData, isLoading: userContextLoading } = useUserContextForAI()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  
+  // Refresh user context only once on mount if not already loaded
+  useEffect(() => {
+    const { user, isLoading } = useUserContextStore.getState()
+    if (!user && !isLoading) {
+      refreshUserData()
+    }
+  }, []) // Empty dependency array - only run once on mount
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -59,6 +69,9 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     setIsLoading(true)
 
     try {
+      // Get user context for AI
+      const userContextForAI = getUserContextForAI()
+      
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: {
@@ -70,7 +83,9 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
           // Include preloaded config so the API doesn't need to fetch again
           config: config ?? undefined,
           // Include current URL for context-aware filtering
-          currentUrl: window.location.href
+          currentUrl: window.location.href,
+          // Include user context for personalized responses
+          userContext: userContextForAI
         })
       })
 
@@ -166,7 +181,10 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       
       if (filterCommand === 'RESET') {
         // Reset all filters - navigate to publishers page without any parameters
-        router.replace('/publishers')
+        // Defer navigation to prevent layout shift during streaming
+        setTimeout(() => {
+          router.replace('/publishers')
+        }, 100)
         return
       }
       
@@ -188,8 +206,11 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       // Build new URL
       const newUrl = `/publishers${newParams.toString() ? `?${newParams.toString()}` : ''}`
       
-      // Navigate to the new URL using replace to ensure proper detection
-      router.replace(newUrl)
+      // Defer navigation to prevent layout shift during streaming
+      // This allows the streaming animation to complete before page navigation
+      setTimeout(() => {
+        router.replace(newUrl)
+      }, 100)
     } catch (error) {
       console.error('Error applying filters:', error)
     }

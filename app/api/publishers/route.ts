@@ -4,8 +4,15 @@ import { fetchSitesWithFilters, transformAPISiteToSite } from '@/lib/sample-site
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = (searchParams.get('query') || '').trim()
+  const page = Number(searchParams.get('page') || 1)
+  const limit = Number(searchParams.get('limit') || 8)
+  const offset = (page - 1) * limit
 
-  const filters: any = { limit: Number(searchParams.get('limit') || 50) }
+  const filters: any = { 
+    limit: limit,
+    offset: offset,
+    page: page
+  }
   if (query) { filters.niche = query; filters.website = query }
   const niche = searchParams.get('niche')
   const language = searchParams.get('language')
@@ -37,8 +44,8 @@ export async function GET(request: Request) {
   if (spamMax) filters.spamScore = { max: Number(spamMax) }
   if (availability === 'true') filters.availability = true
 
-  const apiSites = await fetchSitesWithFilters(filters)
-  const items = apiSites.map(transformAPISiteToSite).map(s => ({
+  const result = await fetchSitesWithFilters(filters)
+  const items = result.sites.map(transformAPISiteToSite).map(s => ({
     id: s.id,
     website: s.name,
     niche: s.niche,
@@ -47,7 +54,15 @@ export async function GET(request: Request) {
     price: s.publishing.priceWithContent || s.publishing.price,
   }))
 
-  return NextResponse.json({ items })
+  return NextResponse.json({ 
+    items,
+    pagination: {
+      page,
+      limit,
+      total: result.total,
+      totalPages: Math.ceil(result.total / limit)
+    }
+  })
 }
 
 

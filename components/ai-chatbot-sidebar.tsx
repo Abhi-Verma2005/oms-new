@@ -36,6 +36,7 @@ import {
 import { useAIChatbot } from './ai-chatbot-provider'
 import { useCart } from '@/contexts/cart-context'
 import { useChat } from '@/contexts/chat-context'
+import { useUserContextForAI, useUserContextStore } from '@/stores/user-context-store'
 import { MarkdownRenderer } from './markdown-renderer'
 import { useAIMessageListener } from '@/lib/ai-chat-utils'
 import { useResizableLayout } from './resizable-layout'
@@ -74,6 +75,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     isItemInCart 
   } = useCart()
   const { messages, addMessage, updateMessage, clearMessages, isLoading, setIsLoading } = useChat()
+  const { getUserContextForAI, refreshUserData, isLoading: userContextLoading } = useUserContextForAI()
   
   // Clear chat function that preserves RAG data
   const clearChat = async () => {
@@ -119,6 +121,14 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
   const prevCartCountRef = useRef<number>(cartState.items.length)
   const didMountRef = useRef<boolean>(false)
+  
+  // Refresh user context only once on mount if not already loaded
+  useEffect(() => {
+    const { user, isLoading } = useUserContextStore.getState()
+    if (!user && !isLoading) {
+      refreshUserData()
+    }
+  }, []) // Empty dependency array - only run once on mount
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -195,48 +205,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
   // Remove the duplicate event listener - the cart length change detection above handles this
 
-  // Listen for refine modal apply event from ChatActionCard
-  useEffect(() => {
-    const handler = (e: Event) => {
-      try {
-        const detail = (e as CustomEvent<string>).detail || ''
-        const fp = new URLSearchParams(detail)
-        const priceMin = fp.get('priceMin')
-        const priceMax = fp.get('priceMax')
-        const parts: string[] = []
-        if (priceMin) parts.push(`min price $${priceMin}`)
-        if (priceMax) parts.push(`max price $${priceMax}`)
-
-        const confirmation: Message = {
-          id: (Date.now() + 2).toString(),
-          content: parts.length > 0
-            ? `Okay — I’ve applied ${parts.join(', ')}. Showing updated results.`
-            : `Okay — I’ve applied your filters. Showing updated results.`,
-          role: 'assistant',
-          timestamp: new Date()
-        }
-        addMessage(confirmation)
-        applyFilters(detail)
-
-        queueActionCard({
-          id: `${Date.now()}-refine-applied`,
-          type: 'filter',
-          title: 'Filters Applied',
-          message: parts.join(' • '),
-          icon: <Filter className="h-4 w-4" />,
-          actions: [
-            { label: 'Clear Filters', variant: 'secondary', onClick: () => clearFilters() },
-            { label: 'Refine', variant: 'tertiary', onClick: () => openFilterDialog() },
-          ],
-          dismissible: true,
-          timestamp: new Date(),
-          afterMessageId: confirmation.id,
-        })
-      } catch {}
-    }
-    window.addEventListener('AI_CHAT_REFINE_FILTERS', handler as EventListener)
-    return () => window.removeEventListener('AI_CHAT_REFINE_FILTERS', handler as EventListener)
-  }, [])
 
 
   // Process AI response and handle all possible actions
@@ -668,7 +636,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             icon: <Filter className="h-4 w-4" />,
             actions: [
               { label: 'Clear Filters', variant: 'secondary', onClick: () => clearFilters() },
-              { label: 'Refine', variant: 'tertiary', onClick: () => openFilterDialog() },
             ],
             dismissible: true,
             timestamp: new Date(),
@@ -982,7 +949,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           message: 'Refine or browse matches',
           icon: <Filter className="h-4 w-4" />,
           actions: [
-            { label: 'Refine', variant: 'tertiary', onClick: () => openFilterDialog() },
             { label: 'Clear Filters', variant: 'secondary', onClick: () => clearFilters() },
           ],
           dismissible: true,
@@ -1049,10 +1015,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     applyFilters('RESET')
   }
 
-  const openFilterDialog = () => {
-    // Placeholder: navigate to publishers where filters are available
-    goToPublishers()
-  }
 
 
   const sendMessage = async (messageContent?: string) => {
@@ -1085,6 +1047,17 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         totalItems: getTotalItems(),
         totalPrice: getTotalPrice()
       }
+      
+      // Get user context for AI
+      const userContextForAI = getUserContextForAI()
+      
+      console.log('👤 DEBUG: User context for AI:', {
+        hasUserContext: !!userContextForAI,
+        userBasic: userContextForAI?.basic,
+        userProfile: userContextForAI?.profile,
+        userRoles: userContextForAI?.roles,
+        isAdmin: userContextForAI?.isAdmin
+      })
       
       console.log('🛒 DEBUG: Sending cart state to AI API:', {
         cartItems: cartState.items,
@@ -1147,7 +1120,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           // Include current URL for context-aware filtering
           currentUrl: window.location.href,
           // Include current cart state for accurate cart operations
-          cartState: cartStateForAPI
+          cartState: cartStateForAPI,
+          // Include user context for personalized responses
+          userContext: userContextForAI
         })
       })
       console.log(`📥 [AI] Received response: ${response.status}`)
@@ -1184,7 +1159,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       
       // Read stream chunks with throttling
       let lastUpdate = 0
-      const updateThrottle = 50 // Update UI every 50ms max
+      const updateThrottle = 200 // Update UI every 200ms max to reduce layout shifts
       let buffer = '' // Buffer for incomplete lines
       
       console.log('🔍 [AI] Starting stream parsing...')
@@ -1234,7 +1209,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 // Throttle UI updates to prevent jankiness
                 const now = Date.now()
                 if (now - lastUpdate > updateThrottle) {
-                  updateMessage(assistantMessage.id, { content: fullText })
+                  requestAnimationFrame(() => {
+                    updateMessage(assistantMessage.id, { content: fullText })
+                  })
                   lastUpdate = now
                 }
               }
@@ -1248,7 +1225,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       
       // Final update to ensure all content is displayed
       console.log('🔍 [AI] Final full text:', fullText)
-      updateMessage(assistantMessage.id, { content: fullText })
+      requestAnimationFrame(() => {
+        updateMessage(assistantMessage.id, { content: fullText })
+      })
       
       console.timeEnd && console.timeEnd('AI_STREAM_PARSE')
       
@@ -1278,7 +1257,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
               config: {},
               currentUrl: window.location.href,
               cartState: cartStateForAPI,
-              userId: undefined
+              userId: undefined,
+              // Include user context for personalized responses
+              userContext: userContextForAI
             })
           })
           
@@ -1310,16 +1291,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'beforeProcess', hasFinalText: !!fullText, ts: Date.now() } })) } catch {}
       
       // Process the final response for any actions
-      try {
-        await processAIResponse(fullText, cartStateForAPI, { 
-          targetMessageId: assistantMessage.id,
-          userText: content // Pass the original user message for heuristic extraction
-        })
-      } catch (e) {
-        console.error('[AI] processAIResponse failed:', e)
-        try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'processError', ts: Date.now(), error: String(e) } })) } catch {}
-        // Don't throw, just log the error
-      }
+      // Add a small delay to ensure streaming UI has stabilized before executing tools
+      setTimeout(async () => {
+        try {
+          await processAIResponse(fullText, cartStateForAPI, { 
+            targetMessageId: assistantMessage.id,
+            userText: content // Pass the original user message for heuristic extraction
+          })
+        } catch (e) {
+          console.error('[AI] processAIResponse failed:', e)
+          try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'processError', ts: Date.now(), error: String(e) } })) } catch {}
+          // Don't throw, just log the error
+        }
+      }, 150) // Small delay to prevent layout shifts
       
       try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterProcess', ts: Date.now() } })) } catch {}
 
@@ -1379,7 +1363,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       
       if (filterCommand === 'RESET') {
         // Reset all filters - navigate to publishers page without any parameters
-        router.replace('/publishers')
+        // Defer navigation to prevent layout shift during streaming
+        setTimeout(() => {
+          router.replace('/publishers')
+        }, 100)
         return
       }
       
@@ -1401,8 +1388,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       // Build new URL
       const newUrl = `/publishers${newParams.toString() ? `?${newParams.toString()}` : ''}`
       
-      // Navigate to the new URL using replace to ensure proper detection
-      router.replace(newUrl)
+      // Defer navigation to prevent layout shift during streaming
+      // This allows the streaming animation to complete before page navigation
+      setTimeout(() => {
+        router.replace(newUrl)
+      }, 100)
     } catch (error) {
       console.error('Error applying filters:', error)
     }
@@ -1522,7 +1512,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 )}
               >
                 {message.role === 'user' ? (
-                  <div className="max-w-full sm:max-w-[85%] rounded-[12px] px-3 py-2 select-text bg-indigo-600/95 text-white selection:bg-indigo-500/30 selection:text-white border border-indigo-300/40 shadow-sm break-words">
+                  <div 
+                    className="max-w-full sm:max-w-[85%] rounded-[12px] px-3 py-2 select-text bg-indigo-600/95 text-white selection:bg-indigo-500/30 selection:text-white border border-indigo-300/40 shadow-sm"
+                    style={{ display: 'block', contain: 'layout' }}
+                  >
                     <MarkdownRenderer content={message.content} variant="chatbot" />
                   </div>
                 ) : (
@@ -1537,8 +1530,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                         <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                       </svg>
                     </div>
-                    <div className="flex-1 select-text selection:bg-white/10 selection:text-white overflow-hidden">
-                      <div className="inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 bg-white/10 border border-white/10 text-white/95 shadow-sm break-words">
+                    <div className="flex-1 select-text selection:bg-white/10 selection:text-white overflow-hidden" style={{ minWidth: 0 }}>
+                      <div 
+                        className="inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 bg-white/10 border border-white/10 text-white/95 shadow-sm"
+                        style={{ contain: 'layout' }}
+                      >
                         <MarkdownRenderer content={message.content} variant="chatbot" />
                       </div>
                     </div>

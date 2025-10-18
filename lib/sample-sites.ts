@@ -104,6 +104,13 @@ export interface APIFilters {
   websiteRemark?: string
   website?: string
   limit?: number
+  offset?: number
+  page?: number
+}
+
+export interface PaginatedResult {
+  sites: APISite[]
+  total: number
 }  
 
 // Convert API filters to query string
@@ -246,7 +253,7 @@ export interface CategoryRecommendation {
   relevance?: number
 }
 
-function getFallbackSampleData(filters: APIFilters = {}): APISite[] {
+function getFallbackSampleData(filters: APIFilters = {}): PaginatedResult {
   const sampleData: APISite[] = [
     {
       id: 1,
@@ -424,6 +431,51 @@ function getFallbackSampleData(filters: APIFilters = {}): APISite[] {
       sampleURL: "https://forbes.com/sample-article",
       availability: true,
     },
+    // Add more sample data to demonstrate pagination
+    {
+      id: 9,
+      website: "cnn.com",
+      niche: "News",
+      priceCategory: "Premium",
+      domainAuthority: 94,
+      pageAuthority: 87,
+      linkAttribute: "do-follow",
+      semrushTraffic: "8900000",
+      spamScore: 1,
+      domainRating: 93,
+      costPrice: 800,
+      sellingPrice: 1200,
+      webCountry: "United States",
+      language: "English",
+      numberOfLinks: 2,
+      turnAroundTime: "5",
+      disclaimer: "",
+      updatedAt: new Date().toISOString(),
+      sampleURL: "https://cnn.com/sample-article",
+      availability: true,
+    },
+    {
+      id: 10,
+      website: "bbc.com",
+      niche: "News",
+      priceCategory: "Premium",
+      domainAuthority: 96,
+      pageAuthority: 89,
+      linkAttribute: "do-follow",
+      semrushTraffic: "7200000",
+      spamScore: 2,
+      domainRating: 94,
+      costPrice: 900,
+      sellingPrice: 1400,
+      webCountry: "United Kingdom",
+      language: "English",
+      numberOfLinks: 2,
+      turnAroundTime: "6",
+      disclaimer: "",
+      updatedAt: new Date().toISOString(),
+      sampleURL: "https://bbc.com/sample-article",
+      availability: true,
+    },
   ]
 
   // minimal filtering support
@@ -436,13 +488,21 @@ function getFallbackSampleData(filters: APIFilters = {}): APISite[] {
     const q = String(filters.website).toLowerCase()
     filtered = filtered.filter(s => s.website.toLowerCase().includes(q))
   }
-  if (filters.limit) {
-    filtered = filtered.slice(0, filters.limit)
+  
+  // Apply pagination
+  const total = filtered.length
+  const offset = filters.offset || 0
+  const limit = filters.limit || 8
+  
+  const paginatedSites = filtered.slice(offset, offset + limit)
+  
+  return {
+    sites: paginatedSites,
+    total: total
   }
-  return filtered
 }
 
-export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<APISite[]> {
+export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<PaginatedResult> {
   try {
     // Build filter query string
     const filterQuery = buildFilterQuery(filters);
@@ -457,9 +517,15 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<A
         filters: filterQuery,
       }
       
-      // Add limit if specified
+      // Add pagination parameters
       if (filters.limit) {
         requestPayload.limit = filters.limit;
+      }
+      if (filters.offset) {
+        requestPayload.offset = filters.offset;
+      }
+      if (filters.page) {
+        requestPayload.page = filters.page;
       }
       
       requestBody = JSON.stringify(requestPayload);
@@ -491,11 +557,11 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<A
 
     if (Array.isArray(data)) {
       const arr = data.map((item: APIResponse) => item.json)
-      return arr.length > 0 ? arr : getFallbackSampleData(filters)
+      return arr.length > 0 ? { sites: arr, total: arr.length } : getFallbackSampleData(filters)
     }
     if (data && typeof data === 'object') {
       const single = data.json || data
-      return single ? [single] : getFallbackSampleData(filters)
+      return single ? { sites: [single], total: 1 } : getFallbackSampleData(filters)
     }
     return getFallbackSampleData(filters)
   } catch (error) {
