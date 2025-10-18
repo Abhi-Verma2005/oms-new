@@ -16,9 +16,9 @@ export default function DefaultLayout({
       </Suspense>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto pt-14 sm:pt-16">
+      <div className="flex-1 overflow-y-auto">
         <Suspense fallback={null}>
-          <main className="min-h-full [&>*:first-child]:scroll-mt-16">
+          <main className="min-h-full pt-14 sm:pt-16">
             {children}
           </main>
         </Suspense>

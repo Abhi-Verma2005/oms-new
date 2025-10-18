@@ -290,11 +290,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 // Add or update the assistant message
     if (options?.targetMessageId) {
       // Always update with the clean response to ensure content is displayed
-      updateMessage(options.targetMessageId, { content: cleanResponse || 'Processing your request...' })
+      updateMessage(options.targetMessageId, { content: cleanResponse || 'I apologize, but I encountered an issue processing your request. Please try again.' })
     } else {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: cleanResponse || 'Processing your request...',
+        content: cleanResponse || 'I apologize, but I encountered an issue processing your request. Please try again.',
         role: 'assistant',
         timestamp: new Date()
       }
@@ -880,9 +880,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       console.timeEnd && console.timeEnd('AI_JSON_PARSE') // reset placeholder
       console.time && console.time('AI_PROCESS_RESPONSE')
       console.timeEnd && console.timeEnd('AI_PROCESS_RESPONSE') // reset placeholder
-      console.log('📤 [AI] Sending request to API (non-stream)...')
+      console.log('📤 [AI] Sending request to API (streaming)...')
       try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'beforeFetch', ts: Date.now() } })) } catch {}
-      const response = await fetch('/api/ai-chat', {
+      const response = await fetch('/api/ai-chat?stream=1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -919,46 +919,155 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       }
       console.timeEnd && console.timeEnd('AI_FETCH')
 
-      // Parse JSON and handle full response without streaming
-      console.time && console.time('AI_JSON_PARSE')
-      const data = await response.json().catch((e) => { console.error('[AI] JSON parse failed', e); return ({ message: '' }) })
-      console.timeEnd && console.timeEnd('AI_JSON_PARSE')
-      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterJson', hasMessage: typeof data?.message === 'string', ts: Date.now(), timings: data?.timings } })) } catch {}
-
-      // Log backend timings if provided
-      try {
-        if (data?.timings) {
-          console.log('⏱️ [AI] Backend timings:', data.timings)
-        } else {
-          console.log('⏱️ [AI] No backend timings provided')
+      // Handle streaming response
+      console.time && console.time('AI_STREAM_PARSE')
+      
+      if (!response.body) {
+        throw new Error('No response body received')
+      }
+      
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+      
+      // Create assistant message for streaming
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: '',
+        role: 'assistant',
+        timestamp: new Date()
+      }
+      addMessage(assistantMessage)
+      
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterStreamStart', ts: Date.now() } })) } catch {}
+      
+      // Read stream chunks with throttling
+      let lastUpdate = 0
+      const updateThrottle = 50 // Update UI every 50ms max
+      let buffer = '' // Buffer for incomplete lines
+      
+      console.log('🔍 [AI] Starting stream parsing...')
+      
+      while (true) {
+        const { done, value } = await reader.read()
+        
+        if (done) {
+          console.log('🔍 [AI] Stream ended')
+          break
         }
-      } catch {}
-
-      // Update RAG context indicators in UI if available
-      try {
-        if (Array.isArray(data?.sources) || typeof data?.contextCount === 'number' || typeof data?.hasRelevantContext === 'boolean') {
-          setRagContext({
-            sources: Array.isArray(data.sources) ? data.sources : [],
-            cacheHit: !!data.cacheHit,
-            contextCount: typeof data.contextCount === 'number' ? data.contextCount : 0,
-            hasRelevantContext: typeof data.hasRelevantContext === 'boolean' ? data.hasRelevantContext : true,
-            confidence: typeof data.confidence === 'number' ? data.confidence : 0.85
+        
+        const chunk = decoder.decode(value, { stream: true })
+        console.log('🔍 [AI] Received chunk:', chunk.substring(0, 100) + '...')
+        
+        // Add chunk to buffer
+        buffer += chunk
+        
+        // Process complete lines
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
+        
+        for (const line of lines) {
+          if (line.trim() === '') continue // Skip empty lines
+          
+          console.log('🔍 [AI] Processing line:', line.substring(0, 100) + '...')
+          
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6) // Remove 'data: ' prefix
+            
+            if (data === '[DONE]') {
+              console.log('🔍 [AI] Stream completed')
+              break
+            }
+            
+            try {
+              const parsed = JSON.parse(data)
+              console.log('🔍 [AI] Parsed JSON:', parsed)
+              
+              const content = parsed.choices?.[0]?.delta?.content
+              console.log('🔍 [AI] Extracted content:', content)
+              
+              if (content) {
+                fullText += content
+                console.log('🔍 [AI] Full text so far:', fullText.substring(0, 100) + '...')
+                
+                // Throttle UI updates to prevent jankiness
+                const now = Date.now()
+                if (now - lastUpdate > updateThrottle) {
+                  updateMessage(assistantMessage.id, { content: fullText })
+                  lastUpdate = now
+                }
+              }
+            } catch (e) {
+              // Skip invalid JSON lines
+              console.warn('Failed to parse SSE data:', data, e)
+            }
+          }
+        }
+      }
+      
+      // Final update to ensure all content is displayed
+      console.log('🔍 [AI] Final full text:', fullText)
+      updateMessage(assistantMessage.id, { content: fullText })
+      
+      console.timeEnd && console.timeEnd('AI_STREAM_PARSE')
+      
+      // Check if we have a valid response
+      if (!fullText || fullText.trim() === '') {
+        console.warn('⚠️ [AI] Empty or invalid streaming response from API:', { fullText })
+        console.log('🔍 [AI] Attempting fallback to non-streaming...')
+        
+        // Fallback: Try non-streaming request
+        try {
+          const fallbackResponse = await fetch('/api/ai-chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-client-id': (() => {
+                try {
+                  const k = 'ai_client_id'
+                  let v = localStorage.getItem(k)
+                  if (!v) { v = Math.random().toString(36).slice(2); localStorage.setItem(k, v) }
+                  return v
+                } catch { return Math.random().toString(36).slice(2) }
+              })(),
+            },
+            body: JSON.stringify({
+              message: content,
+              messages: messages,
+              config: {},
+              currentUrl: window.location.href,
+              cartState: cartStateForAPI,
+              userId: undefined
+            })
           })
+          
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json()
+            if (fallbackData.message) {
+              updateMessage(assistantMessage.id, { content: fallbackData.message })
+              console.log('✅ [AI] Fallback successful')
+              return
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError)
         }
-      } catch {}
-
-      const tBeforeProcess = typeof performance !== 'undefined' ? performance.now() : Date.now()
-      console.time && console.time('AI_PROCESS_RESPONSE')
-      const finalText = typeof data?.message === 'string' ? data.message : ''
-      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'beforeProcess', hasFinalText: !!finalText, ts: Date.now() } })) } catch {}
+        
+        updateMessage(assistantMessage.id, { content: 'I apologize, but I received an empty response. Please try again.' })
+        return
+      }
+      
+      try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'beforeProcess', hasFinalText: !!fullText, ts: Date.now() } })) } catch {}
+      
+      // Process the final response for any actions
       try {
-        await processAIResponse(finalText, cartStateForAPI)
+        await processAIResponse(fullText, cartStateForAPI, { targetMessageId: assistantMessage.id })
       } catch (e) {
         console.error('[AI] processAIResponse failed:', e)
         try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'processError', ts: Date.now(), error: String(e) } })) } catch {}
-        throw e
+        // Don't throw, just log the error
       }
-      console.timeEnd && console.timeEnd('AI_PROCESS_RESPONSE')
+      
       try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterProcess', ts: Date.now() } })) } catch {}
 
       const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -971,7 +1080,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         } catch {}
         return undefined
       })()
-      const processMs = Math.round((t1 - tBeforeProcess))
+      const processMs = Math.round((t1 - t0)) // Use t0 since tBeforeProcess is not available in streaming
       console.log('✅ [AI] Frontend timings:', { totalMs, fetchMs, processMs })
       try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'frontendTimings', totalMs, fetchMs, processMs, ts: Date.now() } })) } catch {}
     } catch (error) {
@@ -1047,18 +1156,23 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   }
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] flex flex-col relative text-white overflow-hidden max-w-3xl mx-auto w-full mt-14 sm:mt-16">
+    <div className="h-screen flex flex-col relative text-white overflow-hidden max-w-3xl mx-auto w-full">
       {/* Solid Brand Background (from screenshot) */}
       <div className="absolute inset-0 bg-[#1f2230]"></div>
       
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col">
+      <div className="relative z-10 h-full flex flex-col pt-14 sm:pt-16">
         {/* Header - minimal, balanced layout per HIG */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-black/10">
           <div className="flex items-center gap-2" aria-label="Assistant">
             <div className="h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
-              <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="8" />
+              <svg
+                className="w-4 h-4 fill-violet-500"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 32 32"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
               </svg>
             </div>
             <div className="text-[13px] font-medium tracking-[-0.01em] text-white/90">Assistant</div>
@@ -1100,8 +1214,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
                 <div className="h-7 w-7 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
-                  <svg className="w-4 h-4 text-white/70" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="8" />
+                  <svg
+                    className="w-4 h-4 fill-violet-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 32 32"
+                    preserveAspectRatio="xMidYMid meet"
+                  >
+                    <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                   </svg>
                 </div>
               </div>
@@ -1156,8 +1275,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 ) : (
                   <div className="w-full flex items-start gap-2">
                     <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
-                      <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor">
-                        <circle cx="12" cy="12" r="8" />
+                      <svg
+                        className="w-3.5 h-3.5 fill-violet-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 32 32"
+                        preserveAspectRatio="xMidYMid meet"
+                      >
+                        <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                       </svg>
                     </div>
                     <div className="flex-1 select-text selection:bg-white/10 selection:text-white overflow-hidden">
@@ -1177,8 +1301,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             <div className="flex gap-3 justify-start">
               <div className="w-full flex items-start gap-2">
                 <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
-                  <svg className="w-3.5 h-3.5 text-white/70" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="12" r="8" />
+                  <svg
+                    className="w-3.5 h-3.5 fill-violet-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 32 32"
+                    preserveAspectRatio="xMidYMid meet"
+                  >
+                    <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                   </svg>
                 </div>
                 <div className="flex-1">
