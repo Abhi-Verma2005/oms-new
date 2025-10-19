@@ -144,11 +144,11 @@ export default function CheckoutClient() {
   return (
     <div className="lg:relative lg:flex">
       {/* Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8 lg:grow lg:pr-8 xl:pr-16 2xl:ml-[80px]">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4 pb-8 lg:grow lg:pr-8 xl:pr-16 2xl:ml-[80px]">
         <div className="lg:max-w-[640px] lg:mx-auto">
           {/* Cart items */}
           <div className="mb-6 lg:mb-0">
-            <div className="mb-4">
+            <div className="mb-3">
               <div className="flex items-center text-sm font-medium text-gray-400 dark:text-gray-500 gap-2">
                 <span className="text-gray-500 dark:text-gray-400">Review</span>
                 <svg className="h-3.5 w-3.5 opacity-70" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -162,7 +162,7 @@ export default function CheckoutClient() {
               </div>
             </div>
             {/* Back to publishers */}
-            <div className="mb-5">
+            <div className="mb-4">
               <a
                 href="/publishers"
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
@@ -298,29 +298,7 @@ function PaymentForm() {
           console.warn('Failed to notify AI about payment success:', notificationError)
         }
 
-        // Add user message to chat context immediately
-        addMessage({
-          id: Date.now().toString(),
-          content: "I have completed the payment successfully. Please show me my orders.",
-          role: 'user',
-          timestamp: new Date()
-        })
-
-        // Send automatic message to AI chat immediately
-        try {
-          await fetch('/api/ai-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: "I have completed the payment successfully. Please show me my orders.",
-              messages: [],
-              currentUrl: window.location.href,
-              autoMessage: true
-            })
-          })
-        } catch (aiError) {
-          console.warn('Failed to send automatic message to AI:', aiError)
-        }
+        // Payment success handled - no automatic message needed
 
         // Store payment success in sessionStorage for orders page to detect
         try {
