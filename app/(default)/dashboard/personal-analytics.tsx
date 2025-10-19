@@ -231,16 +231,135 @@ export default function PersonalAnalytics() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-6 min-w-0">
+        {/* Key Metrics Summary Card - 4 metrics in a row */}
         <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl">
           <div className="px-5 py-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="text-center animate-pulse">
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              {/* Total Orders & Spent */}
+              <div className="text-center">
+                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 mx-auto" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+              </div>
+              
+              {/* Credits Usage */}
+              <div className="text-center">
+                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 mx-auto" />
+                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-6 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+              </div>
+              
+              {/* Wishlist Items */}
+              <div className="text-center">
+                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 mx-auto" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-6 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+              </div>
+              
+              {/* Activity Score */}
+              <div className="text-center">
+                <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 mx-auto" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-6 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1 mx-auto" />
+                <div className="h-3 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Order Status Chart - Doughnut Chart */}
+        <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
+          <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+            <div className="h-5 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1" />
+            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </header>
+          <div className="p-5 flex items-center justify-center">
+            {/* Doughnut chart skeleton */}
+            <div className="relative">
+              <div className="h-48 w-48 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-16 w-16 bg-gray-100 dark:bg-gray-600 rounded-full" />
+              </div>
+            </div>
+          </div>
+          {/* Legend skeleton */}
+          <div className="px-5 pb-4 flex flex-wrap gap-4 justify-center">
+            {['Paid', 'Pending', 'Failed', 'Cancelled'].map((label, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="h-3 w-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Weekly Credits Usage - Line Chart */}
+        <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
+          <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+            <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1" />
+            <div className="h-4 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </header>
+          <div className="p-5">
+            {/* Line chart skeleton with area fill */}
+            <div className="relative h-32">
+              <div className="h-full w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="absolute bottom-0 left-0 right-0 h-16">
+                <div className="h-full w-full bg-gray-100 dark:bg-gray-600 rounded-t" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Wishlist Activity - Pie Chart */}
+        <div className="col-span-full sm:col-span-6 xl:col-span-4 bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
+          <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+            <div className="h-5 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1" />
+            <div className="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </header>
+          <div className="p-5 flex items-center justify-center">
+            {/* Pie chart skeleton */}
+            <div className="h-48 w-48 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+          </div>
+          {/* Legend skeleton */}
+          <div className="px-5 pb-4 flex flex-wrap gap-4 justify-center">
+            {['Added This Month', 'Added Last Month', 'Added Earlier'].map((label, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="h-3 w-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity Breakdown - Bar Chart */}
+        <div className="col-span-full bg-white dark:bg-gray-800 shadow-sm rounded-xl min-w-0">
+          <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+            <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-1" />
+            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          </header>
+          <div className="p-5">
+            {/* Bar chart skeleton with multiple bars */}
+            <div className="h-48 flex items-end justify-between gap-2">
+              {[40, 60, 30, 70, 50, 45].map((height, i) => (
+                <div key={i} className="flex flex-col items-center gap-2 flex-1">
+                  <div 
+                    className="w-full bg-gray-200 dark:bg-gray-700 rounded-t animate-pulse" 
+                    style={{ height: `${height}%` }} 
+                  />
+                  <div className="h-3 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+            {/* Activity type buttons skeleton */}
+            <div className="flex gap-4 mt-4 justify-center">
+              {['Navigation', 'Orders', 'Profile', 'Other'].map((label, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-4 w-4 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                  <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                 </div>
               ))}
             </div>
