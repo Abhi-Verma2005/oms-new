@@ -339,7 +339,9 @@ export async function POST(request: NextRequest) {
 
     if (isStream) {
       return await handleStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist, userContext)
-    } 
+    } else {
+      return await handleNonStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist, userContext)
+    }
   } catch (error) {
     console.error('Error in RAG-integrated AI chat API:', error)
     return NextResponse.json(
@@ -570,7 +572,18 @@ AI: "I'll set the minimum turnaround time to 6 days for you."
 ${userContextStr}
 ${ragContext}
 
-Be helpful and provide useful responses about publisher websites and filtering. If the user shares personal information, acknowledge it and remember it for future conversations.`
+Be helpful and provide useful responses about publisher websites and filtering. If the user shares personal information, acknowledge it and remember it for future conversations.
+
+IMPORTANT PAYMENT SUCCESS HANDLING:
+When a user mentions completing payment successfully or payment success, you MUST:
+1. Congratulate them on the successful payment
+2. Use [VIEW_ORDERS] action to redirect them to the orders page
+3. Do NOT use [PROCEED_TO_CHECKOUT] as they have already completed payment
+4. Offer to help them with their orders or next steps
+
+Example response for payment success:
+"🎉 Congratulations! Your payment has been processed successfully. Let me show you your orders."
+[VIEW_ORDERS]`
     
     // Create OpenAI client for streaming
     const openai = createOpenAI({ apiKey: process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY! })
@@ -667,5 +680,228 @@ Be helpful and provide useful responses about publisher websites and filtering. 
         'Cache-Control': 'no-cache',
       },
     })
+  }
+}
+
+/**
+ * 🚀 Non-streaming RAG request
+ */
+async function handleNonStreamingRequest(
+  userId: string,
+  message: string,
+  messages: any[],
+  clientConfig: any,
+  cartState: any,
+  currentUrl: string,
+  canPersist: boolean,
+  userContext: any
+) {
+  try {
+    console.log('🔍 Starting RAG-enhanced non-streaming request...')
+    const t0Total = Date.now()
+    
+    // Check semantic cache first
+    const queryHash = Buffer.from(message).toString('base64').slice(0, 64)
+    let queryEmbedding: number[]
+    try {
+      queryEmbedding = await generateEmbedding(message)
+    } catch {
+      queryEmbedding = Array.from({ length: 1536 }, () => Math.random() * 2 - 1)
+    }
+    
+    // Check for semantically similar cached responses
+    const similarCachedResponse = await prisma.$queryRaw`
+      SELECT 
+        id,
+        cached_response,
+        COALESCE(1 - (query_embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536)), 0.0) AS similarity
+      FROM semantic_cache
+      WHERE user_id = ${userId}
+        AND expires_at > NOW()
+        AND (1 - (query_embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536))) > 0.85
+      ORDER BY similarity DESC
+      LIMIT 1
+    `
+    
+    if (similarCachedResponse.length > 0 && similarCachedResponse[0].similarity > 0.9) {
+      console.log(`🎯 Semantic cache hit! Similarity: ${similarCachedResponse[0].similarity.toFixed(3)}`)
+      
+      // Update cache hit count
+      await prisma.semanticCache.update({
+        where: { id: similarCachedResponse[0].id },
+        data: { 
+          hitCount: { increment: 1 },
+          lastHitAt: new Date()
+        }
+      })
+      
+      return NextResponse.json({
+        response: similarCachedResponse[0].cached_response,
+        cached: true,
+        similarity: similarCachedResponse[0].similarity
+      })
+    }
+    
+    // RAG: Get context using same approach as streaming
+    let searchResults: any[] = []
+    let userContextStr = ''
+    try {
+      const ragProcessingPromise = (async () => {
+        const rewrittenQueries = await rewriteQuery(message)
+        const hybridResults = await hybridSearch(userId, rewrittenQueries, message)
+        return await rerankResults(hybridResults, message)
+      })()
+      
+      // Format user context directly
+      userContextStr = formatUserContextFromRequest(userContext)
+      console.log('👤 DEBUG: Formatted user context:', userContextStr)
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('RAG processing timeout')), 10000) // 10 second timeout
+      })
+      
+      const ragResults = await Promise.race([
+        ragProcessingPromise,
+        timeoutPromise
+      ]) as any[]
+      
+      searchResults = ragResults
+    } catch (error) {
+      console.warn('RAG processing failed or timed out, continuing without context:', error)
+      searchResults = []
+      userContextStr = ''
+    }
+    
+    // Build context
+    const hasRelevantContext = searchResults.length > 0 && (
+      searchResults.some((r: any) => (r.confidence_score || 0) > 0.7) || 
+      searchResults.some((r: any) => (r.similarity || 0) > 0.4)
+    )
+    
+    const ragContext = hasRelevantContext
+      ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${searchResults.map(r => `- ${r.content}`).join('\n')}`
+      : ''
+    
+    console.log(`📚 RAG Context: ${ragContext.length} characters`)
+    
+    // Build system prompt with RAG context
+    const systemPrompt = `You are a helpful AI assistant for Outreach Mosaic, a platform for digital marketing and outreach.
+
+${userContextStr}
+${ragContext}
+
+Be helpful and provide useful responses about publisher websites and filtering. If the user shares personal information, acknowledge it and remember it for future conversations.
+
+IMPORTANT PAYMENT SUCCESS HANDLING:
+When a user mentions completing payment successfully or payment success, you MUST:
+1. Congratulate them on the successful payment
+2. Use [VIEW_ORDERS] action to redirect them to the orders page
+3. Do NOT use [PROCEED_TO_CHECKOUT] as they have already completed payment
+4. Offer to help them with their orders or next steps
+
+Example response for payment success:
+"🎉 Congratulations! Your payment has been processed successfully. Let me show you your orders."
+[VIEW_ORDERS]`
+
+    // Create OpenAI instance
+    const openai = createOpenAI({
+      apiKey: process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY!,
+    })
+
+    // Build messages array - include more conversation history for better context
+    const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt },
+      ...(messages || []).slice(-10).map((m: any) => ({ 
+        role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant', 
+        content: m.content 
+      })),
+      { role: 'user' as const, content: message }
+    ]
+    
+    // Generate response using OpenAI API directly
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: chatMessages,
+        temperature: 0.7,
+        max_tokens: 1000,
+        stream: false
+      })
+    })
+    
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text()
+      console.error('OpenAI API error:', openaiResponse.status, errorText)
+      throw new Error(`OpenAI API error: ${openaiResponse.status}`)
+    }
+    
+    const responseData = await openaiResponse.json()
+    const responseText = responseData.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response.'
+    
+    console.log(`✅ Generated response: ${responseText.length} characters`)
+    
+    // Cache the response
+    if (canPersist && responseText.length > 50) {
+      try {
+        await prisma.semanticCache.create({
+          data: {
+            userId,
+            query: message,
+            queryEmbedding,
+            cachedResponse: responseText,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            hitCount: 0,
+            createdAt: new Date(),
+            lastHitAt: new Date()
+          }
+        })
+        console.log('💾 Response cached successfully')
+      } catch (cacheError) {
+        console.error('Failed to cache response:', cacheError)
+      }
+    }
+    
+    // Log the conversation
+    if (canPersist) {
+      try {
+        await prisma.conversationLog.create({
+          data: {
+            userId,
+            message,
+            response: responseText,
+            context: ragContext,
+            userContext: userContextStr,
+            currentUrl,
+            cartState: cartState ? JSON.stringify(cartState) : null,
+            timestamp: new Date()
+          }
+        })
+        console.log('📝 Conversation logged successfully')
+      } catch (logError) {
+        console.error('Failed to log conversation:', logError)
+      }
+    }
+    
+    const totalTime = Date.now() - t0Total
+    console.log(`⏱️ Total RAG non-streaming time: ${totalTime}ms`)
+    
+    return NextResponse.json({
+      response: responseText,
+      cached: false,
+      ragContext: ragContext.length,
+      processingTime: totalTime
+    })
+    
+  } catch (error) {
+    console.error('Error in RAG non-streaming request:', error)
+    return NextResponse.json(
+      { error: 'Failed to process message' },
+      { status: 500 }
+    )
   }
 }

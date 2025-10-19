@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -62,6 +62,7 @@ interface AIChatbotSidebarProps {
 
 export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { config, configLoading } = useAIChatbot()
   const { toggleSidebar } = useResizableLayout()
   const { 
@@ -170,15 +171,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       const attachToId = (() => {
         const last = messages[messages.length - 1]
         if (last && last.role === 'assistant') return last.id
-        // Create a lightweight assistant confirmation to anchor the card
-        const assistantMessage: Message = {
-          id: (Date.now() + 3).toString(),
-          content: `Item added to cart.`,
-          role: 'assistant',
-          timestamp: new Date()
-        }
-        addMessage(assistantMessage)
-        return assistantMessage.id
+        // Don't create a message here - let the AI response handle the messaging
+        // Just return a temporary ID for the action card
+        return `temp-${Date.now()}`
       })()
       const cardId = `${Date.now()}-added-card`
       const dismissCard = () => dismissActionCard(cardId)
@@ -658,11 +653,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         break
 
       case 'addToCart':
-        // For now, we'll show a message since we need site data
-        // In a real implementation, you'd fetch the site data and add it
+        // Show confirmation that items were added to cart
         const addToCartMessage: Message = {
           id: (Date.now() + 2).toString(),
-          content: `I'd be happy to add items to your cart! However, I need more specific information about which sites you'd like to add. Could you tell me which specific sites from the results you're interested in?`,
+          content: `Item added to cart.`,
           role: 'assistant',
           timestamp: new Date()
         }
@@ -1404,7 +1398,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       <div className="absolute inset-0 bg-[#1f2230]"></div>
       
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col pt-14 sm:pt-16">
+      <div className={cn(
+        "relative z-10 h-full flex flex-col",
+        pathname === '/checkout' ? '' : 'pt-14 sm:pt-16'
+      )}>
         {/* Header - minimal, balanced layout per HIG */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-black/10">
           <div className="flex items-center gap-2" aria-label="Assistant">
