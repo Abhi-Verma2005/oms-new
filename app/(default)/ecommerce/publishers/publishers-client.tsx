@@ -184,17 +184,24 @@ function FiltersUI({
   }, [nicheSearch])
 
   // Load views on demand when dropdown is opened
-  const loadViews = async () => {
-    if (viewsLoaded || loadingViews) return
+  const loadViews = async (forceRefresh = false) => {
+    if ((viewsLoaded && !forceRefresh) || loadingViews) return
     setLoadingViews(true)
     try {
+      console.log('Loading views from API...', forceRefresh ? '(forced refresh)' : '')
       const res = await fetch('/api/views', { cache: 'no-store' })
+      console.log('Views API response status:', res.status)
       if (res.ok) {
         const data = await res.json()
+        console.log('Views API response data:', data)
         setViews(data.views || [])
         setViewsLoaded(true)
+      } else {
+        console.log('Views API error:', res.status, res.statusText)
       }
-    } catch {}
+    } catch (error) {
+      console.log('Views API fetch error:', error)
+    }
     finally {
       setLoadingViews(false)
     }
@@ -211,8 +218,9 @@ function FiltersUI({
     try {
       const res = await fetch('/api/views', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, filters }) })
       if (!res.ok) return
-      // Refresh views after saving
-      await loadViews()
+      
+      // Force refresh views after saving
+      await loadViews(true)
       setViewName("")
     } catch {}
   }
@@ -229,7 +237,8 @@ function FiltersUI({
     try {
       const res = await fetch(`/api/views/${id}`, { method: 'DELETE' })
       if (res.ok) {
-        setViews(prev => prev.filter(v => v.id !== id))
+        // Force refresh views after deletion
+        await loadViews(true)
         if (applyingViewId === id) setApplyingViewId("")
       }
     } catch {}

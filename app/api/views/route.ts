@@ -1,44 +1,67 @@
 import { NextRequest } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
-
-type View = { id: string; name: string; filters: any }
-
-const dataDir = path.join(process.cwd(), 'data')
-const dataFile = path.join(dataDir, 'views.json')
-
-async function readViews(): Promise<View[]> {
-  try {
-    const raw = await fs.readFile(dataFile, 'utf8')
-    const json = JSON.parse(raw)
-    return Array.isArray(json) ? json : []
-  } catch {
-    return []
-  }
-}
-
-async function writeViews(views: View[]): Promise<void> {
-  await fs.mkdir(dataDir, { recursive: true })
-  await fs.writeFile(dataFile, JSON.stringify(views, null, 2), 'utf8')
-}
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/db'
 
 export async function GET() {
-  const views = await readViews()
-  return Response.json({ views })
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return Response.json({ views: [] })
+    }
+
+    console.log('Views API: GET request received for user:', session.user.id)
+    const views = await prisma.savedView.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'desc' }
+    })
+    
+    console.log('Views API: Returning views:', views)
+    return Response.json({ views })
+  } catch (error) {
+    console.log('Views API: Error fetching views:', error)
+    return Response.json({ views: [] })
+  }
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return new Response('Unauthorized', { status: 401 })
+    }
+
     const body = await req.json()
     const name = String(body?.name || '').trim()
     const filters = body?.filters ?? {}
+    
     if (!name) return new Response('Name required', { status: 400 })
-    const views = await readViews()
-    const id = `${name}-${Date.now()}`
-    const next: View[] = [{ id, name, filters }, ...views.filter(v => v.name !== name)]
-    await writeViews(next)
-    return Response.json({ ok: true, id })
-  } catch {
+
+    console.log('Views API: Creating view for user:', session.user.id, 'name:', name)
+    
+    // Use upsert to handle duplicate names (update existing or create new)
+    const savedView = await prisma.savedView.upsert({
+      where: {
+        userId_name: {
+          userId: session.user.id,
+          name: name
+        }
+      },
+      update: {
+        filters: filters,
+        updatedAt: new Date()
+      },
+      create: {
+        userId: session.user.id,
+        name: name,
+        filters: filters
+      }
+    })
+
+    console.log('Views API: Created/updated view:', savedView)
+    return Response.json({ ok: true, id: savedView.id })
+  } catch (error) {
+    console.log('Views API: Error creating view:', error)
     return new Response('Bad Request', { status: 400 })
   }
 }
