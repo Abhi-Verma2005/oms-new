@@ -146,10 +146,12 @@ function FiltersUI({
     return () => clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
-  // Saved views (localStorage)
+  // Saved views (loaded on demand)
   const [views, setViews] = useState<Array<{ id: string; name: string; filters: any }>>([])
   const [viewName, setViewName] = useState("")
   const [applyingViewId, setApplyingViewId] = useState("")
+  const [loadingViews, setLoadingViews] = useState(false)
+  const [viewsLoaded, setViewsLoaded] = useState(false)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [activeKey, setActiveKey] = useState<keyof Filters | null>(null)
@@ -181,17 +183,22 @@ function FiltersUI({
     return () => clearTimeout(tid)
   }, [nicheSearch])
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch('/api/views', { cache: 'no-store' })
-        if (!res.ok) return
+  // Load views on demand when dropdown is opened
+  const loadViews = async () => {
+    if (viewsLoaded || loadingViews) return
+    setLoadingViews(true)
+    try {
+      const res = await fetch('/api/views', { cache: 'no-store' })
+      if (res.ok) {
         const data = await res.json()
         setViews(data.views || [])
-      } catch {}
+        setViewsLoaded(true)
+      }
+    } catch {}
+    finally {
+      setLoadingViews(false)
     }
-    load()
-  }, [])
+  }
 
   const persistViews = (next: Array<{ id: string; name: string; filters: any }>) => {
     setViews(next)
@@ -204,9 +211,8 @@ function FiltersUI({
     try {
       const res = await fetch('/api/views', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, filters }) })
       if (!res.ok) return
-      const refreshed = await fetch('/api/views', { cache: 'no-store' })
-      const data = await refreshed.json()
-      setViews(data.views || [])
+      // Refresh views after saving
+      await loadViews()
       setViewName("")
     } catch {}
   }
@@ -815,17 +821,33 @@ function FiltersUI({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-3.5 gap-2 sm:gap-3 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
-          <Select value={applyingViewId || undefined} onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}>
+          <Select 
+            value={applyingViewId || undefined} 
+            onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}
+            onOpenChange={(open) => {
+              if (open && !viewsLoaded) {
+                loadViews()
+              }
+            }}
+          >
             <SelectTrigger className="h-8 w-full sm:w-48 text-xs">
-              <SelectValue placeholder={views.length ? 'Apply saved view' : 'No saved views'} />
+              <SelectValue placeholder={
+                loadingViews ? 'Loading views...' : 
+                views.length ? 'Apply saved view' : 
+                viewsLoaded ? 'No saved views' : 'Apply saved view'
+              } />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectLabel>Saved Views</SelectLabel>
                 <SelectItem value="__none__">None</SelectItem>
-                {views.map(v => (
-                  <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                ))}
+                {loadingViews ? (
+                  <SelectItem value="__loading__" disabled>Loading...</SelectItem>
+                ) : (
+                  views.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                  ))
+                )}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -2396,6 +2418,108 @@ export default function PublishersClient() {
       clearTimeout(timeoutId)
     }
   }, [searchQuery, results.length, loading, filters])
+
+  // Show skeleton while loading project filters or initial data
+  if (isLoadingProjectFilters || (loading && sites.length === 0)) {
+    return (
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
+        {/* Header skeleton */}
+        <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-3 sm:mb-4 gap-3 sm:gap-4">
+          <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+
+        {/* Main content grid skeleton */}
+        <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[300px] sm:min-h-[400px]">
+          {/* Filters section skeleton */}
+          <div className="lg:col-span-7 xl:col-span-7 flex flex-col">
+            <div className="flex-1">
+              <Card className="bg-white dark:bg-gray-800 shadow-sm">
+                <CardContent className="p-4">
+                  {/* Filter pebbles skeleton */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                    ))}
+                  </div>
+                  
+                  {/* Search and controls skeleton */}
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+                    <div className="h-8 w-full sm:w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-full sm:w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Sidebar skeleton */}
+          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col">
+            <div className="flex-1 sticky top-0">
+              <Card className="bg-white dark:bg-gray-800 shadow-sm h-full">
+                <CardContent className="p-6">
+                  {/* Metrics cards skeleton */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="text-center">
+                        <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 mx-auto" />
+                        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Search suggestions skeleton */}
+                  <div className="space-y-3">
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="space-y-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Results table skeleton */}
+        <Card className="bg-white dark:bg-gray-800 shadow-sm">
+          <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </header>
+          </div>
+          <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0">
+            <div className="min-w-[600px] sm:min-w-[800px]">
+              {/* Table header skeleton */}
+              <div className="px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+                <div className="h-4 w-1/2 sm:w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+              {/* Rows skeleton */}
+              <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div key={idx} className="px-4 sm:px-5 py-3 grid grid-cols-6 gap-3 sm:gap-5 items-center">
+                    <div className="col-span-2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="col-span-1 h-7 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">

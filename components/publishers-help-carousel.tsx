@@ -212,7 +212,7 @@ export default function PublishersHelpCarousel({
       </div>
       
       {/* Project panel - takes remaining height */}
-      <div className="mt-4 flex-1 flex flex-col min-h-0">
+      <div className="mt-4 flex-1 flex flex-col min-h-0 max-h-[250px]">
         {projects.length === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 p-3 sm:p-4 flex flex-col gap-3 h-full">
             <div className="flex-1">
@@ -267,7 +267,7 @@ export default function PublishersHelpCarousel({
             ) : error ? (
               <div className="text-[10px] text-red-600 dark:text-red-400 flex-1">{error}</div>
             ) : (
-              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 no-scrollbar">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1 no-scrollbar min-h-0 max-h-full">
                 <ul className="divide-y divide-gray-100 dark:divide-gray-800/60">
                   {/* Unselect Project Option */}
                   <li>
@@ -303,11 +303,6 @@ export default function PublishersHelpCarousel({
                     </li>
                   ))}
                 </ul>
-                {projects.length > 1 && (
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400 text-center py-0.5 mt-0.5 border-t border-gray-100 dark:border-gray-800/60">
-                    Scroll to see {projects.length - 1} more project{projects.length - 1 !== 1 ? 's' : ''}
-                  </div>
-                )}
               </div>
             )}
           </div>
