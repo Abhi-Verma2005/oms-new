@@ -62,6 +62,22 @@ interface AIChatbotSidebarProps {
 
 export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const router = useRouter()
+
+  // Helper function to clean tool tags from text for display
+  const cleanToolTagsFromText = (text: string): string => {
+    // Remove all tool tags like [FILTER:...], [NAVIGATE:...], etc.
+    // Also remove any incomplete tool tags that might cause horizontal scrolling
+    return text
+      .replace(/\[[A-Z_]+(?::[^\]]*)?\]/g, '') // Complete tool tags
+      .replace(/\[[A-Z_]*$/g, '') // Incomplete tool tags at end of text
+      .replace(/\[[A-Z_]*:[^\]]*$/g, '') // Incomplete tool tags with colon
+      .replace(/\[[A-Z_]*&[^\]]*$/g, '') // Incomplete tool tags with ampersand
+      .replace(/\[[A-Z_]*=[^\]]*$/g, '') // Incomplete tool tags with equals
+      .replace(/\[[A-Z_]*\s[^\]]*$/g, '') // Incomplete tool tags with spaces
+      .replace(/\[[A-Z_]*\w[^\]]*$/g, '') // Any incomplete tool tag patterns
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim()
+  }
   const pathname = usePathname()
   const { config, configLoading } = useAIChatbot()
   const { toggleSidebar } = useResizableLayout()
@@ -1200,14 +1216,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 fullText += content
                 console.log('🔍 [AI] Full text so far:', fullText.substring(0, 100) + '...')
                 
-                // Throttle UI updates to prevent jankiness
-                const now = Date.now()
-                if (now - lastUpdate > updateThrottle) {
-                  requestAnimationFrame(() => {
-                    updateMessage(assistantMessage.id, { content: fullText })
-                  })
-                  lastUpdate = now
-                }
+                // Clean tool tags from display text but keep them in fullText for processing
+                const displayText = cleanToolTagsFromText(fullText)
+                
+                // Always update with cleaned text to prevent horizontal scrolling
+                requestAnimationFrame(() => {
+                  updateMessage(assistantMessage.id, { content: displayText })
+                })
               }
             } catch (e) {
               // Skip invalid JSON lines
@@ -1217,10 +1232,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         }
       }
       
-      // Final update to ensure all content is displayed
+      // Final update to ensure all content is displayed (with tool tags cleaned)
       console.log('🔍 [AI] Final full text:', fullText)
+      const finalDisplayText = cleanToolTagsFromText(fullText)
       requestAnimationFrame(() => {
-        updateMessage(assistantMessage.id, { content: fullText })
+        updateMessage(assistantMessage.id, { content: finalDisplayText })
       })
       
       console.timeEnd && console.timeEnd('AI_STREAM_PARSE')
@@ -1529,8 +1545,8 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                     </div>
                     <div className="flex-1 select-text selection:bg-white/10 selection:text-white overflow-hidden" style={{ minWidth: 0 }}>
                       <div 
-                        className="inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 bg-white/10 border border-white/10 text-white/95 shadow-sm"
-                        style={{ contain: 'layout' }}
+                        className="inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 bg-white/10 border border-white/10 text-white/95 shadow-sm break-words"
+                        style={{ contain: 'layout', wordBreak: 'break-word' }}
                       >
                         <MarkdownRenderer content={message.content} variant="chatbot" />
                       </div>
