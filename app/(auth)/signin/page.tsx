@@ -56,7 +56,7 @@ export default function SignIn() {
           clearPendingQuery()
           router.push('/publishers?sidebar=open')
         } else {
-          window.location.href = '/dashboard'
+          window.location.href = '/publishers'
         }
       }
     } catch (err: any) {
@@ -126,7 +126,7 @@ export default function SignIn() {
               {/* Social providers */}
               <div className="mt-6 space-y-2">
                 <button onClick={() => {
-                  const callbackUrl = pendingQuery ? '/publishers?sidebar=open' : '/dashboard'
+                  const callbackUrl = pendingQuery ? '/publishers?sidebar=open' : '/publishers'
                   signIn('google', { callbackUrl })
                 }} className="btn w-full bg-white border border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 cursor-pointer">Continue with Google</button>
               </div>

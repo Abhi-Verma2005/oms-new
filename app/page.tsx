@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -120,6 +120,20 @@ export default function LandingPage() {
     offset: ['start 80%', 'end 20%'],
   });
   const appPreviewScale = useTransform(scrollYProgress, [0, 1], [0.98, 1.02]);
+
+  // Auto-redirect users based on authentication status
+  // All users (signed in or signed out) are redirected away from the landing page
+  useEffect(() => {
+    if (status === 'loading') return; // Still loading, wait
+    
+    if (session) {
+      // User is authenticated, redirect to publishers
+      router.push('/publishers');
+    } else {
+      // User is not authenticated, redirect to signin
+      router.push('/signin');
+    }
+  }, [session, status, router]);
 
   const handleSearchSubmit = async () => {
     if (!searchQuery.trim()) return;
