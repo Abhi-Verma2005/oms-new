@@ -27,6 +27,16 @@ export async function middleware(request: NextRequest) {
 
   const isAdminRoute = nextUrl.pathname.startsWith('/admin')
 
+  // Pages that should be redirected to /publishers when accessed by authenticated users
+  const hiddenPages = ['/about', '/integrations', '/pricing', '/customers', '/changelog', '/case-studies', '/resources', '/contact', '/faq']
+  
+  // All landing pages that should be inaccessible to normal users
+  const landingPages = [
+    '/about', '/integrations', '/pricing', '/customers', '/changelog', 
+    '/case-studies', '/resources', '/contact', '/faq', '/features',
+    '/help', '/docs', '/status', '/privacy', '/terms', '/cookies', '/gdpr'
+  ]
+
   // If it's a protected route and no valid token, redirect to signin
   if (isProtectedRoute && !token) {
     return NextResponse.redirect(new URL('/signin', nextUrl))
@@ -34,6 +44,22 @@ export async function middleware(request: NextRequest) {
 
   // If it's an admin route, check if user has admin role
   if (isAdminRoute && token && !token.isAdmin) {
+    return NextResponse.redirect(new URL('/publishers', nextUrl))
+  }
+
+  // Redirect all landing pages to appropriate destinations
+  if (landingPages.includes(nextUrl.pathname)) {
+    if (token) {
+      // Authenticated users go to publishers
+      return NextResponse.redirect(new URL('/publishers', nextUrl))
+    } else {
+      // Unauthenticated users go to signin
+      return NextResponse.redirect(new URL('/signin', nextUrl))
+    }
+  }
+
+  // Redirect hidden pages to /publishers for authenticated users (legacy logic)
+  if (token && hiddenPages.includes(nextUrl.pathname)) {
     return NextResponse.redirect(new URL('/publishers', nextUrl))
   }
 

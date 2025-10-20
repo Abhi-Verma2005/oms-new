@@ -36,8 +36,6 @@ export default function Header({
   const [showCreditHint, setShowCreditHint] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false)
   const [isClient, setIsClient] = useState(false)
-  const [pagesOpen, setPagesOpen] = useState<boolean>(false)
-  const [pagesTimeoutId, setPagesTimeoutId] = useState<NodeJS.Timeout | null>(null)
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -97,30 +95,6 @@ export default function Header({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [mobileMenuOpen, isClient])
 
-  // Pages dropdown hover handlers
-  const handlePagesMouseEnter = () => {
-    if (pagesTimeoutId) {
-      clearTimeout(pagesTimeoutId)
-      setPagesTimeoutId(null)
-    }
-    setPagesOpen(true)
-  }
-
-  const handlePagesMouseLeave = () => {
-    const id = setTimeout(() => {
-      setPagesOpen(false)
-    }, 150) // Small delay to prevent flickering
-    setPagesTimeoutId(id)
-  }
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (pagesTimeoutId) {
-        clearTimeout(pagesTimeoutId)
-      }
-    }
-  }, [pagesTimeoutId])
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 before:absolute before:inset-0 before:backdrop-blur-2xl before:backdrop-saturate-150 before:bg-white/40 dark:before:bg-gray-900/40 before:ring-1 before:ring-white/20 dark:before:ring-white/10 before:-z-10 ${variant === 'v2' || variant === 'v3' ? 'after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10' : 'shadow-sm border-b border-gray-200/50 dark:border-gray-700/50'} ${variant === 'v2' ? 'dark:before:bg-gray-800' : ''} ${variant === 'v3' ? 'dark:before:bg-gray-900' : ''}`}>
@@ -152,29 +126,6 @@ export default function Header({
 
             {/* Navigation Menu - Hidden on mobile, shown on desktop */}
             <nav className="hidden lg:flex items-center space-x-1 ml-4 sm:ml-6 whitespace-nowrap">
-              {/* Pages dropdown (hover-sticky) */}
-              <div
-                className="relative mr-1"
-                onMouseEnter={handlePagesMouseEnter}
-                onMouseLeave={handlePagesMouseLeave}
-              >
-                <button className="relative px-3 py-2 text-neutral-600 dark:text-neutral-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-200 rounded-lg">
-                  <span className="relative z-20">Pages</span>
-                </button>
-                {pagesOpen && (
-                  <div 
-                    className="absolute left-0 top-full mt-2 min-w-[220px] rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/95 dark:bg-gray-900/95 shadow-lg shadow-purple-500/10 backdrop-blur-md p-2 z-50"
-                    onMouseEnter={handlePagesMouseEnter}
-                    onMouseLeave={handlePagesMouseLeave}
-                  >
-                    <Link href="/about" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">About</Link>
-                    <Link href="/integrations" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Integrations</Link>
-                    <Link href="/pricing" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Pricing</Link>
-                    <Link href="/customers" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Customers</Link>
-                    <Link href="/changelog" className="block px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">Changelog</Link>
-                  </div>
-                )}
-              </div>
               <NavbarDropdown
                 title="Dashboard"
                 icon={<LayoutDashboard className="w-4 h-4" />}

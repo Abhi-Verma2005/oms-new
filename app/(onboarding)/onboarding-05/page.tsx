@@ -46,8 +46,7 @@ export default function Onboarding05() {
                   </svg>
                   <h1 className="text-3xl text-gray-800 dark:text-gray-100 font-bold mb-8">Welcome{companyName ? `, ${companyName}` : ''}! 🎉</h1>
                   <div className="flex items-center justify-center space-x-4">
-                    <Link className="btn bg-violet-600 text-white hover:bg-violet-500" href="/publishers">Go to Publishers</Link>
-                    <Link className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white" href="/dashboard">Go to Dashboard</Link>
+                    <Link className="btn bg-violet-600 text-white hover:bg-violet-500" href="/publishers">Get Started</Link>
                   </div>
                 </div>
 
