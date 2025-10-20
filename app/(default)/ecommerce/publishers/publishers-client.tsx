@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import ModalBasic from "@/components/modal-basic"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
@@ -46,6 +45,9 @@ const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-hel
 import { ProjectSelector } from '@/components/projects/project-selector'
 import { useActivityLogger } from '@/lib/user-activity-client'
 import { useProjectStore } from '@/stores/project-store'
+import ModalBasic from '@/components/modal-basic'
+import { useResizableLayout } from '@/components/resizable-layout'
+import { useLayout } from '@/contexts/LayoutContext'
 
 type Trend = "increasing" | "decreasing" | "stable"
 type BacklinkNature = "do-follow" | "no-follow" | "sponsored"
@@ -927,7 +929,7 @@ function summarizeFilters(f: Filters) {
   return out
 }
 
-function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void }) {
+function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void; onRowHeightButtonRef?: (el: HTMLButtonElement | null) => void }) {
   const { addItem, removeItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
   // Track the currently hovered site for the trend preview panel
@@ -940,6 +942,8 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
   const [rowsOpen, setRowsOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
+  const rowHeightButtonRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => { onRowHeightButtonRef?.(rowHeightButtonRef.current) }, [onRowHeightButtonRef, rowHeightButtonRef.current])
 
   // Limit number of rows shown based on row density setting so users see a visible change
   const maxRowsByLevel: Record<1 | 2 | 3 | 4, number> = useMemo(() => ({ 1: 30, 2: 20, 3: 12, 4: 8 }), [])
@@ -1470,7 +1474,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy }: { sites: Site[]; lo
             <div className="flex items-center gap-1.5">
               <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1 px-1.5 sm:px-2">
+                <Button ref={rowHeightButtonRef} variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1 px-1.5 sm:px-2">
                   <span className="hidden sm:inline">Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
                   <span className="sm:hidden">{rowLevel === 1 ? 'S' : rowLevel === 2 ? 'M' : rowLevel === 3 ? 'L' : 'XL'}</span>
                   <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -2428,6 +2432,61 @@ export default function PublishersClient() {
     }
   }, [searchQuery, results.length, loading, filters])
 
+  // ---------------------- Guided Tour (Publishers Onboarding) ----------------------
+  type TourStep = 'filters' | 'rowHeight' | 'project'
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('publishers:tutorialCompleted') : 'true'
+      return raw !== 'true'
+    } catch { return true }
+  })
+  const [tourStep, setTourStep] = useState<TourStep>('filters')
+  const filtersContainerRef = useRef<HTMLDivElement | null>(null)
+  const rowHeightButtonElRef = useRef<HTMLButtonElement | null>(null)
+  const projectPanelRef = useRef<HTMLDivElement | null>(null)
+  const [aiIntroOpen, setAiIntroOpen] = useState(false)
+  const { toggleSidebar } = useResizableLayout()
+  const { isSidebarOpen } = useLayout()
+  const [aiHintVisible, setAiHintVisible] = useState(false)
+  const [aiOverlayVisible, setAiOverlayVisible] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+  useEffect(() => { setIsClient(true) }, [])
+  const [aiOverlayPos, setAiOverlayPos] = useState<{ top: number; left: number; width: number } | null>(null)
+  useEffect(() => {
+    if (!aiOverlayVisible) return
+    const calc = () => {
+      const top = Math.max((window.innerHeight * 0.5) - 120, 16)
+      const width = Math.min(300, window.innerWidth - 32)
+      const left = Math.min(window.innerWidth - width - 16, Math.max(16, window.innerWidth * 0.66))
+      setAiOverlayPos({ top, left, width })
+    }
+    calc()
+    window.addEventListener('resize', calc)
+    return () => window.removeEventListener('resize', calc)
+  }, [aiOverlayVisible])
+
+  const completeTutorial = () => {
+    try { localStorage.setItem('publishers:tutorialCompleted', 'true') } catch {}
+    setShowTour(false)
+  }
+
+  const skipTutorial = () => {
+    setShowTour(false)
+    // Do not open sidebar; show AI helper overlay with blur + tooltip
+    try { localStorage.setItem('publishers:tutorialCompleted', 'true') } catch {}
+    setAiOverlayVisible(true)
+  }
+
+  const nextStep = () => {
+    setTourStep((prev) => {
+      if (prev === 'filters') return 'rowHeight'
+      if (prev === 'rowHeight') return 'project'
+      // project -> complete
+      completeTutorial()
+      return prev
+    })
+  }
+
   // Show skeleton while loading project filters or initial data
   if (isLoadingProjectFilters || (loading && sites.length === 0)) {
     return (
@@ -2531,7 +2590,8 @@ export default function PublishersClient() {
   }
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
+    <>
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
         <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-3 sm:mb-4 gap-3 sm:gap-4">
           <h1 className="text-lg sm:text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
         </div>
@@ -2539,7 +2599,7 @@ export default function PublishersClient() {
         {/* Project Context moved into sidebar (PublishersHelpCarousel) */}
 
         <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[300px] sm:min-h-[400px]">
-          <div className="lg:col-span-7 xl:col-span-7 flex flex-col">
+          <div className="lg:col-span-7 xl:col-span-7 flex flex-col" ref={filtersContainerRef}>
             <div className="flex-1">
               <FiltersUI 
                 filters={filters} 
@@ -2552,7 +2612,7 @@ export default function PublishersClient() {
               />
             </div>
           </div>
-          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col">
+          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col" ref={projectPanelRef}>
             <div className="flex-1 sticky top-0">
               {(() => {
                 const total = displayedSites.length
@@ -2584,7 +2644,7 @@ export default function PublishersClient() {
 
         {error && <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300">{error}</div>}
 
-        <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} />
+        <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} />
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -2600,6 +2660,78 @@ export default function PublishersClient() {
         )}
 
       </div>
+      {/* Guided Tour Overlay */}
+      {isClient && showTour && (
+        <div className="fixed inset-0 z-[70] pointer-events-none">
+          {/* Backdrop with blur except around target */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+
+          {/* Tooltip panel positioned near current step element */}
+          {(() => {
+            let target: HTMLElement | null = null
+            if (tourStep === 'filters') target = filtersContainerRef.current
+            else if (tourStep === 'rowHeight') target = rowHeightButtonElRef.current
+            else if (tourStep === 'project') target = projectPanelRef.current
+            if (!target) return null
+
+            const rect = target.getBoundingClientRect()
+            const top = Math.max(rect.top - 12, 12)
+            const left = Math.min(Math.max(rect.left, 12), window.innerWidth - 340)
+
+            return (
+              <div className="absolute" style={{ top, left, width: Math.min(320, window.innerWidth - 24) }}>
+                {/* Highlight box outline */}
+                <div className="pointer-events-none absolute -inset-1 rounded-xl ring-2 ring-violet-400/80" />
+                {/* Tooltip card */}
+                <div className="pointer-events-auto relative rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-xl p-4">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                    {tourStep === 'filters' ? 'Filters' : tourStep === 'rowHeight' ? 'Row Height' : 'Projects'}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300 mb-3">
+                    {tourStep === 'filters' && 'Use these pills to quickly filter publishers by niche, language, country and more. Click any pill to open detailed options.'}
+                    {tourStep === 'rowHeight' && 'Adjust the table row density. Choose Short to see more rows at once or Extra Tall for richer details.'}
+                    {tourStep === 'project' && 'You can buy individually with no project, or assign purchases to a project to organize orders.'}
+                  </div>
+                  <div className="flex items-center gap-2 justify-end">
+                    <button onClick={skipTutorial} className="text-xs px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60">Skip tutorial</button>
+                    <button onClick={nextStep} className="text-xs px-2.5 py-1.5 rounded-md bg-violet-600 text-white hover:bg-violet-700">{tourStep === 'project' ? 'Finish' : 'Next'}</button>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </div>
+      )}
+
+      {/* AI helper overlay with blur + tooltip (shown after Skip) */}
+      {isClient && aiOverlayVisible && aiOverlayPos && (
+        <div className="fixed inset-0 z-[80]">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+          <div className="absolute" style={{ top: aiOverlayPos.top, left: aiOverlayPos.left, width: aiOverlayPos.width }}>
+            <div className="pointer-events-auto relative rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-2xl p-4">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Meet your AI assistant</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300 mb-2">It can help you:</div>
+                  <ul className="text-xs text-gray-700 dark:text-gray-200 list-disc pl-4 space-y-1">
+                    <li>Apply filters for you</li>
+                    <li>Explain metrics and columns</li>
+                    <li>Find publishers by goals</li>
+                  </ul>
+                  <div className="mt-3">
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">Try:</div>
+                    <div className="text-[11px] rounded-md border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-gray-800/60 px-2 py-1 text-gray-700 dark:text-gray-200">
+                      "Show sites under $150 with DR ≥ 50"
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setAiOverlayVisible(false)}>Close</Button>
+                    <Button size="sm" className="h-8 text-xs" onClick={() => { setAiOverlayVisible(false); toggleSidebar() }}>Got it</Button>
+                  </div>
+                  <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-white dark:border-r-gray-900" />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site: Site; maxStars?: number; showRevealButton?: boolean }) {

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -62,6 +63,7 @@ interface AIChatbotSidebarProps {
 
 export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const router = useRouter()
+  const { theme } = useTheme()
 
   // Helper function to clean tool tags from text for display
   const cleanToolTagsFromText = (text: string): string => {
@@ -1409,9 +1411,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col relative text-white overflow-hidden max-w-3xl mx-auto w-full">
-      {/* Solid Brand Background (from screenshot) */}
-      <div className="absolute inset-0 bg-[#1f2230]"></div>
+    <div className="h-screen flex flex-col relative overflow-hidden max-w-3xl mx-auto w-full dark:text-white text-black">
+      {/* Theme-aware Background */}
+      <div className={cn(
+        "absolute inset-0",
+        theme === 'light' ? "bg-gradient-to-br from-[#f8f6ff] to-white" : "bg-[#1f2230]"
+      )}></div>
       
       {/* Content */}
       <div className={cn(
@@ -1419,9 +1424,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         pathname === '/checkout' ? '' : 'pt-14 sm:pt-16'
       )}>
         {/* Header - minimal, balanced layout per HIG */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 bg-black/10">
+        <div className={cn(
+          "flex items-center justify-between px-4 py-2.5 border-b",
+          theme === 'light' 
+            ? "border-[#6A5ACD]/20 bg-white/80 backdrop-blur-sm" 
+            : "border-white/10 bg-black/10"
+        )}>
           <div className="flex items-center gap-2" aria-label="Assistant">
-            <div className="h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+            <div className={cn(
+              "h-6 w-6 rounded-md border grid place-items-center",
+              theme === 'light' 
+                ? "bg-[#6A5ACD]/10 border-[#6A5ACD]/20" 
+                : "bg-white/10 border-white/10"
+            )} aria-hidden>
               <svg
                 className="w-4 h-4 fill-violet-500"
                 xmlns="http://www.w3.org/2000/svg"
@@ -1431,7 +1446,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
               </svg>
             </div>
-            <div className="text-[13px] font-medium tracking-[-0.01em] text-white/90">Assistant</div>
+            <div className={cn(
+              "text-[13px] font-medium tracking-[-0.01em]",
+              theme === 'light' ? "text-black" : "text-white/90"
+            )}>Assistant</div>
           </div>
           <div className="flex items-center gap-0.5">
             {messages.length > 0 && (
@@ -1440,7 +1458,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 variant="ghost"
                 size="sm"
                 onClick={clearChat}
-                className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/20"
+                className={cn(
+                  "h-8 w-8 p-0 focus-visible:ring-2",
+                  theme === 'light' 
+                    ? "text-black/70 hover:text-black hover:bg-[#6A5ACD]/10 focus-visible:ring-[#6A5ACD]/30" 
+                    : "text-white/70 hover:text-white hover:bg-white/10 focus-visible:ring-white/20"
+                )}
                 title="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />
@@ -1457,7 +1480,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 }
                 try { toggleSidebar() } catch {}
               }}
-              className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/20"
+              className={cn(
+                "h-8 w-8 p-0 focus-visible:ring-2",
+                theme === 'light' 
+                  ? "text-black/70 hover:text-black hover:bg-[#6A5ACD]/10 focus-visible:ring-[#6A5ACD]/30" 
+                  : "text-white/70 hover:text-white hover:bg-white/10 focus-visible:ring-white/20"
+              )}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -1469,7 +1497,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           <div className="px-6 py-8">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
-                <div className="h-7 w-7 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+                <div className={cn(
+                  "h-7 w-7 rounded-md border grid place-items-center",
+                  theme === 'light' 
+                    ? "bg-[#6A5ACD]/10 border-[#6A5ACD]/20" 
+                    : "bg-white/10 border-white/10"
+                )} aria-hidden>
                   <svg
                     className="w-4 h-4 fill-violet-500"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1480,10 +1513,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                   </svg>
                 </div>
               </div>
-              <div className="flex-1 text-white">
+              <div className={cn(
+                "flex-1",
+                theme === 'light' ? "text-black" : "text-white"
+              )}>
                 <div className="text-[20px] font-semibold leading-6 mb-1 tracking-[-0.01em]">Hi,</div>
-                <div className="text-[13px] text-white/70 mb-3">How can I assist you today?</div>
-                <div className="flex items-center gap-2 text-[12px] text-white/60">
+                <div className={cn(
+                  "text-[13px] mb-3",
+                  theme === 'light' ? "text-black/70" : "text-white/70"
+                )}>How can I assist you today?</div>
+                <div className={cn(
+                  "flex items-center gap-2 text-[12px]",
+                  theme === 'light' ? "text-black/60" : "text-white/60"
+                )}>
                   <span className="flex items-center gap-1">
                     <ShoppingCart className="h-3 w-3" />
                     Cart
@@ -1510,7 +1552,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           aria-relevant="additions"
         >
           {configLoading && messages.length === 0 && (
-            <div className="text-center text-white/60 py-6">
+            <div className={cn(
+              "text-center py-6",
+              theme === 'light' ? "text-black/60" : "text-white/60"
+            )}>
               <Bot className="h-8 w-8 mx-auto mb-3 opacity-60" />
               <p className="text-sm">Loading config…</p>
             </div>
@@ -1526,14 +1571,24 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
               >
                 {message.role === 'user' ? (
                   <div 
-                    className="max-w-full sm:max-w-[85%] rounded-[12px] px-3 py-2 select-text bg-indigo-600/95 text-white selection:bg-indigo-500/30 selection:text-white border border-indigo-300/40 shadow-sm"
+                    className={cn(
+                      "max-w-full sm:max-w-[85%] rounded-[12px] px-3 py-2 select-text shadow-sm border text-white",
+                      theme === 'light' 
+                        ? "bg-[#6A5ACD] selection:bg-[#5a4ac0]/30 selection:text-white border-[#6A5ACD]/40" 
+                        : "bg-indigo-600/95 selection:bg-indigo-500/30 selection:text-white border-indigo-300/40"
+                    )}
                     style={{ display: 'block', contain: 'layout' }}
                   >
-                    <MarkdownRenderer content={message.content} variant="chatbot" />
+                    <MarkdownRenderer content={message.content} variant="chatbot" theme={theme as 'light' | 'dark'} isUserMessage={message.role === 'user'} />
                   </div>
                 ) : (
                   <div className="w-full flex items-start gap-2">
-                    <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+                    <div className={cn(
+                      "flex-shrink-0 mt-0.5 h-6 w-6 rounded-md border grid place-items-center",
+                      theme === 'light' 
+                        ? "bg-[#6A5ACD]/10 border-[#6A5ACD]/20" 
+                        : "bg-white/10 border-white/10"
+                    )} aria-hidden>
                       <svg
                         className="w-3.5 h-3.5 fill-violet-500"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1543,12 +1598,22 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                         <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                       </svg>
                     </div>
-                    <div className="flex-1 select-text selection:bg-white/10 selection:text-white overflow-hidden" style={{ minWidth: 0 }}>
+                    <div className={cn(
+                      "flex-1 select-text overflow-hidden",
+                      theme === 'light' 
+                        ? "selection:bg-[#6A5ACD]/20 selection:text-black" 
+                        : "selection:bg-white/10 selection:text-white"
+                    )} style={{ minWidth: 0 }}>
                       <div 
-                        className="inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 bg-white/10 border border-white/10 text-white/95 shadow-sm break-words"
+                        className={cn(
+                          "inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 border shadow-sm break-words",
+                          theme === 'light' 
+                            ? "bg-white/90 border-[#6A5ACD]/20 text-black" 
+                            : "bg-white/10 border-white/10 text-white/95"
+                        )}
                         style={{ contain: 'layout', wordBreak: 'break-word' }}
                       >
-                        <MarkdownRenderer content={message.content} variant="chatbot" />
+                        <MarkdownRenderer content={message.content} variant="chatbot" theme={theme as 'light' | 'dark'} isUserMessage={false} />
                       </div>
                     </div>
                   </div>
@@ -1562,7 +1627,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           {isLoading && (
             <div className="flex gap-3 justify-start">
               <div className="w-full flex items-start gap-2">
-                <div className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-md bg-white/10 border border-white/10 grid place-items-center" aria-hidden>
+                <div className={cn(
+                  "flex-shrink-0 mt-0.5 h-6 w-6 rounded-md border grid place-items-center",
+                  theme === 'light' 
+                    ? "bg-[#6A5ACD]/10 border-[#6A5ACD]/20" 
+                    : "bg-white/10 border-white/10"
+                )} aria-hidden>
                   <svg
                     className="w-3.5 h-3.5 fill-violet-500"
                     xmlns="http://www.w3.org/2000/svg"
@@ -1574,9 +1644,18 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 </div>
                 <div className="flex-1">
                   <div className="flex gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" />
-                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full animate-bounce",
+                      theme === 'light' ? "bg-[#6A5ACD]" : "bg-white/60"
+                    )} />
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full animate-bounce",
+                      theme === 'light' ? "bg-[#6A5ACD]" : "bg-white/60"
+                    )} style={{ animationDelay: '0.1s' }} />
+                    <div className={cn(
+                      "w-1.5 h-1.5 rounded-full animate-bounce",
+                      theme === 'light' ? "bg-[#6A5ACD]" : "bg-white/60"
+                    )} style={{ animationDelay: '0.2s' }} />
                   </div>
                 </div>
               </div>
@@ -1600,7 +1679,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
           {/* Input Field */}
           <div className="relative">
-            <div className="bg-white/5 rounded-[12px] p-3 border border-white/10 focus-within:border-white/20 focus-within:bg-white/[0.07] transition-colors">
+            <div className={cn(
+              "rounded-[12px] p-3 border transition-colors",
+              theme === 'light' 
+                ? "bg-white/80 border-[#6A5ACD]/20 focus-within:border-[#6A5ACD]/40 focus-within:bg-white/90" 
+                : "bg-white/5 border-white/10 focus-within:border-white/20 focus-within:bg-white/[0.07]"
+            )}>
               <textarea
                 ref={inputRef}
                 value={input}
@@ -1609,7 +1693,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 placeholder="Message Assistant"
                 aria-label="Message Assistant"
                 disabled={isLoading}
-                className="w-full bg-transparent text-white placeholder-white/55 resize-none focus:outline-none text-[13px] leading-5 border-0 selection:bg-white/10 selection:text-white focus:ring-0 focus:border-0"
+                className={cn(
+                  "w-full bg-transparent resize-none focus:outline-none text-[13px] leading-5 border-0 focus:ring-0 focus:border-0",
+                  theme === 'light' 
+                    ? "text-black placeholder-black/60 selection:bg-[#6A5ACD]/20 selection:text-black" 
+                    : "text-white placeholder-white/55 selection:bg-white/10 selection:text-white"
+                )}
                 rows={2}
               />
               <div className="flex items-center justify-end mt-2">
@@ -1617,7 +1706,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 <div className="flex items-center gap-1.5">
                   <button
                     aria-label="Voice input"
-                    className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-white/70 focus-visible:ring-2 focus-visible:ring-white/20"
+                    className={cn(
+                      "p-1.5 rounded-md transition-colors focus-visible:ring-2",
+                      theme === 'light' 
+                        ? "hover:bg-[#6A5ACD]/10 text-black/70 focus-visible:ring-[#6A5ACD]/30" 
+                        : "hover:bg-white/10 text-white/70 focus-visible:ring-white/20"
+                    )}
                   >
                     <Mic className="h-3 w-3" />
                   </button>
@@ -1626,7 +1720,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                     onClick={() => sendMessage()}
                     disabled={!input.trim() || isLoading}
                     size="sm"
-                    className="bg-indigo-600/90 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-md border border-indigo-400/30 focus-visible:ring-2 focus-visible:ring-indigo-300/30"
+                    className={cn(
+                      "text-white px-3 py-1.5 rounded-md border focus-visible:ring-2",
+                      theme === 'light' 
+                        ? "bg-[#6A5ACD] hover:bg-[#5a4ac0] border-[#6A5ACD]/40 focus-visible:ring-[#6A5ACD]/30" 
+                        : "bg-indigo-600/90 hover:bg-indigo-600 border-indigo-400/30 focus-visible:ring-indigo-300/30"
+                    )}
                   >
                     <Send className="h-3 w-3" />
                   </Button>
