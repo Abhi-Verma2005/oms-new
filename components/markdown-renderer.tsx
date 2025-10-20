@@ -11,10 +11,13 @@ interface MarkdownRendererProps {
   content: string
   className?: string
   variant?: 'default' | 'chatbot'
+  theme?: 'light' | 'dark'
+  isUserMessage?: boolean
 }
 
-export function MarkdownRenderer({ content, className, variant = 'default' }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className, variant = 'default', theme, isUserMessage = false }: MarkdownRendererProps) {
   const isChatbot = variant === 'chatbot'
+  const isLight = theme === 'light'
   
   if (!content) {
     return null
@@ -33,7 +36,9 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
           h1: ({ children, ...props }) => (
             <h1 className={cn(
               "text-xl font-bold mb-4 mt-6 first:mt-0",
-              isChatbot ? "text-white" : "text-gray-900 dark:text-gray-100"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-900 dark:text-gray-100"
             )} {...props}>
               {children}
             </h1>
@@ -41,7 +46,9 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
           h2: ({ children, ...props }) => (
             <h2 className={cn(
               "text-lg font-semibold mb-3 mt-5 first:mt-0",
-              isChatbot ? "text-white" : "text-gray-900 dark:text-gray-100"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-900 dark:text-gray-100"
             )} {...props}>
               {children}
             </h2>
@@ -49,7 +56,9 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
           h3: ({ children, ...props }) => (
             <h3 className={cn(
               "text-base font-semibold mb-2 mt-4 first:mt-0",
-              isChatbot ? "text-white" : "text-gray-900 dark:text-gray-100"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-900 dark:text-gray-100"
             )} {...props}>
               {children}
             </h3>
@@ -57,7 +66,9 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
           h4: ({ children, ...props }) => (
             <h4 className={cn(
               "text-sm font-semibold mb-2 mt-3 first:mt-0",
-              isChatbot ? "text-white" : "text-gray-900 dark:text-gray-100"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-900 dark:text-gray-100"
             )} {...props}>
               {children}
             </h4>
@@ -67,7 +78,9 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
           p: ({ children, ...props }) => (
             <p className={cn(
               "mb-3 leading-relaxed",
-              isChatbot ? "text-white" : "text-gray-700 dark:text-gray-300"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-700 dark:text-gray-300"
             )} {...props}>
               {children}
             </p>
@@ -77,7 +90,9 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
           ul: ({ children, ...props }) => (
             <ul className={cn(
               "list-disc list-inside mb-3 space-y-1",
-              isChatbot ? "text-white" : "text-gray-700 dark:text-gray-300"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-700 dark:text-gray-300"
             )} {...props}>
               {children}
             </ul>
@@ -85,14 +100,18 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
           ol: ({ children, ...props }) => (
             <ol className={cn(
               "list-decimal list-inside mb-3 space-y-1",
-              isChatbot ? "text-white" : "text-gray-700 dark:text-gray-300"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-700 dark:text-gray-300"
             )} {...props}>
               {children}
             </ol>
           ),
           li: ({ children, ...props }) => (
             <li className={cn(
-              isChatbot ? "text-white" : "text-gray-700 dark:text-gray-300"
+              isChatbot 
+                ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
+                : "text-gray-700 dark:text-gray-300"
             )} {...props}>
               {children}
             </li>
@@ -138,7 +157,7 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
             <blockquote className={cn(
               "border-l-4 border-violet-500 pl-4 py-2 mb-4 italic",
               isChatbot 
-                ? "bg-violet-500/10 text-violet-100" 
+                ? (isLight ? "bg-[#6A5ACD]/10 text-black" : "bg-violet-500/10 text-violet-100")
                 : "bg-gray-50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300"
             )} {...props}>
               {children}
@@ -150,7 +169,7 @@ export function MarkdownRenderer({ content, className, variant = 'default' }: Ma
             <span 
               className={cn(
                 isChatbot 
-                  ? "text-white" 
+                  ? (isUserMessage ? "text-white" : (isLight ? "text-black" : "text-white"))
                   : "text-gray-700 dark:text-gray-300"
               )}
               {...props}
