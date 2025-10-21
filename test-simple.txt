@@ -1,0 +1,22 @@
+Document Extraction Test
+
+Project Title: Document Upload & AI Integration Platform
+
+Key Features:
+1. PDF text extraction using pdf-parse
+2. Word document processing with Mammoth
+3. Text file handling with UTF-8 encoding
+4. AI context integration
+
+Testing Checklist:
+- PDF upload and extraction
+- Word document processing
+- Text file handling
+- AI context integration
+
+This document serves as a test case for the document extraction system.
+The AI should be able to read and understand this content when uploaded.
+
+Created: 2025-01-14
+Version: 1.0
+Status: Test Document
