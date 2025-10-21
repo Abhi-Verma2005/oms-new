@@ -2806,7 +2806,3 @@ function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site:
     </div>
   )
 }
-
-
-
-
