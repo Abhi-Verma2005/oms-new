@@ -23,7 +23,7 @@ interface AIChatbotProps {
 
 export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const router = useRouter()
-  const { config, configLoading } = useAIChatbot()
+  const { } = useAIChatbot()
   const { getUserContextForAI, refreshUserData, isLoading: userContextLoading } = useUserContextForAI()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -265,7 +265,6 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
                 <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                   <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Hi! I'm your AI assistant. How can I help you today?</p>
-                  {configLoading && <p className="text-xs mt-2">Loading config…</p>}
                 </div>
               )}
               
