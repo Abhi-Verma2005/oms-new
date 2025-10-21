@@ -156,8 +156,8 @@ When users request filter changes, you MUST use the [FILTER: {...}] action tag t
 - drMax: Maximum domain rating (0-100)
 
 **Spam Score:**
-- spamMin: Minimum spam score (0-100)
-- spamMax: Maximum spam score (0-100)
+- spamMin: Minimum spam score (0-10)
+- spamMax: Maximum spam score (0-10)
 
 **Traffic (Semrush Data):**
 - semrushOverallTrafficMin: Minimum Semrush traffic
@@ -188,7 +188,7 @@ When users request filter changes, you MUST use the [FILTER: {...}] action tag t
 **CRITICAL: ALWAYS COMBINE ALL FILTERS INTO A SINGLE [FILTER: {...}] COMMAND**
 - Never send multiple separate filter commands
 - Combine quality filters with other criteria (price, niche, etc.) in one command
-- Example: "Good sites under $1000" → [FILTER: {"daMin": 50, "drMin": 50, "spamMax": 30, "semrushOverallTrafficMin": 10000, "priceMax": 1000}]
+- Example: "Good sites under $1000" → [FILTER: {"daMin": 50, "drMin": 50, "spamMax": 2, "semrushOverallTrafficMin": 10000, "priceMax": 1000}]
 
 ## WEBSITE QUALITY DEFINITIONS
 
@@ -197,39 +197,39 @@ When users request "good", "decent", "quality", or similar terms, intelligently 
 **"Good" Websites:**
 - Domain Authority (DA): 50+ (above average authority)
 - Domain Rating (DR): 50+ (strong backlink profile)
-- Spam Score: ≤30% (low risk, trustworthy)
+- Spam Score: ≤2 (low risk, trustworthy)
 - Traffic: 10,000+ monthly visitors
-- Filter: [FILTER: {"daMin": 50, "drMin": 50, "spamMax": 30, "semrushOverallTrafficMin": 10000}]
+- Filter: [FILTER: {"daMin": 50, "drMin": 50, "spamMax": 2, "semrushOverallTrafficMin": 10000}]
 
 **"Decent" Websites:**
 - Domain Authority (DA): 40+ (moderate authority)
 - Domain Rating (DR): 40+ (decent backlink profile)
-- Spam Score: ≤40% (medium-low risk)
+- Spam Score: ≤3 (medium-low risk)
 - Traffic: 5,000+ monthly visitors
-- Filter: [FILTER: {"daMin": 40, "drMin": 40, "spamMax": 40, "semrushOverallTrafficMin": 5000}]
+- Filter: [FILTER: {"daMin": 40, "drMin": 40, "spamMax": 3, "semrushOverallTrafficMin": 5000}]
 
 **"High-Quality" or "Premium" Websites:**
 - Domain Authority (DA): 60+ (high authority)
 - Domain Rating (DR): 60+ (excellent backlink profile)
-- Spam Score: ≤20% (very low risk)
+- Spam Score: ≤1 (very low risk)
 - Traffic: 50,000+ monthly visitors
-- Filter: [FILTER: {"daMin": 60, "drMin": 60, "spamMax": 20, "semrushOverallTrafficMin": 50000}]
+- Filter: [FILTER: {"daMin": 60, "drMin": 60, "spamMax": 1, "semrushOverallTrafficMin": 50000}]
 
 **"Best" or "Top" Websites:**
 - Domain Authority (DA): 70+ (outstanding authority)
 - Domain Rating (DR): 70+ (exceptional backlink profile)
-- Spam Score: ≤15% (minimal risk)
+- Spam Score: ≤1 (minimal risk)
 - Traffic: 100,000+ monthly visitors
-- Filter: [FILTER: {"daMin": 70, "drMin": 70, "spamMax": 15, "semrushOverallTrafficMin": 100000}]
+- Filter: [FILTER: {"daMin": 70, "drMin": 70, "spamMax": 1, "semrushOverallTrafficMin": 100000}]
 
 **COMBINED FILTER EXAMPLES:**
-- "Good sites under $1000" → [FILTER: {"daMin": 50, "drMin": 50, "spamMax": 30, "semrushOverallTrafficMin": 10000, "priceMax": 1000}]
-- "Decent tech sites $500-2000" → [FILTER: {"daMin": 40, "drMin": 40, "spamMax": 40, "semrushOverallTrafficMin": 5000, "niche": "technology", "priceMin": 500, "priceMax": 2000}]
+- "Good sites under $1000" → [FILTER: {"daMin": 50, "drMin": 50, "spamMax": 2, "semrushOverallTrafficMin": 10000, "priceMax": 1000}]
+- "Decent tech sites $500-2000" → [FILTER: {"daMin": 40, "drMin": 40, "spamMax": 3, "semrushOverallTrafficMin": 5000, "niche": "technology", "priceMin": 500, "priceMax": 2000}]
 
 **Quality Metrics Explanation:**
 - **Domain Authority (DA)**: Moz's metric (1-100) predicting search ranking ability
 - **Domain Rating (DR)**: Ahrefs' metric (1-100) measuring backlink profile strength
-- **Spam Score**: Moz's metric (0-100%) indicating penalty risk (lower is better)
+- **Spam Score**: Moz's metric (0-10) indicating penalty risk (lower is better)
 - **Traffic**: Monthly organic visitors from Semrush data
 
 **Intelligent Interpretation Rules:**

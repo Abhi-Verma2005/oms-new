@@ -506,35 +506,35 @@ async function handleStreamingRequest(
     **"Good" Websites:**
     - Domain Authority (DA): 50+ (above average authority)
     - Domain Rating (DR): 50+ (strong backlink profile)
-    - Spam Score: ≤30% (low risk, trustworthy)
+    - Spam Score: ≤2 (low risk, trustworthy)
     - Traffic: 10,000+ monthly visitors
-    - Filter: [FILTER:daMin=50&drMin=50&spamMax=30&semrushOverallTrafficMin=10000]
+    - Filter: [FILTER:daMin=50&drMin=50&spamMax=2&semrushOverallTrafficMin=10000]
     
     **"Decent" Websites:**
     - Domain Authority (DA): 40+ (moderate authority)
     - Domain Rating (DR): 40+ (decent backlink profile)
-    - Spam Score: ≤40% (medium-low risk)
+    - Spam Score: ≤3 (medium-low risk)
     - Traffic: 5,000+ monthly visitors
-    - Filter: [FILTER:daMin=40&drMin=40&spamMax=40&semrushOverallTrafficMin=5000]
+    - Filter: [FILTER:daMin=40&drMin=40&spamMax=3&semrushOverallTrafficMin=5000]
     
     **"High-Quality" or "Premium" Websites:**
     - Domain Authority (DA): 60+ (high authority)
     - Domain Rating (DR): 60+ (excellent backlink profile)
-    - Spam Score: ≤20% (very low risk)
+    - Spam Score: ≤1 (very low risk)
     - Traffic: 50,000+ monthly visitors
-    - Filter: [FILTER:daMin=60&drMin=60&spamMax=20&semrushOverallTrafficMin=50000]
+    - Filter: [FILTER:daMin=60&drMin=60&spamMax=1&semrushOverallTrafficMin=50000]
     
     **"Best" or "Top" Websites:**
     - Domain Authority (DA): 70+ (outstanding authority)
     - Domain Rating (DR): 70+ (exceptional backlink profile)
-    - Spam Score: ≤15% (minimal risk)
+    - Spam Score: ≤1 (minimal risk)
     - Traffic: 100,000+ monthly visitors
-    - Filter: [FILTER:daMin=70&drMin=70&spamMax=15&semrushOverallTrafficMin=100000]
+    - Filter: [FILTER:daMin=70&drMin=70&spamMax=1&semrushOverallTrafficMin=100000]
     
     **Quality Metrics Explanation:**
     - **Domain Authority (DA)**: Moz's metric (1-100) predicting search ranking ability
     - **Domain Rating (DR)**: Ahrefs' metric (1-100) measuring backlink profile strength
-    - **Spam Score**: Moz's metric (0-100%) indicating penalty risk (lower is better)
+    - **Spam Score**: Moz's metric (0-10) indicating penalty risk (lower is better)
     - **Traffic**: Monthly organic visitors from Semrush data
     
     **Intelligent Interpretation Rules:**
@@ -586,24 +586,24 @@ async function handleStreamingRequest(
     Filtered: Technology niche, DA 50+.
     
     User: "I want good websites"
-    AI: [FILTER:daMin=50&drMin=50&spamMax=30&semrushOverallTrafficMin=10000]
-    Applied quality filters: DA 50+, DR 50+, Spam Score ≤30%, Traffic 10K+.
+    AI: [FILTER:daMin=50&drMin=50&spamMax=2&semrushOverallTrafficMin=10000]
+    Applied quality filters: DA 50+, DR 50+, Spam Score ≤2, Traffic 10K+.
     
     User: "Show me decent sites"
-    AI: [FILTER:daMin=40&drMin=40&spamMax=40&semrushOverallTrafficMin=5000]
-    Applied decent quality filters: DA 40+, DR 40+, Spam Score ≤40%, Traffic 5K+.
+    AI: [FILTER:daMin=40&drMin=40&spamMax=3&semrushOverallTrafficMin=5000]
+    Applied decent quality filters: DA 40+, DR 40+, Spam Score ≤3, Traffic 5K+.
     
     User: "Find high-quality websites"
-    AI: [FILTER:daMin=60&drMin=60&spamMax=20&semrushOverallTrafficMin=50000]
-    Applied high-quality filters: DA 60+, DR 60+, Spam Score ≤20%, Traffic 50K+.
+    AI: [FILTER:daMin=60&drMin=60&spamMax=1&semrushOverallTrafficMin=50000]
+    Applied high-quality filters: DA 60+, DR 60+, Spam Score ≤1, Traffic 50K+.
     
     User: "Fetch me some good websites in price range 1000 to 2000"
-    AI: [FILTER:daMin=50&drMin=50&spamMax=30&semrushOverallTrafficMin=10000&priceMin=1000&priceMax=2000]
-    Applied quality filters with price range: DA 50+, DR 50+, Spam ≤30%, Traffic 10K+, Price $1000-$2000.
+    AI: [FILTER:daMin=50&drMin=50&spamMax=2&semrushOverallTrafficMin=10000&priceMin=1000&priceMax=2000]
+    Applied quality filters with price range: DA 50+, DR 50+, Spam ≤2, Traffic 10K+, Price $1000-$2000.
     
     User: "Show me decent tech sites under $500"
-    AI: [FILTER:daMin=40&drMin=40&spamMax=40&semrushOverallTrafficMin=5000&niche=technology&priceMax=500]
-    Applied decent tech filters: DA 40+, DR 40+, Spam ≤40%, Traffic 5K+, Tech niche, Under $500.
+    AI: [FILTER:daMin=40&drMin=40&spamMax=3&semrushOverallTrafficMin=5000&niche=technology&priceMax=500]
+    Applied decent tech filters: DA 40+, DR 40+, Spam ≤3, Traffic 5K+, Tech niche, Under $500.
     
     User: "Apply all filters with reasonable ranges"
     AI: [FILTER:country=US&language=en&niche=technology&priceMin=100&priceMax=2000&daMin=30&daMax=80&tatDaysMin=3&tatDaysMax=14]
@@ -624,11 +624,11 @@ async function handleStreamingRequest(
     ❌ AI: "Perfect! I've found sites..." ← WRONG! Don't claim actions without tool tags.
     
     ❌ User: "Good sites under $1000"
-       AI: [FILTER:daMin=50&drMin=50&spamMax=30]
+       AI: [FILTER:daMin=50&drMin=50&spamMax=2]
        AI: [FILTER:priceMax=1000] ← WRONG! Multiple separate filter commands.
        
     ❌ User: "Good sites under $1000"
-       AI: Applied quality filters: DA 50+, DR 50+, Spam ≤30%.
+       AI: Applied quality filters: DA 50+, DR 50+, Spam ≤2.
        AI: Applied price filter: Under $1000. ← WRONG! Multiple confirmation messages.
     
     ### 3. PROHIBITED PHRASES (Without Tool Tags)
