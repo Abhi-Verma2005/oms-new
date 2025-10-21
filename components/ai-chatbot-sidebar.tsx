@@ -48,6 +48,7 @@ import { useChat } from '@/contexts/chat-context'
 import { useUserContextForAI, useUserContextStore } from '@/stores/user-context-store'
 import { MarkdownRenderer } from './markdown-renderer'
 import { useAIMessageListener } from '@/lib/ai-chat-utils'
+import DocumentUpload from './DocumentUpload'
 import { useResizableLayout } from './resizable-layout'
 import ChatActionCard from '@/components/chat/ChatActionCard'
 import type { ChatActionCardModel } from '@/components/chat/ChatActionCard'
@@ -57,6 +58,17 @@ interface Message {
   content: string
   role: 'user' | 'assistant'
   timestamp: Date
+}
+
+interface UploadedFile {
+  id: string
+  name: string
+  type: string
+  size: number
+  extractedText: string
+  success: boolean
+  method: string
+  uploadedAt: string
 }
 
 type ActionKind = 'cart' | 'checkout' | 'orders' | 'filter' | 'payment'
@@ -133,6 +145,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   }
   
   const [input, setInput] = useState('')
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedFile[]>([])
+  const [selectedDocuments, setSelectedDocuments] = useState<UploadedFile[]>([])
+  const [showDocumentDropdown, setShowDocumentDropdown] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inflightAbortRef = useRef<AbortController | null>(null)
@@ -1240,7 +1255,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           // Include current cart state for accurate cart operations
           cartState: cartStateForAPI,
           // Include user context for personalized responses
-          userContext: userContextForAI
+          userContext: userContextForAI,
+          // Include only selected documents context
+          uploadedDocuments: selectedDocuments.filter(doc => doc.success && doc.extractedText)
         })
       })
       console.log(`📥 [AI] Received response: ${response.status}`)
@@ -1631,7 +1648,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
         {/* Welcome Section - Only show when no messages */}
         {messages.length === 0 && (
-          <div className="px-6 py-8">
+          <div className="px-6 py-8 space-y-6">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
                 <div className={cn(
@@ -1678,6 +1695,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 </div>
               </div>
             </div>
+            
           </div>
         )}
 
@@ -1805,14 +1823,113 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             </div>
           )}
 
-          {/* Input Field */}
+          {/* Input Field with Integrated Document Context */}
           <div className="relative">
             <div className={cn(
-              "rounded-[12px] p-3 border transition-colors",
+              "rounded-lg p-2 border transition-colors",
               theme === 'light' 
                 ? "bg-white/80 border-[#6A5ACD]/20 focus-within:border-[#6A5ACD]/40 focus-within:bg-white/90" 
                 : "bg-white/5 border-white/10 focus-within:border-white/20 focus-within:bg-white/[0.07]"
             )}>
+              {/* Document Context Selector - Integrated */}
+              {uploadedDocuments.length > 0 && (
+                <div className="mb-1 relative">
+                  <div className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded border text-xs",
+                    theme === 'light' 
+                      ? "bg-[#6A5ACD]/10 border-[#6A5ACD]/20 text-[#6A5ACD]" 
+                      : "bg-white/5 border-white/10 text-white/80"
+                  )}>
+                    <FileText className="h-3 w-3" />
+                    <div className="flex-1 flex items-center gap-1">
+                      <span className="font-medium">Context:</span>
+                      {selectedDocuments.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {selectedDocuments.map((doc, index) => (
+                            <span
+                              key={doc.id}
+                              className={cn(
+                                "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs max-w-20",
+                                theme === 'light' 
+                                  ? "bg-[#6A5ACD] text-white" 
+                                  : "bg-white/20 text-white"
+                              )}
+                              title={doc.name}
+                            >
+                              @{doc.name.length > 4 ? doc.name.substring(0, 4) + '...' : doc.name}
+                              <button
+                                onClick={() => setSelectedDocuments(prev => prev.filter(d => d.id !== doc.id))}
+                                className="hover:opacity-70 flex-shrink-0"
+                              >
+                                <X className="h-2 w-2" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="opacity-70 text-xs">None</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowDocumentDropdown(!showDocumentDropdown)}
+                      className={cn(
+                        "p-0.5 rounded hover:opacity-70",
+                        theme === 'light' 
+                          ? "hover:bg-[#6A5ACD]/20" 
+                          : "hover:bg-white/10"
+                      )}
+                      title="Select documents"
+                    >
+                      <ChevronDown className={cn("h-3 w-3 transition-transform rotate-180", !showDocumentDropdown && "rotate-0")} />
+                    </button>
+                  </div>
+                  
+                  {/* Document Dropdown */}
+                  {showDocumentDropdown && (
+                    <div className={cn(
+                      "absolute bottom-full left-0 right-0 z-50 mb-1 p-1.5 rounded border max-h-28 overflow-y-auto",
+                      theme === 'light' 
+                        ? "bg-white border-[#6A5ACD]/20 shadow-lg" 
+                        : "bg-gray-900 border-white/20 shadow-lg"
+                    )}>
+                      {uploadedDocuments.map((doc) => (
+                        <label
+                          key={doc.id}
+                          className={cn(
+                            "flex items-center gap-1.5 p-1.5 rounded cursor-pointer hover:opacity-80",
+                            theme === 'light' 
+                              ? "hover:bg-[#6A5ACD]/10" 
+                              : "hover:bg-white/10"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedDocuments.some(d => d.id === doc.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedDocuments(prev => [...prev, doc])
+                              } else {
+                                setSelectedDocuments(prev => prev.filter(d => d.id !== doc.id))
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <FileText className="h-3 w-3" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium truncate" title={doc.name}>
+                              {doc.name.length > 12 ? doc.name.substring(0, 12) + '...' : doc.name}
+                            </div>
+                            <div className="text-xs opacity-70">
+                              {doc.success ? `${doc.extractedText.length} chars` : 'Failed'}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <textarea
                 ref={inputRef}
                 value={input}
@@ -1822,14 +1939,14 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 aria-label="Message Assistant"
                 disabled={isLoading}
                 className={cn(
-                  "w-full bg-transparent resize-none focus:outline-none text-[13px] leading-5 border-0 focus:ring-0 focus:border-0",
+                  "w-full bg-transparent resize-none focus:outline-none text-[12px] leading-4 border-0 focus:ring-0 focus:border-0",
                   theme === 'light' 
                     ? "text-black placeholder-black/60 selection:bg-[#6A5ACD]/20 selection:text-black" 
                     : "text-white placeholder-white/55 selection:bg-white/10 selection:text-white"
                 )}
-                rows={2}
+                rows={1}
               />
-              <div className="flex items-center justify-end mt-2">
+              <div className="flex items-center justify-end mt-1">
                 {/* Speech error indicator */}
                 {speechError && (
                   <div className="flex-1 mr-2">
@@ -1852,6 +1969,52 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 )}
                 
                 <div className="flex items-center gap-1.5">
+                  {/* Document Upload Button */}
+                  <button
+                    aria-label="Upload document"
+                    onClick={() => {
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.multiple = true
+                      input.accept = '.pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg'
+                      input.onchange = async (e) => {
+                        const files = (e.target as HTMLInputElement).files
+                        if (files && files.length > 0) {
+                          const uploadedFiles: UploadedFile[] = []
+                          for (let i = 0; i < files.length; i++) {
+                            try {
+                              const formData = new FormData()
+                              formData.append('file', files[i])
+                              const response = await fetch('/api/upload-documents', {
+                                method: 'POST',
+                                body: formData,
+                              })
+                              if (response.ok) {
+                                const result = await response.json()
+                                uploadedFiles.push(result)
+                              }
+                            } catch (error) {
+                              console.error('Upload failed:', files[i].name, error)
+                            }
+                          }
+                          setUploadedDocuments(prev => [...prev, ...uploadedFiles])
+                          setSelectedDocuments(prev => [...prev, ...uploadedFiles])
+                        }
+                      }
+                      input.click()
+                    }}
+                    disabled={isLoading}
+                    className={cn(
+                      "p-1.5 rounded-md transition-colors focus-visible:ring-2",
+                      theme === 'light' 
+                        ? "hover:bg-[#6A5ACD]/10 text-black/70 focus-visible:ring-[#6A5ACD]/30" 
+                        : "hover:bg-white/10 text-white/70 focus-visible:ring-white/20"
+                    )}
+                    title="Upload document"
+                  >
+                    <Paperclip className="h-3 w-3" />
+                  </button>
+                  
                   {speechSupported && (
                     <button
                       aria-label={isListening ? "Stop voice input" : "Start voice input"}

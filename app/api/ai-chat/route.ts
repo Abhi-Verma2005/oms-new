@@ -305,7 +305,7 @@ async function rerankResults(results: any[], query: string): Promise<any[]> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, messages, config: clientConfig, currentUrl, cartState, userId: requestUserId, userContext } = await request.json()
+    const { message, messages, config: clientConfig, currentUrl, cartState, userId: requestUserId, userContext, uploadedDocuments } = await request.json()
     const isStream = request.nextUrl?.searchParams?.get('stream') === '1'
     
     console.log(`🚀 RAG-Integrated AI Chat (${isStream ? 'stream' : 'non-stream'}): message="${message.substring(0, 50)}..."`)
@@ -338,9 +338,9 @@ export async function POST(request: NextRequest) {
     console.log(`👤 Using userId: ${userId} | persist=${canPersist}`)
 
     if (isStream) {
-      return await handleStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist, userContext)
+      return await handleStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist, userContext, uploadedDocuments)
     } else {
-      return await handleNonStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist, userContext)
+      return await handleNonStreamingRequest(userId, message, messages, clientConfig, cartState, currentUrl, canPersist, userContext, uploadedDocuments)
     }
   } catch (error) {
     console.error('Error in RAG-integrated AI chat API:', error)
@@ -362,7 +362,8 @@ async function handleStreamingRequest(
   cartState: any,
   currentUrl: string,
   canPersist: boolean,
-  userContext: any
+  userContext: any,
+  uploadedDocuments?: any[]
 ) {
   try {
     console.log('🔍 Starting RAG-enhanced streaming request...')
@@ -486,6 +487,11 @@ async function handleStreamingRequest(
     
     const ragContext = hasRelevantContext
       ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${searchResults.map(r => `- ${r.content}`).join('\n')}`
+      : ''
+    
+    // Add document context if uploaded documents are provided
+    const documentContext = uploadedDocuments && uploadedDocuments.length > 0
+      ? `\n\nUPLOADED DOCUMENT CONTEXT:\n${uploadedDocuments.map((doc, index) => `doc${index + 1}: ${doc.name}\n${doc.extractedText}`).join('\n\n')}`
       : ''
     
     // Single, clean system prompt template
@@ -713,6 +719,7 @@ async function handleStreamingRequest(
     
     ${userContextStr}
     ${ragContext}
+    ${documentContext}
     
     ## QUALITY CHECKLIST
     Before responding, verify:
@@ -738,7 +745,7 @@ async function handleStreamingRequest(
       ]
       
       // 🔍 DEBUG: Log final context being sent to AI
-      console.log('🤖 FINAL AI CONTEXT:', JSON.stringify(chatMessages, null, 2))
+      // console.log('🤖 FINAL AI CONTEXT:', JSON.stringify(chatMessages, null, 2))
       
       // Create streaming response using OpenAI API directly
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -833,7 +840,8 @@ async function handleNonStreamingRequest(
   cartState: any,
   currentUrl: string,
   canPersist: boolean,
-  userContext: any
+  userContext: any,
+  uploadedDocuments?: any[]
 ) {
   try {
     console.log('🔍 Starting RAG-enhanced non-streaming request...')
@@ -893,7 +901,7 @@ async function handleNonStreamingRequest(
       
       // Format user context directly
       userContextStr = formatUserContextFromRequest(userContext)
-      console.log('👤 DEBUG: Formatted user context:', userContextStr)
+      // console.log('👤 DEBUG: Formatted user context:', userContextStr)
       
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('RAG processing timeout')), 10000) // 10 second timeout
@@ -921,13 +929,20 @@ async function handleNonStreamingRequest(
       ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${searchResults.map(r => `- ${r.content}`).join('\n')}`
       : ''
     
-    console.log(`📚 RAG Context: ${ragContext.length} characters`)
+    // Add document context if uploaded documents are provided
+    const documentContext = uploadedDocuments && uploadedDocuments.length > 0
+      ? `\n\nUPLOADED DOCUMENT CONTEXT:\n${uploadedDocuments.map((doc, index) => `doc${index + 1}: ${doc.name}\n${doc.extractedText}`).join('\n\n')}`
+      : ''
+    
+    // console.log(`📚 RAG Context: ${ragContext.length} characters`)
+    // console.log(`📄 Document Context: ${documentContext.length} characters`)
     
     // Build system prompt with RAG context
     const systemPrompt = `You are a helpful AI assistant for Outreach Mosaic, a platform for digital marketing and outreach.
 
 ${userContextStr}
 ${ragContext}
+${documentContext}
 
 Be helpful and provide useful responses about publisher websites and filtering. If the user shares personal information, acknowledge it and remember it for future conversations.
 
@@ -982,7 +997,7 @@ Example response for payment success:
     const responseData = await openaiResponse.json()
     const responseText = responseData.choices[0]?.message?.content || 'I apologize, but I was unable to generate a response.'
     
-    console.log(`✅ Generated response: ${responseText.length} characters`)
+    // console.log(`✅ Generated response: ${responseText.length} characters`)
     
     // Cache the response
     if (canPersist && responseText.length > 50) {
