@@ -1,6 +1,14 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
+
+// TypeScript declarations for speech recognition
+declare global {
+  interface Window {
+    SpeechRecognition: any
+    webkitSpeechRecognition: any
+  }
+}
 import { useRouter, usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
@@ -137,6 +145,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     hasRelevantContext?: boolean
     confidence?: number
   } | null>(null)
+  
+  // Speech-to-text state
+  const [isListening, setIsListening] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(false)
+  const [speechError, setSpeechError] = useState<string | null>(null)
+  const recognitionRef = useRef<any>(null)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const prevCartCountRef = useRef<number>(cartState.items.length)
   const didMountRef = useRef<boolean>(false)
@@ -148,6 +163,99 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       refreshUserData()
     }
   }, []) // Empty dependency array - only run once on mount
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+        if (SpeechRecognition) {
+          setSpeechSupported(true)
+          const recognition = new SpeechRecognition()
+          recognition.continuous = false
+          recognition.interimResults = false
+          recognition.lang = 'en-US'
+        
+        recognition.onstart = () => {
+          setIsListening(true)
+          setSpeechError(null) // Clear any previous errors
+        }
+        
+        recognition.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0])
+            .map((result: any) => result.transcript)
+            .join('')
+          
+          if (transcript.trim()) {
+            setInput(prev => prev + (prev ? ' ' : '') + transcript)
+          }
+        }
+        
+        recognition.onend = () => {
+          setIsListening(false)
+          // Focus the input field after speech recognition ends
+          setTimeout(() => {
+            if (inputRef.current) {
+              inputRef.current.focus()
+            }
+          }, 100)
+        }
+        
+        recognition.onerror = (event: any) => {
+          // Use console.warn instead of console.error to avoid Next.js treating it as unhandled error
+          console.warn('Speech recognition error:', event.error)
+          setIsListening(false)
+          
+          // Handle different error types gracefully
+          let errorMessage: string | null = null
+          switch (event.error) {
+            case 'not-allowed':
+              errorMessage = 'Microphone access denied. Please allow microphone access to use voice input.'
+              break
+            case 'no-speech':
+              errorMessage = 'No speech detected. Please try again.'
+              break
+            case 'network':
+              errorMessage = 'Network error occurred. Please check your internet connection and try again.'
+              // Clear error after a delay to allow retry
+              setTimeout(() => setSpeechError(null), 3000)
+              break
+            case 'aborted':
+              // User manually stopped or component unmounted - this is expected
+              break
+            case 'audio-capture':
+              errorMessage = 'Audio capture failed. Please check your microphone.'
+              break
+            case 'service-not-allowed':
+              errorMessage = 'Speech recognition service not allowed. Please check your browser settings.'
+              break
+            default:
+              errorMessage = `Speech recognition error: ${event.error}`
+          }
+          
+          if (errorMessage) {
+            setSpeechError(errorMessage)
+          }
+        }
+        
+        recognitionRef.current = recognition
+        }
+      } catch (error) {
+        console.warn('Failed to initialize speech recognition:', error)
+        setSpeechSupported(false)
+      }
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -1360,6 +1468,38 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     }
   }
 
+  // Speech recognition handlers
+  const startListening = () => {
+    if (recognitionRef.current && !isListening && speechSupported) {
+      try {
+        setSpeechError(null) // Clear any previous errors
+        recognitionRef.current.start()
+      } catch (error) {
+        console.warn('Failed to start speech recognition:', error)
+        setIsListening(false)
+        setSpeechError('Failed to start speech recognition. Please try again.')
+      }
+    }
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      try {
+        recognitionRef.current.stop()
+      } catch (error) {
+        console.warn('Failed to stop speech recognition:', error)
+      }
+    }
+  }
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening()
+    } else {
+      startListening()
+    }
+  }
+
   // Listen for programmatic message sending from search bar
   useAIMessageListener((message) => {
     if (message && !isLoading) {
@@ -1702,19 +1842,45 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 rows={2}
               />
               <div className="flex items-center justify-end mt-2">
+                {/* Speech error indicator */}
+                {speechError && (
+                  <div className="flex-1 mr-2">
+                    <div className={cn(
+                      "text-xs px-2 py-1 rounded-md flex items-center justify-between",
+                      theme === 'light' 
+                        ? "bg-red-50 text-red-600 border border-red-200" 
+                        : "bg-red-900/20 text-red-400 border border-red-800/30"
+                    )}>
+                      <span>{speechError}</span>
+                      <button
+                        onClick={() => setSpeechError(null)}
+                        className="ml-2 hover:opacity-70"
+                        aria-label="Dismiss error"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex items-center gap-1.5">
-                  <button
-                    aria-label="Voice input"
-                    className={cn(
-                      "p-1.5 rounded-md transition-colors focus-visible:ring-2",
-                      theme === 'light' 
-                        ? "hover:bg-[#6A5ACD]/10 text-black/70 focus-visible:ring-[#6A5ACD]/30" 
-                        : "hover:bg-white/10 text-white/70 focus-visible:ring-white/20"
-                    )}
-                  >
-                    <Mic className="h-3 w-3" />
-                  </button>
+                  {speechSupported && (
+                    <button
+                      aria-label={isListening ? "Stop voice input" : "Start voice input"}
+                      onClick={toggleListening}
+                      disabled={isLoading}
+                      className={cn(
+                        "p-1.5 rounded-md transition-colors focus-visible:ring-2",
+                        isListening 
+                          ? "bg-red-500/20 text-red-500" 
+                          : theme === 'light' 
+                            ? "hover:bg-[#6A5ACD]/10 text-black/70 focus-visible:ring-[#6A5ACD]/30" 
+                            : "hover:bg-white/10 text-white/70 focus-visible:ring-white/20"
+                      )}
+                    >
+                      <Mic className={cn("h-3 w-3", isListening && "animate-pulse")} />
+                    </button>
+                  )}
                   <Button
                     aria-label="Send message"
                     onClick={() => sendMessage()}
