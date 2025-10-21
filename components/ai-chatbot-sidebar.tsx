@@ -89,7 +89,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       .trim()
   }
   const pathname = usePathname()
-  const { config, configLoading } = useAIChatbot()
+  const { } = useAIChatbot()
   const { toggleSidebar } = useResizableLayout()
   const { 
     state: cartState,
@@ -1235,8 +1235,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         body: JSON.stringify({
           message: userMessage.content,
           messages: messages,
-          // Include preloaded config so the API doesn't need to fetch again
-          config: config ?? undefined,
           // Include current URL for context-aware filtering
           currentUrl: window.location.href,
           // Include current cart state for accurate cart operations
@@ -1374,7 +1372,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             body: JSON.stringify({
               message: content,
               messages: messages,
-              config: {},
               currentUrl: window.location.href,
               cartState: cartStateForAPI,
               userId: undefined,
@@ -1691,15 +1688,6 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           aria-live="polite"
           aria-relevant="additions"
         >
-          {configLoading && messages.length === 0 && (
-            <div className={cn(
-              "text-center py-6",
-              theme === 'light' ? "text-black/60" : "text-white/60"
-            )}>
-              <Bot className="h-8 w-8 mx-auto mb-3 opacity-60" />
-              <p className="text-sm">Loading config…</p>
-            </div>
-          )}
           
           {messages.map((message) => (
             <div key={message.id} className="space-y-2 max-w-full overflow-hidden">
