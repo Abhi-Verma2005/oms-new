@@ -57,8 +57,16 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
   }, [])
 
   const setWidths = useCallback((main: number, sidebar: number) => {
-    setMainWidth(main)
-    setSidebarWidth(sidebar)
+    // Ensure total doesn't exceed 100%
+    const total = main + sidebar
+    if (total > 100) {
+      const ratio = 100 / total
+      setMainWidth(main * ratio)
+      setSidebarWidth(sidebar * ratio)
+    } else {
+      setMainWidth(main)
+      setSidebarWidth(sidebar)
+    }
     setIsSidebarOpen(sidebar > 0)
   }, [])
 
