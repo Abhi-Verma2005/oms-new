@@ -1924,7 +1924,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                       {/* Load Documents Button */}
                       <div className="mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
                         <button
-                          onClick={loadDocuments}
+                          onClick={() => setShowUploadModal(true)}
                           disabled={isLoadingDocuments}
                           className={cn(
                             "w-full flex items-center justify-center gap-1 px-2 py-1 rounded text-xs",

@@ -6,6 +6,66 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getMultipleDocumentContents } from '@/lib/document-cache'
 
+// ---------------------------------------------
+// Token & Chat History Management (128k handling)
+// ---------------------------------------------
+// Rough token estimation: ~4 chars per token (conservative across models)
+function estimateTokensForMessages(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>): number {
+  try {
+    const totalChars = messages.reduce((sum, m) => sum + (m?.content?.length || 0), 0)
+    // Add small overhead per message for role/formatting
+    const overhead = messages.length * 20
+    return Math.ceil((totalChars + overhead) / 4)
+  } catch {
+    return 0
+  }
+}
+
+async function summarizeChatHistory(
+  historyMessages: Array<{ role: 'user' | 'assistant'; content: string }>,
+  model: string,
+  apiKey: string
+): Promise<string> {
+  const historyText = historyMessages
+    .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+    .join('\n\n')
+    .slice(0, 350000) // hard cap to avoid oversized summarization input
+
+  const system = `You are a conversation summarizer. Create a concise, factual summary of the chat so far that preserves:
+  - The user's goals, constraints, preferences and any confirmations
+  - Important decisions, tool/action tags mentioned like [FILTER:...] or [VIEW_ORDERS]
+  - Open questions or pending follow-ups
+  Keep it short but information-dense. Do NOT invent details. Output plain text.`
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: historyText }
+      ],
+      temperature: 0.2,
+      max_tokens: 1200,
+      stream: false
+    })
+  })
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    console.warn('Summarization failed:', res.status, errText)
+    // Fallback: crude truncation
+    return historyText.slice(0, 8000)
+  }
+
+  const data = await res.json()
+  return data?.choices?.[0]?.message?.content || historyText.slice(0, 8000)
+}
+
 // User Context Helper Functions
 function formatUserContextFromRequest(userContext: any): string {
   if (!userContext) {
@@ -84,7 +144,7 @@ function formatUserContextFromRequest(userContext: any): string {
     contextParts.push(`Account Age: ${accountAge} days`)
   }
 
-  console.log('👤 DEBUG: Formatted user context:', contextParts.join('\n'))
+  // console.log('👤 DEBUG: Formatted user context:', contextParts.join('\n'))
 
   return contextParts.length > 0 ? `\n\nUSER CONTEXT:\n${contextParts.join('\n')}` : ''
 }
@@ -567,12 +627,9 @@ async function handleStreamingRequest(
     - **Spam Score**: Moz's metric (0-10) indicating penalty risk (lower is better)
     - **Traffic**: Monthly organic visitors from Semrush data
     
-    **Intelligent Interpretation Rules:**
-    1. When user says "good" → Apply "Good" quality filters
-    2. When user says "decent" → Apply "Decent" quality filters
-    3. When user says "high-quality" or "premium" → Apply "High-Quality" filters
-    4. When user says "best" or "top" → Apply "Best" quality filters
-    5. Always explain what filters were applied in your confirmation
+    **Interpretation Guidance (Suggest, don't auto-apply):**
+    - If the user uses terms like "good", "decent", "high-quality/premium", or "best/top", SUGGEST the corresponding filters with a one-line explanation. DO NOT apply filters unless the user explicitly asks you to apply them or confirms after your suggestion.
+    - Example: "Would you like me to apply: [daMin=50, drMin=50, spamMax=2, traffic>=10k]?"
     
     ## CORE BEHAVIORAL RULES
     
@@ -582,28 +639,31 @@ async function handleStreamingRequest(
     - If you don't know something, say so clearly
     - Don't make assumptions about data you can't see
     
-    ### 2. FILTER APPLICATION PROTOCOL (CRITICAL)
+    ### 2. FILTER APPLICATION PROTOCOL
     
-    **MANDATORY SEQUENCE:**
-    1. Output [FILTER:...] tool tag FIRST on its own line with ALL criteria combined
+    Only follow this protocol when the user has explicitly asked to apply filters or has confirmed after your suggestion.
+    
+    **Sequence when applying filters:**
+    1. Output a single [FILTER:...] line with ALL criteria combined
     2. THEN provide brief confirmation (1 sentence max)
     
-    **CRITICAL: ALWAYS COMBINE ALL FILTERS INTO A SINGLE [FILTER:...] COMMAND**
-    - Never send multiple separate filter commands
-    - Combine quality filters with other criteria (price, niche, etc.) in one command
-    - Use & to separate multiple parameters: [FILTER:daMin=50&priceMin=1000&priceMax=2000]
+    **Rules:**
+    - Always combine all criteria into one [FILTER:...] command (use & separators)
+    - Never emit multiple separate filter commands
     
-    **WHEN TO APPLY FILTERS:**
-    - User explicitly requests filtering (e.g., "filter by", "show me sites with", "apply filters")
-    - User provides specific criteria with action intent
-    - User requests "good", "decent", "quality", "high-quality", "premium", or "reliable" websites
-    - User asks for "best sites", "top sites", or "recommended sites"
+    **WHEN TO APPLY FILTERS (Allowed):**
+    - User explicitly requests filtering (e.g., "apply filters", "filter by", "show me sites with ...")
+    - User provides criteria and explicitly asks you to apply them
+    - User says "yes", "apply", or otherwise confirms after your suggested filters
     
-    **WHEN NOT TO APPLY FILTERS:**
-    - User asks general questions about the platform
+    **WHEN NOT TO APPLY FILTERS (Disallowed):**
+    - User uses general quality terms ("good", "decent", "best", etc.) without asking to apply
+    - User asks general/informational questions
     - User shares preferences without requesting action
-    - User asks "what can you filter by?" or similar informational queries
     - User is exploring options without committing to criteria
+    
+    **If ambiguous:**
+    - Propose the consolidated filter set and ask for confirmation before applying.
     
     **CORRECT EXAMPLES:**
     
@@ -768,8 +828,40 @@ async function handleStreamingRequest(
         { role: 'user' as const, content: message }
       ]
       
-      // 🔍 DEBUG: Log final context being sent to AI
-      // console.log('🤖 FINAL AI CONTEXT:', JSON.stringify(chatMessages, null, 2))
+      // 128k-token safeguard: summarize only the chat history (keep system/doc/RAG intact)
+      try {
+        const MAX_CONTEXT_TOKENS = 128000
+        const SAFETY_MARGIN = 120000 // trigger summarization before hard cap
+        let currentTokens = estimateTokensForMessages(chatMessages)
+        if (currentTokens > SAFETY_MARGIN) {
+          const apiKey = process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY!
+          const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+          // Extract only history (exclude first system and last user message)
+          const historyOnly = chatMessages.slice(1, -1) as Array<{ role: 'user' | 'assistant'; content: string }>
+          const summary = await summarizeChatHistory(historyOnly, model, apiKey)
+          const summarizedHistory = [{ role: 'assistant' as const, content: `Conversation summary (for context):\n${summary}` }]
+          const rebuilt = [chatMessages[0], ...summarizedHistory, chatMessages[chatMessages.length - 1]]
+          // If still too large, keep only the summary and last user
+          if (estimateTokensForMessages(rebuilt) > MAX_CONTEXT_TOKENS) {
+            chatMessages.splice(0, chatMessages.length, rebuilt[0], summarizedHistory[0], rebuilt[rebuilt.length - 1])
+          } else {
+            chatMessages.splice(0, chatMessages.length, ...rebuilt)
+          }
+        }
+      } catch (e) {
+        console.warn('Chat history summarization step failed, continuing without it:', e)
+      }
+      
+      // 🔍 DEBUG: Log context size and final context being sent to AI
+      try {
+        const ctxStr = JSON.stringify(chatMessages)
+        console.log('🤖 CONTEXT SIZE:', {
+          messagesCount: chatMessages.length,
+          chars: ctxStr.length,
+          approxTokens: estimateTokensForMessages(chatMessages)
+        })
+      } catch {}
+      console.log('🤖 FINAL AI CONTEXT:', JSON.stringify(chatMessages, null, 2))
       
       // Create streaming response using OpenAI API directly
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -793,7 +885,7 @@ async function handleStreamingRequest(
       throw new Error(`OpenAI API error: ${openaiResponse.status}`)
     }
     
-    console.log('✅ OpenAI streaming response started')
+    // console.log('✅ OpenAI streaming response started')
     
     // Store interaction in background (non-blocking)
     setImmediate(() => {
@@ -868,7 +960,7 @@ async function handleNonStreamingRequest(
   uploadedDocuments?: any[]
 ) {
   try {
-    console.log('🔍 Starting RAG-enhanced non-streaming request...')
+    // console.log('🔍 Starting RAG-enhanced non-streaming request...')
     const t0Total = Date.now()
     
     // Check semantic cache first
@@ -895,7 +987,7 @@ async function handleNonStreamingRequest(
     `
     
     if (similarCachedResponse.length > 0 && similarCachedResponse[0].similarity > 0.9) {
-      console.log(`🎯 Semantic cache hit! Similarity: ${similarCachedResponse[0].similarity.toFixed(3)}`)
+      // console.log(`🎯 Semantic cache hit! Similarity: ${similarCachedResponse[0].similarity.toFixed(3)}`)
       
       // Update cache hit count
       await prisma.semanticCache.update({
@@ -956,22 +1048,22 @@ async function handleNonStreamingRequest(
     // Add document context if uploaded documents are provided
     let documentContext = ''
     if (uploadedDocuments && uploadedDocuments.length > 0) {
-      console.log('Processing uploaded documents:', uploadedDocuments.length);
-      console.log('Document details:', uploadedDocuments.map(doc => ({
-        id: doc.id,
-        originalName: doc.originalName,
-        fileName: doc.fileName,
-        fileUrl: doc.fileUrl
-      })));
+      // console.log('Processing uploaded documents:', uploadedDocuments.length);
+      // console.log('Document details:', uploadedDocuments.map(doc => ({
+      //   id: doc.id,
+      //   originalName: doc.originalName,
+      //   fileName: doc.fileName,
+      //   fileUrl: doc.fileUrl
+      // })));
       
       try {
         const documentContents = await getMultipleDocumentContents(uploadedDocuments);
-        console.log('Document contents fetched:', documentContents.length);
-        console.log('Content previews:', documentContents.map(doc => ({
-          name: doc.name,
-          contentLength: doc.content.length,
-          contentPreview: doc.content.substring(0, 100) + '...'
-        })));
+        // console.log('Document contents fetched:', documentContents.length);
+        // console.log('Content previews:', documentContents.map(doc => ({
+        //   name: doc.name,
+        //   contentLength: doc.content.length,
+        //   contentPreview: doc.content.substring(0, 100) + '...'
+        // })));
         
         documentContext = `\n\nUPLOADED DOCUMENT CONTEXT:\n${documentContents.map((doc, index) => `doc${index + 1}: ${doc.name}\n${doc.content}`).join('\n\n')}`;
         console.log('Final document context length:', documentContext.length);
@@ -1018,6 +1110,29 @@ Example response for payment success:
       })),
       { role: 'user' as const, content: message }
     ]
+    
+    // 128k-token safeguard (non-streaming): summarize only the chat history
+    try {
+      const MAX_CONTEXT_TOKENS = 128000
+      const SAFETY_MARGIN = 120000
+      let currentTokens = estimateTokensForMessages(chatMessages)
+      if (currentTokens > SAFETY_MARGIN) {
+        const apiKey = process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY!
+        const model = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+        const historyOnly = chatMessages.slice(1, -1) as Array<{ role: 'user' | 'assistant'; content: string }>
+        const summary = await summarizeChatHistory(historyOnly, model, apiKey)
+        const summarizedHistory = [{ role: 'assistant' as const, content: `Conversation summary (for context):\n${summary}` }]
+        const rebuilt = [chatMessages[0], ...summarizedHistory, chatMessages[chatMessages.length - 1]]
+        if (estimateTokensForMessages(rebuilt) > MAX_CONTEXT_TOKENS) {
+          // Keep only system, summary, and last user message
+          chatMessages.splice(0, chatMessages.length, rebuilt[0], summarizedHistory[0], rebuilt[rebuilt.length - 1])
+        } else {
+          chatMessages.splice(0, chatMessages.length, ...rebuilt)
+        }
+      }
+    } catch (e) {
+      console.warn('Chat history summarization (non-stream) failed, continuing without it:', e)
+    }
     
     // Generate response using OpenAI API directly
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -1082,7 +1197,7 @@ Example response for payment success:
             timestamp: new Date()
           }
         })
-        console.log('📝 Conversation logged successfully')
+        // console.log('📝 Conversation logged successfully')
       } catch (logError) {
         console.error('Failed to log conversation:', logError)
       }

@@ -138,7 +138,7 @@ export function DocumentUpload({
               id="file-upload"
               type="file"
               onChange={handleFileUpload}
-              accept=".pdf,.doc,.docx,.xlsx,.xls,.txt,.md,.csv"
+              accept=".pdf,.doc,.docx,.txt,.md"
               disabled={isUploading}
               className="flex-1"
             />
