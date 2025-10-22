@@ -1373,10 +1373,8 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 // Clean tool tags from display text but keep them in fullText for processing
                 const displayText = cleanToolTagsFromText(fullText)
                 
-                // Always update with cleaned text to prevent horizontal scrolling
-                requestAnimationFrame(() => {
-                  updateMessage(assistantMessage.id, { content: displayText })
-                })
+                // Update with cleaned text in real-time for immediate markdown rendering
+                updateMessage(assistantMessage.id, { content: displayText })
               }
             } catch (e) {
               // Skip invalid JSON lines
@@ -1389,9 +1387,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       // Final update to ensure all content is displayed (with tool tags cleaned)
       console.log('🔍 [AI] Final full text:', fullText)
       const finalDisplayText = cleanToolTagsFromText(fullText)
-      requestAnimationFrame(() => {
-        updateMessage(assistantMessage.id, { content: finalDisplayText })
-      })
+      updateMessage(assistantMessage.id, { content: finalDisplayText })
       
       console.timeEnd && console.timeEnd('AI_STREAM_PARSE')
       
@@ -2124,6 +2120,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 }}
                 selectedDocuments={selectedDocuments}
                 className="w-full"
+                onDocumentsUpdated={() => {
+                  // Refresh the documents list when new documents are uploaded
+                  loadDocuments()
+                }}
               />
             </div>
           </div>

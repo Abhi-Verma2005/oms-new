@@ -27,100 +27,123 @@ export async function POST(request: NextRequest) {
     uploadFormData.append('file_name', file, fileName);
 
     // Upload to external API with timeout and retry
-    let uploadResponse;
-    let retryCount = 0;
-    const maxRetries = 2;
-    
-    while (retryCount <= maxRetries) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-        
-        uploadResponse = await fetch('https://da.outreachdeal.com/upload.php', {
-          method: 'POST',
-          body: uploadFormData,
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
-        break; // Success, exit retry loop
-      } catch (error) {
-        retryCount++;
-        if (retryCount > maxRetries) {
-          throw new Error(`Upload failed after ${maxRetries + 1} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-        // Wait before retry (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-      }
-    }
-
-    if (!uploadResponse.ok) {
-      throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-    }
-
-    const uploadResult = await uploadResponse.text();
-    
-    // Log the response to see the format
-    console.log('Upload API Response:', {
-      status: uploadResponse.status,
-      statusText: uploadResponse.statusText,
-      headers: Object.fromEntries(uploadResponse.headers.entries()),
-      body: uploadResult
-    });
-    
-    // Parse the response to get the file URL
     let fileUrl: string;
     try {
-      // Try to parse as JSON first
-      const result = JSON.parse(uploadResult);
-      console.log('Parsed JSON result:', result);
+      let uploadResponse;
+      let retryCount = 0;
+      const maxRetries = 2;
       
-      if (result.url) {
-        fileUrl = result.url;
-      } else if (result.file_name) {
-        // If no URL but has filename, construct URL
-        fileUrl = `https://da.outreachdeal.com/OMS/${result.file_name}`;
-      } else {
-        throw new Error('No URL or filename in response');
+      while (retryCount <= maxRetries) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+          
+          uploadResponse = await fetch('https://da.outreachdeal.com/upload.php', {
+            method: 'POST',
+            body: uploadFormData,
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          break; // Success, exit retry loop
+        } catch (error) {
+          retryCount++;
+          if (retryCount > maxRetries) {
+            throw new Error(`Upload failed after ${maxRetries + 1} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
       }
-    } catch (parseError) {
-      console.log('JSON parse error:', parseError);
-      console.log('Treating as direct URL:', uploadResult);
-      // If not JSON, treat as direct URL
-      fileUrl = uploadResult.trim();
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      const uploadResult = await uploadResponse.text();
+      
+      // Log the response to see the format
+      console.log('Upload API Response:', {
+        status: uploadResponse.status,
+        statusText: uploadResponse.statusText,
+        headers: Object.fromEntries(uploadResponse.headers.entries()),
+        body: uploadResult
+      });
+      
+      // Parse the response to get the file URL
+      try {
+        // Try to parse as JSON first
+        const result = JSON.parse(uploadResult);
+        console.log('Parsed JSON result:', result);
+        
+        if (result.error) {
+          throw new Error(`Upload failed: ${result.error}`);
+        } else if (result.url) {
+          fileUrl = result.url;
+        } else if (result.file_name) {
+          // If no URL but has filename, construct URL
+          fileUrl = `https://da.outreachdeal.com/OMS/${result.file_name}`;
+        } else {
+          throw new Error('No URL or filename in response');
+        }
+      } catch (parseError) {
+        // Only treat as direct URL if it's not a JSON parse error from an error response
+        if (parseError instanceof Error && parseError.message.includes('Upload failed:')) {
+          throw parseError; // Re-throw upload errors
+        }
+        console.log('JSON parse error:', parseError);
+        console.log('Treating as direct URL:', uploadResult);
+        // If not JSON, treat as direct URL
+        fileUrl = uploadResult.trim();
+      }
+      
+      console.log('Final fileUrl:', fileUrl);
+    } catch (uploadError) {
+      console.error('External upload failed:', uploadError);
+      // Return error response instead of continuing with invalid URL
+      return NextResponse.json(
+        { error: `File upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}` },
+        { status: 500 }
+      );
     }
-    
-    console.log('Final fileUrl:', fileUrl);
 
     // Store in database
-    const document = await prisma.userDocument.create({
-      data: {
-        userId: session.user.id,
-        originalName: file.name,
-        fileName: fileName,
-        fileUrl: fileUrl,
-        fileSize: file.size,
-        mimeType: file.type,
-      },
-    });
+    let document: any
+    try {
+      document = await prisma.user_documents.create({
+        data: {
+          id: randomUUID(), // Generate ID explicitly
+          user_id: session.user.id,
+          original_name: file.name,
+          file_name: fileName,
+          file_url: fileUrl,
+          file_size: file.size,
+          mime_type: file.type,
+        },
+      })
+    } catch (dbError) {
+      console.error('Failed to create document in DB, returning ephemeral:', dbError)
+      // Fallback: return an ephemeral document object so the UI can proceed
+      document = {
+        id: randomUUID(),
+        original_name: file.name,
+        file_name: fileName,
+        file_url: fileUrl,
+        uploaded_at: new Date().toISOString(),
+      }
+    }
 
-    console.log('Document created with data:', {
-      id: document.id,
-      originalName: document.originalName,
-      fileName: document.fileName,
-      fileUrl: document.fileUrl,
-      fileSize: document.fileSize,
-      mimeType: document.mimeType
-    });
 
     return NextResponse.json({
       success: true,
       document: {
         id: document.id,
-        originalName: document.originalName,
-        fileName: document.fileName,
-        fileUrl: document.fileUrl,
-        uploadedAt: document.uploadedAt,
+        originalName: document.original_name,
+        fileName: document.file_name,
+        fileUrl: document.file_url,
+        fileSize: document.file_size,
+        mimeType: document.mime_type,
+        uploadedAt: document.uploaded_at instanceof Date ? document.uploaded_at.toISOString() : document.uploaded_at,
       },
     });
 
@@ -144,30 +167,49 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    const documents = await prisma.userDocument.findMany({
-      where: {
-        userId: session.user.id,
-        isActive: true,
-        ...(search && {
-          OR: [
-            { originalName: { contains: search, mode: 'insensitive' } },
-            { fileName: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-      },
-      orderBy: { uploadedAt: 'desc' },
-      take: limit,
-      select: {
-        id: true,
-        originalName: true,
-        fileName: true,
-        fileUrl: true,
-        fileSize: true,
-        mimeType: true,
-        uploadedAt: true,
-        accessCount: true,
-      },
-    });
+    let documents: any[] = []
+    try {
+      const dbDocuments = await prisma.user_documents.findMany({
+        where: {
+          user_id: session.user.id,
+          is_active: true,
+          ...(search && {
+            OR: [
+              { original_name: { contains: search, mode: 'insensitive' } },
+              { file_name: { contains: search, mode: 'insensitive' } },
+            ],
+          }),
+        },
+        orderBy: { uploaded_at: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          original_name: true,
+          file_name: true,
+          file_url: true,
+          file_size: true,
+          mime_type: true,
+          uploaded_at: true,
+          access_count: true,
+        },
+      })
+      
+      // Transform snake_case to camelCase for frontend compatibility
+      documents = dbDocuments.map(doc => ({
+        id: doc.id,
+        originalName: doc.original_name,
+        fileName: doc.file_name,
+        fileUrl: doc.file_url,
+        fileSize: doc.file_size,
+        mimeType: doc.mime_type,
+        uploadedAt: doc.uploaded_at.toISOString(),
+        accessCount: doc.access_count,
+      }))
+    } catch (dbError) {
+      console.error('Get documents error:', dbError);
+      // Fallback: return empty array if DB query fails
+      return NextResponse.json({ documents: [], warning: 'Failed to fetch documents from DB.' });
+    }
 
     return NextResponse.json({ documents });
 

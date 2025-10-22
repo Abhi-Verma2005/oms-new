@@ -2355,26 +2355,41 @@ export default function PublishersClient() {
 
   // Keep URL params in sync with filters and search query
   useEffect(() => {
-    const sp = new URLSearchParams()
-    const setIf = (k: string, v: unknown) => {
-      if (v === undefined || v === null) return
-      if (typeof v === 'string' && v.trim() === '') return
-      sp.set(k, String(v))
-    }
-    setIf('q', searchQuery)
+    // Start from current URL params to preserve unrelated ones (e.g., 'sidebar')
+    const currentSearch = typeof window !== 'undefined' ? window.location.search : ''
+    const sp = new URLSearchParams(currentSearch)
+
+    // Helper to decide empty values
+    const isEmpty = (v: unknown) => (
+      v === undefined || v === null || (typeof v === 'string' && v.trim() === '')
+    )
+
+    // Sync search query
+    if (isEmpty(searchQuery)) sp.delete('q')
+    else sp.set('q', String(searchQuery))
+
+    // Sync all filter keys (set or delete)
     Object.entries(filters).forEach(([k, v]) => {
-      if (v === undefined || v === null) return
-      if (typeof v === 'string' && v.trim() === '') return
       if (typeof v === 'boolean') {
         if (v) sp.set(k, '1')
+        else sp.delete(k)
         return
       }
-      setIf(k, v as any)
+      if (isEmpty(v)) sp.delete(k)
+      else sp.set(k, String(v))
     })
-    const qs = sp.toString()
+
+    const nextQs = sp.toString()
     const safePathname = pathname || '/publishers'
-    const url: string = qs ? `${safePathname}?${qs}` : safePathname
-    router.replace(url, { scroll: false })
+    const nextUrl: string = nextQs ? `${safePathname}?${nextQs}` : safePathname
+
+    // Avoid no-op navigations that can cause rerenders
+    if (typeof window !== 'undefined') {
+      const currentUrl = window.location.pathname + (window.location.search || '')
+      if (currentUrl === nextUrl) return
+    }
+
+    router.replace(nextUrl, { scroll: false })
   }, [filters, searchQuery, pathname, router])
 
   const results = useMemo(() => {
