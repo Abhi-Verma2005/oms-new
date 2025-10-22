@@ -4,6 +4,7 @@ import { streamText } from 'ai'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getMultipleDocumentContents } from '@/lib/document-cache'
 
 // User Context Helper Functions
 function formatUserContextFromRequest(userContext: any): string {
@@ -490,9 +491,32 @@ async function handleStreamingRequest(
       : ''
     
     // Add document context if uploaded documents are provided
-    const documentContext = uploadedDocuments && uploadedDocuments.length > 0
-      ? `\n\nUPLOADED DOCUMENT CONTEXT:\n${uploadedDocuments.map((doc, index) => `doc${index + 1}: ${doc.name}\n${doc.extractedText}`).join('\n\n')}`
-      : ''
+    let documentContext = ''
+    if (uploadedDocuments && uploadedDocuments.length > 0) {
+      console.log('Processing uploaded documents:', uploadedDocuments.length);
+      console.log('Document details:', uploadedDocuments.map(doc => ({
+        id: doc.id,
+        originalName: doc.originalName,
+        fileName: doc.fileName,
+        fileUrl: doc.fileUrl
+      })));
+      
+      try {
+        const documentContents = await getMultipleDocumentContents(uploadedDocuments);
+        console.log('Document contents fetched:', documentContents.length);
+        console.log('Content previews:', documentContents.map(doc => ({
+          name: doc.name,
+          contentLength: doc.content.length,
+          contentPreview: doc.content.substring(0, 100) + '...'
+        })));
+        
+        documentContext = `\n\nUPLOADED DOCUMENT CONTEXT:\n${documentContents.map((doc, index) => `doc${index + 1}: ${doc.name}\n${doc.content}`).join('\n\n')}`;
+        console.log('Final document context length:', documentContext.length);
+      } catch (error) {
+        console.error('Error fetching document contents:', error);
+        documentContext = '\n\nNote: Some uploaded documents could not be processed.';
+      }
+    }
     
     // Single, clean system prompt template
     const baseSystemPrompt = `You are an AI assistant for a PUBLISHERS/SITES MARKETPLACE platform. Your role is to help users find and filter publisher websites for link building and content marketing.
@@ -930,9 +954,32 @@ async function handleNonStreamingRequest(
       : ''
     
     // Add document context if uploaded documents are provided
-    const documentContext = uploadedDocuments && uploadedDocuments.length > 0
-      ? `\n\nUPLOADED DOCUMENT CONTEXT:\n${uploadedDocuments.map((doc, index) => `doc${index + 1}: ${doc.name}\n${doc.extractedText}`).join('\n\n')}`
-      : ''
+    let documentContext = ''
+    if (uploadedDocuments && uploadedDocuments.length > 0) {
+      console.log('Processing uploaded documents:', uploadedDocuments.length);
+      console.log('Document details:', uploadedDocuments.map(doc => ({
+        id: doc.id,
+        originalName: doc.originalName,
+        fileName: doc.fileName,
+        fileUrl: doc.fileUrl
+      })));
+      
+      try {
+        const documentContents = await getMultipleDocumentContents(uploadedDocuments);
+        console.log('Document contents fetched:', documentContents.length);
+        console.log('Content previews:', documentContents.map(doc => ({
+          name: doc.name,
+          contentLength: doc.content.length,
+          contentPreview: doc.content.substring(0, 100) + '...'
+        })));
+        
+        documentContext = `\n\nUPLOADED DOCUMENT CONTEXT:\n${documentContents.map((doc, index) => `doc${index + 1}: ${doc.name}\n${doc.content}`).join('\n\n')}`;
+        console.log('Final document context length:', documentContext.length);
+      } catch (error) {
+        console.error('Error fetching document contents:', error);
+        documentContext = '\n\nNote: Some uploaded documents could not be processed.';
+      }
+    }
     
     // console.log(`📚 RAG Context: ${ragContext.length} characters`)
     // console.log(`📄 Document Context: ${documentContext.length} characters`)

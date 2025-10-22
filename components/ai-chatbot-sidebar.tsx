@@ -48,7 +48,7 @@ import { useChat } from '@/contexts/chat-context'
 import { useUserContextForAI, useUserContextStore } from '@/stores/user-context-store'
 import { MarkdownRenderer } from './markdown-renderer'
 import { useAIMessageListener } from '@/lib/ai-chat-utils'
-import DocumentUpload from './DocumentUpload'
+import { DocumentUpload } from './document-upload'
 import { useResizableLayout } from './resizable-layout'
 import ChatActionCard from '@/components/chat/ChatActionCard'
 import type { ChatActionCardModel } from '@/components/chat/ChatActionCard'
@@ -145,12 +145,35 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   }
   
   const [input, setInput] = useState('')
-  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedFile[]>([])
-  const [selectedDocuments, setSelectedDocuments] = useState<UploadedFile[]>([])
+  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([])
+  const [selectedDocuments, setSelectedDocuments] = useState<any[]>([])
   const [showDocumentDropdown, setShowDocumentDropdown] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inflightAbortRef = useRef<AbortController | null>(null)
+
+  // Load documents from API
+  const loadDocuments = async () => {
+    setIsLoadingDocuments(true)
+    try {
+      const response = await fetch('/api/upload-document')
+      if (response.ok) {
+        const data = await response.json()
+        setUploadedDocuments(data.documents || [])
+      }
+    } catch (error) {
+      console.error('Failed to load documents:', error)
+    } finally {
+      setIsLoadingDocuments(false)
+    }
+  }
+
+  // Load documents on component mount
+  useEffect(() => {
+    loadDocuments()
+  }, [])
   const [actionCards, setActionCards] = useState<ActionCard[]>([])
   // RAG Integration Indicators
   const [ragContext, setRagContext] = useState<{
@@ -1257,7 +1280,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           // Include user context for personalized responses
           userContext: userContextForAI,
           // Include only selected documents context
-          uploadedDocuments: selectedDocuments.filter(doc => doc.success && doc.extractedText)
+          uploadedDocuments: selectedDocuments.map(doc => ({
+            id: doc.id,
+            originalName: doc.originalName,
+            fileName: doc.fileName,
+            fileUrl: doc.fileUrl,
+            uploadedAt: doc.uploadedAt
+          }))
         })
       })
       console.log(`📥 [AI] Received response: ${response.status}`)
@@ -1565,7 +1594,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden max-w-3xl mx-auto w-full dark:text-white text-black">
+    <div className="h-screen flex flex-col relative overflow-hidden w-full max-w-full dark:text-white text-black" style={{ maxWidth: '100vw' }}>
       {/* Theme-aware Background */}
       <div className={cn(
         "absolute inset-0",
@@ -1575,11 +1604,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       {/* Content */}
       <div className={cn(
         "relative z-10 h-full flex flex-col",
-        pathname === '/checkout' ? '' : 'pt-14 sm:pt-16'
+        pathname === '/checkout' ? '' : 'lg:pt-14 xl:pt-16'
       )}>
         {/* Header - minimal, balanced layout per HIG */}
         <div className={cn(
-          "flex items-center justify-between px-4 py-2.5 border-b",
+          "flex items-center justify-between px-3 sm:px-4 py-2.5 border-b",
           theme === 'light' 
             ? "border-[#6A5ACD]/20 bg-white/80 backdrop-blur-sm" 
             : "border-white/10 bg-black/10"
@@ -1701,7 +1730,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
         {/* Messages Area */}
         <div
-          className="flex-1 overflow-y-auto no-scrollbar px-6 py-3 space-y-3"
+          className="flex-1 overflow-y-auto no-scrollbar px-3 sm:px-6 py-3 space-y-3 min-w-0"
           role="log"
           aria-live="polite"
           aria-relevant="additions"
@@ -1813,7 +1842,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
 
         {/* Bottom Dock: Action cards above input */}
-        <div className="px-6 pb-4">
+        <div className="px-3 sm:px-6 pb-4 min-w-0">
           {/* Action Dock */}
           {actionCards.length > 0 && (
             <div className="mb-3 space-y-2 pt-4">
@@ -1824,7 +1853,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           )}
 
           {/* Input Field with Integrated Document Context */}
-          <div className="relative">
+          <div className="relative min-w-0">
             <div className={cn(
               "rounded-lg p-2 border transition-colors",
               theme === 'light' 
@@ -1854,9 +1883,9 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                                   ? "bg-[#6A5ACD] text-white" 
                                   : "bg-white/20 text-white"
                               )}
-                              title={doc.name}
+                              title={doc.originalName}
                             >
-                              @{doc.name.length > 4 ? doc.name.substring(0, 4) + '...' : doc.name}
+                              @{doc.originalName.length > 4 ? doc.originalName.substring(0, 4) + '...' : doc.originalName}
                               <button
                                 onClick={() => setSelectedDocuments(prev => prev.filter(d => d.id !== doc.id))}
                                 className="hover:opacity-70 flex-shrink-0"
@@ -1887,44 +1916,76 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                   {/* Document Dropdown */}
                   {showDocumentDropdown && (
                     <div className={cn(
-                      "absolute bottom-full left-0 right-0 z-50 mb-1 p-1.5 rounded border max-h-28 overflow-y-auto",
+                      "absolute bottom-full left-0 right-0 z-50 mb-1 p-1.5 rounded border max-h-32 overflow-y-auto",
                       theme === 'light' 
                         ? "bg-white border-[#6A5ACD]/20 shadow-lg" 
                         : "bg-gray-900 border-white/20 shadow-lg"
                     )}>
-                      {uploadedDocuments.map((doc) => (
-                        <label
-                          key={doc.id}
+                      {/* Load Documents Button */}
+                      <div className="mb-2 pb-2 border-b border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={loadDocuments}
+                          disabled={isLoadingDocuments}
                           className={cn(
-                            "flex items-center gap-1.5 p-1.5 rounded cursor-pointer hover:opacity-80",
+                            "w-full flex items-center justify-center gap-1 px-2 py-1 rounded text-xs",
                             theme === 'light' 
-                              ? "hover:bg-[#6A5ACD]/10" 
-                              : "hover:bg-white/10"
+                              ? "bg-[#6A5ACD]/10 text-[#6A5ACD] hover:bg-[#6A5ACD]/20" 
+                              : "bg-white/10 text-white/80 hover:bg-white/20"
                           )}
                         >
-                          <input
-                            type="checkbox"
-                            checked={selectedDocuments.some(d => d.id === doc.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedDocuments(prev => [...prev, doc])
-                              } else {
-                                setSelectedDocuments(prev => prev.filter(d => d.id !== doc.id))
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <FileText className="h-3 w-3" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium truncate" title={doc.name}>
-                              {doc.name.length > 12 ? doc.name.substring(0, 12) + '...' : doc.name}
+                          {isLoadingDocuments ? (
+                            <>
+                              <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-3 w-3" />
+                              Load Documents
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      
+                      {uploadedDocuments.length === 0 ? (
+                        <div className="text-center py-2 text-xs text-gray-500">
+                          No documents found
+                        </div>
+                      ) : (
+                        uploadedDocuments.map((doc) => (
+                          <label
+                            key={doc.id}
+                            className={cn(
+                              "flex items-center gap-1.5 p-1.5 rounded cursor-pointer hover:opacity-80",
+                              theme === 'light' 
+                                ? "hover:bg-[#6A5ACD]/10" 
+                                : "hover:bg-white/10"
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedDocuments.some(d => d.id === doc.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedDocuments(prev => [...prev, doc])
+                                } else {
+                                  setSelectedDocuments(prev => prev.filter(d => d.id !== doc.id))
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <FileText className="h-3 w-3" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium truncate" title={doc.originalName}>
+                                {doc.originalName.length > 12 ? doc.originalName.substring(0, 12) + '...' : doc.originalName}
+                              </div>
+                              <div className="text-xs opacity-70">
+                                {new Date(doc.uploadedAt).toLocaleDateString()}
+                              </div>
                             </div>
-                            <div className="text-xs opacity-70">
-                              {doc.success ? `${doc.extractedText.length} chars` : 'Failed'}
-                            </div>
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
@@ -1939,7 +2000,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 aria-label="Message Assistant"
                 disabled={isLoading}
                 className={cn(
-                  "w-full bg-transparent resize-none focus:outline-none text-[12px] leading-4 border-0 focus:ring-0 focus:border-0",
+                  "w-full bg-transparent resize-none focus:outline-none text-[12px] leading-4 border-0 focus:ring-0 focus:border-0 min-w-0",
                   theme === 'light' 
                     ? "text-black placeholder-black/60 selection:bg-[#6A5ACD]/20 selection:text-black" 
                     : "text-white placeholder-white/55 selection:bg-white/10 selection:text-white"
@@ -1972,37 +2033,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                   {/* Document Upload Button */}
                   <button
                     aria-label="Upload document"
-                    onClick={() => {
-                      const input = document.createElement('input')
-                      input.type = 'file'
-                      input.multiple = true
-                      input.accept = '.pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg'
-                      input.onchange = async (e) => {
-                        const files = (e.target as HTMLInputElement).files
-                        if (files && files.length > 0) {
-                          const uploadedFiles: UploadedFile[] = []
-                          for (let i = 0; i < files.length; i++) {
-                            try {
-                              const formData = new FormData()
-                              formData.append('file', files[i])
-                              const response = await fetch('/api/upload-documents', {
-                                method: 'POST',
-                                body: formData,
-                              })
-                              if (response.ok) {
-                                const result = await response.json()
-                                uploadedFiles.push(result)
-                              }
-                            } catch (error) {
-                              console.error('Upload failed:', files[i].name, error)
-                            }
-                          }
-                          setUploadedDocuments(prev => [...prev, ...uploadedFiles])
-                          setSelectedDocuments(prev => [...prev, ...uploadedFiles])
-                        }
-                      }
-                      input.click()
-                    }}
+                    onClick={() => setShowUploadModal(true)}
                     disabled={isLoading}
                     className={cn(
                       "p-1.5 rounded-md transition-colors focus-visible:ring-2",
@@ -2052,6 +2083,52 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           </div>
         </div>
       </div>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black/50" 
+            onClick={() => setShowUploadModal(false)}
+          />
+          <div className={cn(
+            "relative w-full max-w-2xl mx-2 sm:mx-4 rounded-lg border shadow-lg",
+            theme === 'light' 
+              ? "bg-white border-gray-200" 
+              : "bg-gray-900 border-gray-700"
+          )}>
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={cn(
+                  "text-lg font-semibold",
+                  theme === 'light' ? "text-gray-900" : "text-white"
+                )}>
+                  Document Management
+                </h3>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className={cn(
+                    "p-1 rounded hover:opacity-70",
+                    theme === 'light' 
+                      ? "hover:bg-gray-100 text-gray-500" 
+                      : "hover:bg-gray-800 text-gray-400"
+                  )}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              
+              <DocumentUpload
+                onDocumentSelect={(documents) => {
+                  setSelectedDocuments(documents)
+                }}
+                selectedDocuments={selectedDocuments}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

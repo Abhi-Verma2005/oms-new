@@ -108,33 +108,33 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
           {children}
         </div>
       ) : (
-        <div className="h-screen bg-gray-50 dark:bg-[#1f2230] flex resizable-container">
+        <div className="h-screen bg-gray-50 dark:bg-[#1f2230] flex resizable-container w-full max-w-full overflow-hidden">
           {/* Mobile: Stack vertically, Desktop: Side by side */}
-          <div className="block lg:hidden flex-1">
+          <div className="block lg:hidden flex-1 min-w-0">
             {/* Mobile: AI Sidebar takes full width */}
             <div className="h-full bg-gray-50 dark:bg-[#1f2230] w-full overflow-hidden">
               <AIChatbotSidebar onClose={handleSidebarToggle} />
             </div>
           </div>
-          <div className="hidden lg:flex flex-1">
+          <div className="hidden lg:flex flex-1 min-w-0">
             {/* Main Content - Independent container */}
             <div 
-              className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230] flex-1"
-              style={{ width: `${mainWidth}%` }}
+              className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230] flex-1 min-w-0"
+              style={{ width: `${mainWidth}%`, maxWidth: `${mainWidth}%` }}
             >
               {children}
             </div>
             
             {/* Resize Handle */}
             <div 
-              className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors cursor-col-resize"
+              className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors cursor-col-resize flex-shrink-0"
               onMouseDown={handleMouseDown}
             />
             
             {/* AI Sidebar - Independent container */}
             <div 
-              className="h-full bg-gray-50 dark:bg-[#1f2230] overflow-hidden flex-shrink-0"
-              style={{ width: `${sidebarWidth}%` }}
+              className="h-full bg-gray-50 dark:bg-[#1f2230] overflow-hidden flex-shrink-0 min-w-0"
+              style={{ width: `${sidebarWidth}%`, maxWidth: `${sidebarWidth}%` }}
             >
               <AIChatbotSidebar onClose={handleSidebarToggle} />
             </div>

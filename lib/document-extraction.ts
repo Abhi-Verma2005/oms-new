@@ -34,8 +34,12 @@ export async function extractDocumentContent(
       return await extractImageContent(buffer)
     }
     
-    if (mimeType.startsWith('text/')) {
+    if (mimeType.startsWith('text/') || extension === 'md' || extension === 'txt') {
       return extractTextContent(buffer)
+    }
+    
+    if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || ['xlsx', 'xls'].includes(extension!)) {
+      return await extractExcelContent(buffer)
     }
     
     return {
@@ -364,5 +368,60 @@ function extractTextContent(buffer: Buffer): ExtractionResult {
     text: text.trim(),
     success: true,
     method: 'utf8'
+  }
+}
+
+/**
+ * Excel File Extraction
+ */
+async function extractExcelContent(buffer: Buffer): Promise<ExtractionResult> {
+  try {
+    console.log('📊 Processing Excel file...')
+    const XLSX = await import('xlsx')
+    
+    // Read the Excel file
+    const workbook = XLSX.read(buffer, { type: 'buffer' })
+    
+    let allText = ''
+    const sheetNames = workbook.SheetNames
+    
+    console.log('📊 Excel sheets found:', sheetNames.length)
+    
+    // Extract text from all sheets
+    for (const sheetName of sheetNames) {
+      const worksheet = workbook.Sheets[sheetName]
+      const sheetData = XLSX.utils.sheet_to_txt(worksheet)
+      
+      if (sheetData && sheetData.trim()) {
+        allText += `\n--- Sheet: ${sheetName} ---\n`
+        allText += sheetData.trim()
+        allText += '\n'
+      }
+    }
+    
+    if (allText.trim()) {
+      console.log('✅ Excel extraction successful:', allText.length, 'chars')
+      return {
+        text: allText.trim(),
+        success: true,
+        method: 'xlsx',
+        metadata: {
+          pageCount: sheetNames.length
+        }
+      }
+    } else {
+      return {
+        text: 'No readable content found in Excel file.',
+        success: false,
+        method: 'xlsx-empty'
+      }
+    }
+  } catch (error) {
+    console.log('⚠️ Excel extraction failed:', error instanceof Error ? error.message : 'Unknown error')
+    return {
+      text: 'Unable to extract content from Excel file. The file may be corrupted or in an unsupported format.',
+      success: false,
+      method: 'xlsx-failed'
+    }
   }
 }
