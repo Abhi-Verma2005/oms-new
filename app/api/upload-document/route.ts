@@ -17,24 +17,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Check file type
-    const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/plain',
-      'text/markdown',
-      'text/csv'
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ 
-        error: `File type ${file.type} not supported. Allowed types: PDF, Word, Excel, Text files` 
-      }, { status: 400 });
-    }
-
     // Generate unique filename with userid_filename format
     const fileExtension = file.name.split('.').pop() || '';
     const uniqueId = randomUUID();
@@ -65,8 +47,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         retryCount++;
         if (retryCount > maxRetries) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          throw new Error(`Upload failed after ${maxRetries + 1} attempts: ${errorMessage}`);
+          throw new Error(`Upload failed after ${maxRetries + 1} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
         // Wait before retry (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));

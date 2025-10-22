@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
-import * as pdf from 'pdf-parse';
-import * as mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
+import { extractDocumentContent } from '@/lib/document-extraction'
+import https from 'node:https'
+import fetch, { Response } from 'node-fetch'
 
 interface CachedDocument {
   id: string;
@@ -45,87 +45,46 @@ export async function getDocumentContent(documentId: string, fileUrl: string): P
     // Validate URL is properly formatted
     new URL(validUrl);
 
-    // Fetch content from URL
-    console.log('Fetching document from URL:', validUrl);
-    const response = await fetch(validUrl);
-    console.log('Document fetch response:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      contentType: response.headers.get('content-type')
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch document: ${response.statusText}`);
+    // Helper to fetch with normal TLS first, then retry with relaxed TLS if needed
+    async function fetchDocument(validUrl: string): Promise<{ buffer: Buffer, contentType: string }> {
+      try {
+        const res = await fetch(validUrl)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const ct = res.headers.get('content-type') || ''
+        const ab = await res.arrayBuffer()
+        return { buffer: Buffer.from(ab), contentType: ct }
+      } catch (err: any) {
+        if (/self-signed certificate/i.test(String(err?.message))) {
+          console.warn('⚠️ TLS self-signed cert detected, retrying insecurely...')
+          const agent = new https.Agent({ rejectUnauthorized: false })
+          const res = await fetch(validUrl, { agent } as any)
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const ct = res.headers.get('content-type') || ''
+          const ab = await res.arrayBuffer()
+          return { buffer: Buffer.from(ab), contentType: ct }
+        }
+        throw err
+      }
     }
 
-    const contentType = response.headers.get('content-type') || '';
-    console.log('Document content type:', contentType);
-    
-    let content: string;
-    
-    if (contentType.includes('application/pdf')) {
-      console.log('Document is PDF, extracting text...');
-      try {
-        const buffer = await response.arrayBuffer();
-        const pdfData = await pdf.default(Buffer.from(buffer));
-        content = pdfData.text;
-        console.log('PDF text extracted, length:', content.length);
-      } catch (error) {
-        console.error('PDF extraction failed:', error);
-        content = `[PDF Document: ${documentId}] - Text extraction failed.`;
-      }
-    } else if (contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') || 
-               contentType.includes('application/msword')) {
-      console.log('Document is Word, extracting text...');
-      try {
-        const buffer = await response.arrayBuffer();
-        const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
-        content = result.value;
-        console.log('Word text extracted, length:', content.length);
-      } catch (error) {
-        console.error('Word extraction failed:', error);
-        content = `[Word Document: ${documentId}] - Text extraction failed.`;
-      }
-    } else if (contentType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') ||
-               contentType.includes('application/vnd.ms-excel')) {
-      console.log('Document is Excel, extracting text...');
-      try {
-        const buffer = await response.arrayBuffer();
-        const workbook = XLSX.read(Buffer.from(buffer), { type: 'buffer' });
-        const sheets = workbook.SheetNames;
-        const extractedData: string[] = [];
-        
-        sheets.forEach(sheetName => {
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          extractedData.push(`Sheet: ${sheetName}`);
-          jsonData.forEach((row: any) => {
-            if (Array.isArray(row)) {
-              extractedData.push(row.join('\t'));
-            }
-          });
-        });
-        
-        content = extractedData.join('\n');
-        console.log('Excel text extracted, length:', content.length);
-      } catch (error) {
-        console.error('Excel extraction failed:', error);
-        content = `[Excel Document: ${documentId}] - Text extraction failed.`;
-      }
-    } else if (contentType.includes('text/')) {
-      content = await response.text();
-      console.log('Text content extracted, length:', content.length);
-    } else {
-      // Try to extract as text anyway
-      try {
-        content = await response.text();
-        console.log('Unknown content type, extracted as text, length:', content.length);
-      } catch (error) {
-        console.error('Text extraction failed:', error);
-        content = `[Document: ${documentId}] - Content type ${contentType} not supported.`;
-      }
-    }
+    console.log('Fetching document from URL:', validUrl);
+    const { buffer: fileBuffer, contentType } = await fetchDocument(validUrl)
+    console.log('Fetched file buffer size:', fileBuffer.byteLength)
+    console.log('Document content type:', contentType)
+
+    // Fetch metadata from DB to get originalName and mimeType
+    const dbDoc = await prisma.userDocument.findUnique({
+      where: { id: documentId },
+      select: { originalName: true, mimeType: true }
+    });
+    const filename = dbDoc?.originalName || validUrl.split('/').pop() || 'document';
+    const mimeType = dbDoc?.mimeType || contentType;
+    console.log('Passing to extractor:', { filename, mimeType });
+
+    const extraction = await extractDocumentContent(fileBuffer, filename, mimeType);
+    console.log('Extraction result:', { success: extraction.success, method: extraction.method, length: extraction.text.length });
+
+    const content = extraction.text || `[Document: ${filename}] - No extractable text.`;
     
     // Update access count in database
     await prisma.userDocument.update({
