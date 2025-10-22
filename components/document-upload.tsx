@@ -25,12 +25,14 @@ interface DocumentUploadProps {
   onDocumentSelect?: (documents: Document[]) => void;
   selectedDocuments?: Document[];
   className?: string;
+  onDocumentsUpdated?: () => void;
 }
 
 export function DocumentUpload({ 
   onDocumentSelect, 
   selectedDocuments = [], 
-  className 
+  className,
+  onDocumentsUpdated
 }: DocumentUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -61,6 +63,8 @@ export function DocumentUpload({
       if (result.success) {
         setDocuments(prev => [result.document, ...prev]);
         toast.success('Document uploaded successfully');
+        // Notify parent component that documents have been updated
+        onDocumentsUpdated?.();
       } else {
         throw new Error(result.error || 'Upload failed');
       }

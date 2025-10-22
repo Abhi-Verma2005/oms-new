@@ -63,16 +63,21 @@ model User {
   onboardingProfile           OnboardingProfile?
   orderFilters                OrderFilter[]
   orders                      Order[]
+  filterPrefs                 ProjectFilterPreference[]
   projects                    Project[]
+  ragPerformanceMetrics       RAGPerformanceMetrics[]
   savedViews                  SavedView[]
   searchInterests             SearchInterest[]
+  semanticCache               SemanticCache[]
   sessions                    Session[]
   activities                  UserActivity[]
   userAIInsights              UserAIInsights?
   userContext                 UserContext?
   user_context_profiles       user_context_profiles?
+  user_documents              user_documents[]
   user_interaction_embeddings user_interaction_embeddings[]
   interactions                UserInteraction[]
+  knowledgeBase               UserKnowledgeBase[]
   notificationReads           UserNotificationRead[]
   user_personality            user_personality?
   userProfile                 UserProfile?
@@ -80,10 +85,6 @@ model User {
   userTags                    UserTag[]
   user_topic_clusters         user_topic_clusters[]
   wishlists                   Wishlist[]
-  filterPrefs                 ProjectFilterPreference[]
-  knowledgeBase               UserKnowledgeBase[]
-  semanticCache               SemanticCache[]
-  ragPerformanceMetrics       RAGPerformanceMetrics[]
 
   @@map("users")
 }
@@ -620,24 +621,24 @@ model BonusGrant {
 }
 
 model Project {
-  id              String              @id @default(cuid())
-  userId          String              @map("user_id")
+  id              String                    @id @default(cuid())
+  userId          String                    @map("user_id")
   name            String
-  domain          String              @unique
+  domain          String                    @unique
   description     String?
-  defaultUrl      String?             @map("default_url")
-  defaultAnchor   String?             @map("default_anchor")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  avgTraffic      Int?                @map("avg_traffic")
-  domainRating    Int?                @map("domain_rating")
+  defaultUrl      String?                   @map("default_url")
+  defaultAnchor   String?                   @map("default_anchor")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+  avgTraffic      Int?                      @map("avg_traffic")
+  domainRating    Int?                      @map("domain_rating")
   orders          Order[]
   competitors     ProjectCompetitor[]
-  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filterPrefs     ProjectFilterPreference[]
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   searchInterests SearchInterest[]
   activities      UserActivity[]
   wishlists       Wishlist[]
-  filterPrefs     ProjectFilterPreference[]
 
   @@index([userId, createdAt])
   @@map("projects")
@@ -666,8 +667,8 @@ model ProjectFilterPreference {
   data      Json
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId, page])
   @@index([projectId, page])
@@ -944,6 +945,7 @@ model user_context_profiles {
   users                       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model user_interaction_embeddings {
   id                 String                 @id
   user_id            String
@@ -963,6 +965,7 @@ model user_interaction_embeddings {
   @@index([user_id, contentType])
   @@index([user_id, timestamp])
   @@index([embedding])
+  @@index([embedding], map: "idx_user_interaction_embeddings_hnsw")
 }
 
 model chat_sessions {
@@ -1034,6 +1037,79 @@ model user_topic_clusters {
   @@unique([user_id, topic])
   @@index([user_id, frequency])
   @@index([user_id, last_mentioned])
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model UserKnowledgeBase {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String                 @map("user_id")
+  content         String
+  contentType     String                 @default("conversation") @map("content_type")
+  embedding       Unsupported("vector")?
+  metadata        Json                   @default("{}")
+  topics          String[]               @default([])
+  sentiment       String?
+  intent          String?
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+  lastAccessed    DateTime               @default(now()) @map("last_accessed")
+  accessCount     Int                    @default(0) @map("access_count")
+  importanceScore Float                  @default(1.0) @map("importance_score")
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_knowledge_base")
+}
+
+model SemanticCache {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String                @map("user_id")
+  queryHash      String                @map("query_hash") @db.VarChar(64)
+  queryEmbedding Unsupported("vector") @map("query_embedding")
+  cachedResponse Json                  @map("cached_response")
+  contextData    Json?                 @map("context_data")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  expiresAt      DateTime              @map("expires_at")
+  hitCount       Int                   @default(0) @map("hit_count")
+  lastHit        DateTime?             @map("last_hit")
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, queryHash])
+  @@map("semantic_cache")
+}
+
+model RAGPerformanceMetrics {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String?  @map("user_id")
+  operation     String
+  durationMs    Int      @map("duration_ms")
+  success       Boolean
+  queryLength   Int?     @map("query_length")
+  contextLength Int?     @map("context_length")
+  docsRetrieved Int?     @map("docs_retrieved")
+  docsFinal     Int?     @map("docs_final")
+  timestamp     DateTime @default(now())
+  metadata      Json     @default("{}")
+  user          User?    @relation(fields: [userId], references: [id])
+
+  @@map("rag_performance_metrics")
+}
+
+model user_documents {
+  id            String    @id
+  user_id       String
+  original_name String
+  file_name     String
+  file_url      String
+  file_size     Int?
+  mime_type     String?
+  uploaded_at   DateTime  @default(now())
+  last_accessed DateTime?
+  access_count  Int       @default(0)
+  is_active     Boolean   @default(true)
+  users         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([file_name])
+  @@index([user_id, uploaded_at])
 }
 
 enum ActivityCategory {
@@ -1110,60 +1186,3 @@ enum InteractionType {
   OTHER
 }
 
-// RAG System Models
-model UserKnowledgeBase {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId          String   @map("user_id")
-  content         String
-  contentType     String   @default("conversation") @map("content_type")
-  embedding       Unsupported("vector(1536)")?
-  metadata        Json     @default("{}")
-  topics          String[] @default([])
-  sentiment       String?
-  intent          String?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-  lastAccessed    DateTime @default(now()) @map("last_accessed")
-  accessCount     Int      @default(0) @map("access_count")
-  importanceScore Float    @default(1.0) @map("importance_score")
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("user_knowledge_base")
-}
-
-model SemanticCache {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId          String   @map("user_id")
-  queryHash       String   @map("query_hash") @db.VarChar(64)
-  queryEmbedding  Unsupported("vector(1536)") @map("query_embedding")
-  cachedResponse  Json     @map("cached_response")
-  contextData     Json?    @map("context_data")
-  createdAt       DateTime @default(now()) @map("created_at")
-  expiresAt       DateTime @map("expires_at")
-  hitCount        Int      @default(0) @map("hit_count")
-  lastHit         DateTime? @map("last_hit")
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, queryHash])
-  @@map("semantic_cache")
-}
-
-model RAGPerformanceMetrics {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId          String?  @map("user_id")
-  operation       String
-  durationMs      Int      @map("duration_ms")
-  success         Boolean
-  queryLength     Int?     @map("query_length")
-  contextLength   Int?     @map("context_length")
-  docsRetrieved   Int?     @map("docs_retrieved")
-  docsFinal       Int?     @map("docs_final")
-  timestamp       DateTime @default(now())
-  metadata        Json     @default("{}")
-  
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  @@map("rag_performance_metrics")
-}
