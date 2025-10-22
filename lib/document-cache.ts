@@ -73,12 +73,12 @@ export async function getDocumentContent(documentId: string, fileUrl: string): P
     console.log('Document content type:', contentType)
 
     // Fetch metadata from DB to get originalName and mimeType
-    const dbDoc = await prisma.userDocument.findUnique({
+    const dbDoc = await prisma.user_documents.findUnique({
       where: { id: documentId },
-      select: { originalName: true, mimeType: true }
+      select: { original_name: true, mime_type: true }
     });
-    const filename = dbDoc?.originalName || validUrl.split('/').pop() || 'document';
-    const mimeType = dbDoc?.mimeType || contentType;
+    const filename = dbDoc?.original_name || validUrl.split('/').pop() || 'document';
+    const mimeType = dbDoc?.mime_type || contentType;
     console.log('Passing to extractor:', { filename, mimeType });
 
     const extraction = await extractDocumentContent(fileBuffer, filename, mimeType);
@@ -87,11 +87,11 @@ export async function getDocumentContent(documentId: string, fileUrl: string): P
     const content = extraction.text || `[Document: ${filename}] - No extractable text.`;
     
     // Update access count in database
-    await prisma.userDocument.update({
+    await prisma.user_documents.update({
       where: { id: documentId },
       data: {
-        accessCount: { increment: 1 },
-        lastAccessed: new Date(),
+        access_count: { increment: 1 },
+        last_accessed: new Date(),
       },
     });
 
