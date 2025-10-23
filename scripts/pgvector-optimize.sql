@@ -50,3 +50,4 @@ ANALYZE semantic_cache;
 -- VACUUM (VERBOSE, ANALYZE) user_knowledge_base;
 -- VACUUM (VERBOSE, ANALYZE) semantic_cache;
 
+
