@@ -58,6 +58,25 @@ input[type="range"].dual-range::-ms-thumb {
   scrollbar-width: none; /* Firefox */
 }
 
+/* Performance optimizations for chat messages */
+.chat-message {
+  contain: style paint;
+  will-change: auto;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* Optimize scrolling performance */
+.chat-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent layout shifts during streaming */
+.streaming-message {
+  min-height: 1.5rem;
+  contain: style paint;
+}
+
 /* Globally hide scrollbars while keeping scroll functional */
 .global-no-scrollbar, .global-no-scrollbar * {
   -ms-overflow-style: none;
