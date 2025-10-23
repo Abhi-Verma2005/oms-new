@@ -101,3 +101,4 @@ async function debugIsolation() {
 }
 
 debugIsolation();
+

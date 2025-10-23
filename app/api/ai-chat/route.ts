@@ -520,7 +520,7 @@ async function performAdvancedRetrieval(userId: string, mainEmbedding: number[],
       const ids = searchResults.map((r: any) => r.id)
       await prisma.userKnowledgeBase.updateMany({
         where: { id: { in: ids } },
-        data: { access_count: { increment: 1 } }
+        data: { accessCount: { increment: 1 } }
       })
     }
     
@@ -606,7 +606,7 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
-    const existingUser = await prisma.user.findUnique({ where: { id: userId } })
+      const existingUser = await prisma.user.findUnique({ where: { id: userId } })
     if (!existingUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 })
     }
@@ -899,17 +899,45 @@ PREMIUM_WEBSITES := DA >= 70 AND DR >= 70 AND SPAM_SCORE <= 1 AND TRAFFIC >= 100
 
 **REMEMBER: When in doubt, DO NOT apply filters. Ask for clarification instead.**
 
-## TOOL_CALLING_PROTOCOL
-WHEN user requests filter application:
-1. PARSE user intent using intent_classification
-2. MAP quality terms to precise filter parameters
-3. GENERATE single [FILTER:...] command with all parameters
-4. CONFIRM application with brief acknowledgment
+## SMART FILTER APPLICATION RULES
+**ALWAYS APPLY FILTERS WHEN:**
+- User says "apply filter" + any parameter (country, spam score, etc.)
+- User mentions specific criteria (spam 9, country india, etc.)
+- User requests filtering with clear parameters
+- User says "make spam X" or "set country Y"
 
-## INTENT_CLASSIFICATION
-- EXPLORATORY: User seeking information → PROVIDE guidance, DO NOT apply filters
-- ACTION_REQUESTED: User explicitly requests filtering → APPLY filters immediately
-- AMBIGUOUS: Unclear intent → ASK single clarifying question
+**NEVER ASK FOR CLARIFICATION IF:**
+- User provides clear filter criteria
+- User explicitly requests filter application
+- Parameters are unambiguous (e.g., "spam 9", "country india")
+
+**ONLY ASK FOR CLARIFICATION IF:**
+- No specific parameters are mentioned
+- Request is genuinely ambiguous
+
+## FILTER APPLICATION EXAMPLES
+**User: "apply filter of country india"**
+→ Response: [FILTER: country=india] ✅ Filter applied for India
+
+**User: "make spam 9"**  
+→ Response: [FILTER: spam_score=9] ✅ Filter applied with spam score 9
+
+**User: "apply filter of spam score 10"**
+→ Response: [FILTER: spam_score=10] ✅ Filter applied with spam score 10
+
+**User: "show me good websites"**
+→ Response: [FILTER: da>=50, dr>=50, spam_score<=2, traffic>=10000] ✅ Filter applied for good websites
+
+## DIRECT ACTION PROTOCOL
+1. IDENTIFY filter parameters from user request
+2. MAP to appropriate filter values  
+3. GENERATE [FILTER:...] command immediately
+4. CONFIRM with brief acknowledgment
+
+## RESPONSE FORMAT
+- ALWAYS include [FILTER:...] command when applying filters
+- Keep responses concise and action-oriented
+- Avoid asking for clarification when parameters are clear
 
 ## META_PROMPTING_CONDUCTOR
 Before responding to user requests, analyze and decompose the task:
@@ -1156,7 +1184,7 @@ This is a publishers marketplace where users can:
           chars: ctxStr.length,
           approxTokens: estimateTokensForMessages(chatMessages)
         })
-      } catch {}
+            } catch {}
       console.log('🤖 FINAL AI CONTEXT:', JSON.stringify(chatMessages, null, 2))
       
       // Enhanced Self-Consistency Prompting Implementation
@@ -1422,7 +1450,7 @@ This is a publishers marketplace where users can:
           generateEmbedding(message).then(embedding => {
             prisma.$executeRaw`
               INSERT INTO user_knowledge_base (
-                user_id, content, content_type, embedding, metadata, topics, importance_score
+                user_id, content, content_type, embedding, metadata, topics, importance_score, created_at, updated_at, last_accessed, access_count
               ) VALUES (
                 ${userId},
                     ${message},
@@ -1434,8 +1462,12 @@ This is a publishers marketplace where users can:
                   hasRelevantContext: hasRelevantContext,
                   contextCount: searchResults.length
                     })}::jsonb,
-                ${[]},
-                ${1.0}
+                ${[]}::text[],
+                ${1.0},
+                NOW(),
+                NOW(),
+                NOW(),
+                ${0}
               )
             `.catch(error => console.warn('Background storage failed:', error))
           }).catch(error => console.warn('Background embedding failed:', error))
@@ -1503,8 +1535,8 @@ async function handleNonStreamingRequest(
 
     // Check for semantically similar cached responses
     const similarCachedResponse = await prisma.$queryRaw`
-        SELECT 
-          id,
+      SELECT 
+        id,
         cached_response,
         COALESCE(1 - (query_embedding <=> ${`[${queryEmbedding.join(',')}]`}::vector(1536)), 0.0) AS similarity
       FROM semantic_cache
@@ -1573,7 +1605,15 @@ async function handleNonStreamingRequest(
     const ragContext = hasRelevantContext
       ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${searchResults.map(r => `- ${r.content}`).join('\n')}`
       : ''
-    
+
+    // Extract sources for caching
+    const sources = searchResults.map((r: any) => ({
+      id: r.id,
+      content: r.content,
+      similarity: r.similarity || 0,
+      confidence: r.confidence_score || 0
+    }))
+
     // Add document context if uploaded documents are provided
     let documentContext = ''
     if (uploadedDocuments && uploadedDocuments.length > 0) {
@@ -1622,17 +1662,45 @@ DECENT_WEBSITES := DA >= 40 AND DR >= 40 AND SPAM_SCORE <= 3 AND TRAFFIC >= 5000
 HIGH_QUALITY_WEBSITES := DA >= 60 AND DR >= 60 AND SPAM_SCORE <= 1 AND TRAFFIC >= 50000
 PREMIUM_WEBSITES := DA >= 70 AND DR >= 70 AND SPAM_SCORE <= 1 AND TRAFFIC >= 100000
 
-## TOOL_CALLING_PROTOCOL
-WHEN user requests filter application:
-1. PARSE user intent using intent_classification
-2. MAP quality terms to precise filter parameters
-3. GENERATE single [FILTER:...] command with all parameters
-4. CONFIRM application with brief acknowledgment
+## SMART FILTER APPLICATION RULES
+**ALWAYS APPLY FILTERS WHEN:**
+- User says "apply filter" + any parameter (country, spam score, etc.)
+- User mentions specific criteria (spam 9, country india, etc.)
+- User requests filtering with clear parameters
+- User says "make spam X" or "set country Y"
 
-## INTENT_CLASSIFICATION
-- EXPLORATORY: User seeking information → PROVIDE guidance, DO NOT apply filters
-- ACTION_REQUESTED: User explicitly requests filtering → APPLY filters immediately
-- AMBIGUOUS: Unclear intent → ASK single clarifying question
+**NEVER ASK FOR CLARIFICATION IF:**
+- User provides clear filter criteria
+- User explicitly requests filter application
+- Parameters are unambiguous (e.g., "spam 9", "country india")
+
+**ONLY ASK FOR CLARIFICATION IF:**
+- No specific parameters are mentioned
+- Request is genuinely ambiguous
+
+## FILTER APPLICATION EXAMPLES
+**User: "apply filter of country india"**
+→ Response: [FILTER: country=india] ✅ Filter applied for India
+
+**User: "make spam 9"**  
+→ Response: [FILTER: spam_score=9] ✅ Filter applied with spam score 9
+
+**User: "apply filter of spam score 10"**
+→ Response: [FILTER: spam_score=10] ✅ Filter applied with spam score 10
+
+**User: "show me good websites"**
+→ Response: [FILTER: da>=50, dr>=50, spam_score<=2, traffic>=10000] ✅ Filter applied for good websites
+
+## DIRECT ACTION PROTOCOL
+1. IDENTIFY filter parameters from user request
+2. MAP to appropriate filter values  
+3. GENERATE [FILTER:...] command immediately
+4. CONFIRM with brief acknowledgment
+
+## RESPONSE FORMAT
+- ALWAYS include [FILTER:...] command when applying filters
+- Keep responses concise and action-oriented
+- Avoid asking for clarification when parameters are clear
 
 ## META_PROMPTING_CONDUCTOR
 Before responding to user requests, analyze and decompose the task:
@@ -1894,7 +1962,7 @@ Be helpful, accurate, and efficient. Focus on delivering value without BS.`
           body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: chatMessages,
-        temperature: 0.7,
+      temperature: 0.7,
         max_tokens: 1000,
         stream: false
       })
@@ -2112,13 +2180,22 @@ Be helpful, accurate, and efficient. Focus on delivering value without BS.`
         await prisma.semanticCache.create({
           data: {
             userId,
-            query: message,
-            queryEmbedding,
-            cachedResponse: responseText,
+            queryHash: Buffer.from(message).toString('base64').slice(0, 64),
+            queryEmbedding: `[${queryEmbedding.join(',')}]`,
+            cachedResponse: {
+              message: responseText,
+              sources: sources || [],
+              confidence: hasRelevantContext ? 0.85 : 0.3,
+              contextCount: searchResults.length
+            },
+            contextData: {
+              ragContext,
+              userContext: userContextStr,
+              hasRelevantContext,
+              searchResultsCount: searchResults.length
+            },
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-            hitCount: 0,
-            createdAt: new Date(),
-            lastHitAt: new Date()
+            hitCount: 0
           }
         })
         console.log('💾 Response cached successfully')
@@ -2130,15 +2207,20 @@ Be helpful, accurate, and efficient. Focus on delivering value without BS.`
     // Log the conversation
     if (canPersist) {
       try {
-        await prisma.conversationLog.create({
+        await prisma.userInteraction.create({
           data: {
             userId,
-            message,
+            interactionType: 'CHAT_MESSAGE',
+            content: message,
             response: responseText,
-            context: ragContext,
-            userContext: userContextStr,
-            currentUrl,
-            cartState: cartState ? JSON.stringify(cartState) : null,
+            context: {
+              ragContext,
+              userContext: userContextStr,
+              currentUrl,
+              cartState: cartState || null,
+              hasRelevantContext,
+              contextCount: searchResults.length
+            },
             timestamp: new Date()
           }
         })
