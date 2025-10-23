@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 
 // TypeScript declarations for speech recognition
 declare global {
@@ -46,7 +46,10 @@ import { useAIChatbot } from './ai-chatbot-provider'
 import { useCart } from '@/contexts/cart-context'
 import { useChat } from '@/contexts/chat-context'
 import { useUserContextForAI, useUserContextStore } from '@/stores/user-context-store'
-import { MarkdownRenderer } from './markdown-renderer'
+import { OptimizedMarkdownRenderer } from './optimized-markdown-renderer'
+import { StreamingMarkdownRenderer } from './streaming-markdown-renderer'
+import { ProgressiveMarkdownRenderer } from './progressive-markdown-renderer'
+import { ChatGPTStyleStreamingRenderer } from './chatgpt-style-streaming-renderer'
 import { useAIMessageListener } from '@/lib/ai-chat-utils'
 import { DocumentUpload } from './document-upload'
 import { useResizableLayout } from './resizable-layout'
@@ -100,6 +103,47 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim()
   }
+
+  // Helper function to fix incomplete markdown syntax during streaming
+  const fixIncompleteMarkdown = (text: string, isStreaming: boolean = false): string => {
+    if (!isStreaming || !text) return text
+
+    let fixed = text
+
+    // Fix incomplete bold syntax (**text -> **text**)
+    // Only fix if we're at the end of text and have unmatched **
+    const boldMatches = (fixed.match(/\*\*/g) || []).length
+    if (boldMatches % 2 === 1 && fixed.endsWith('**')) {
+      // Don't add closing ** if it's already there
+    } else if (boldMatches % 2 === 1 && !fixed.endsWith('**')) {
+      // Add closing ** for incomplete bold
+      fixed += '**'
+    }
+
+    // Fix incomplete italic syntax (*text -> *text*)
+    const italicMatches = (fixed.match(/(?<!\*)\*(?!\*)/g) || []).length
+    if (italicMatches % 2 === 1 && !fixed.endsWith('*')) {
+      fixed += '*'
+    }
+
+    // Fix incomplete code blocks (``` -> ```\n```)
+    const codeBlockMatches = (fixed.match(/```/g) || []).length
+    if (codeBlockMatches % 2 === 1 && fixed.endsWith('```')) {
+      fixed += '\n```'
+    }
+
+    // Fix incomplete headings that might be cut off
+    // If we have a # at the end without proper content, don't render as heading
+    if (fixed.match(/#\s*$/)) {
+      fixed = fixed.replace(/#\s*$/, '')
+    }
+
+    // Ensure proper line breaks for headings
+    fixed = fixed.replace(/(#+\s+[^\n]+)(?=\S)/g, '$1\n')
+
+    return fixed
+  }
+
   const pathname = usePathname()
   const { } = useAIChatbot()
   const { toggleSidebar } = useResizableLayout()
@@ -153,6 +197,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const inflightAbortRef = useRef<AbortController | null>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const userScrolledUpRef = useRef(false)
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false)
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
 
   // Load documents from API
   const loadDocuments = async () => {
@@ -299,9 +347,66 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // Check if user is at the bottom of the chat
+  const isUserAtBottom = useCallback(() => {
+    if (!messagesContainerRef.current) return true
+    
+    const container = messagesContainerRef.current
+    const threshold = 100 // pixels from bottom
+    const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - threshold
+    
+    return isAtBottom
+  }, [])
+
+  // Smart scroll that only scrolls if user is at bottom
+  const smartScrollToBottom = useCallback(() => {
+    if (isUserAtBottom()) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+    }
+  }, [isUserAtBottom])
+
+  // Throttled scroll to prevent excessive scrolling during streaming
+  const throttledScrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'auto' })
+    }
+  }, [])
+
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    // Only smooth scroll for new messages, not during streaming updates
+    if (!isLoading) {
+      scrollToBottom()
+      userScrolledUpRef.current = false
+      setShowScrollToBottom(false)
+    }
+  }, [messages.length, isLoading])
+
+  // Reset scroll state when new message is added (user sends a message)
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === 'user') {
+        userScrolledUpRef.current = false
+      }
+    }
+  }, [messages.length])
+
+  // Handle scroll events to detect user intent
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return
+    
+    const container = messagesContainerRef.current
+    const isAtBottom = isUserAtBottom()
+    
+    // If user scrolled up significantly, mark that they're reading previous messages
+    if (!isAtBottom) {
+      userScrolledUpRef.current = true
+      setShowScrollToBottom(true)
+    } else {
+      userScrolledUpRef.current = false
+      setShowScrollToBottom(false)
+    }
+  }, [isUserAtBottom])
 
   useEffect(() => {
     if (inputRef.current) {
@@ -366,6 +471,438 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
 
 
+  // Enhanced Meta-Prompting: Task Decomposition and Reasoning
+  const performMetaPromptingAnalysis = (userMessage: string, response: string) => {
+    console.log('🧠 Meta-Prompting Analysis:', {
+      userMessage: userMessage.substring(0, 100) + '...',
+      response: response.substring(0, 100) + '...',
+      timestamp: new Date().toISOString()
+    })
+
+    // Task Analysis Phase
+    const taskAnalysis = {
+      primaryIntent: identifyPrimaryIntent(userMessage),
+      parameters: extractParameters(userMessage),
+      constraints: identifyConstraints(userMessage),
+      requiredTools: determineRequiredTools(userMessage)
+    }
+
+    // Reasoning Chain Phase
+    const reasoningChain = {
+      explicitActions: parseExplicitActions(userMessage),
+      implicitNeeds: inferImplicitNeeds(userMessage),
+      qualityMapping: mapQualityTerms(userMessage),
+      feasibilityCheck: validateFeasibility(taskAnalysis.parameters)
+    }
+
+    // Quality Assurance Phase
+    const qualityAssurance = {
+      parameterConsistency: checkParameterConsistency(reasoningChain.qualityMapping),
+      toolCallAccuracy: validateToolCallFormat(response),
+      userContextAlignment: verifyUserContextAlignment(taskAnalysis.primaryIntent),
+      responseCompleteness: assessResponseCompleteness(response, userMessage)
+    }
+
+    console.log('🧠 Meta-Prompting Results:', {
+      taskAnalysis,
+      reasoningChain,
+      qualityAssurance
+    })
+
+    return {
+      taskAnalysis,
+      reasoningChain,
+      qualityAssurance,
+      confidence: calculateConfidence(qualityAssurance)
+    }
+  }
+
+  // Helper functions for meta-prompting analysis
+  const identifyPrimaryIntent = (message: string): string => {
+    const lower = message.toLowerCase()
+    if (/(?:filter|apply|show|find|search)/i.test(lower)) return 'filter'
+    if (/(?:cart|add|remove|checkout)/i.test(lower)) return 'cart'
+    if (/(?:navigate|go|visit|open)/i.test(lower)) return 'navigation'
+    if (/(?:help|how|what|explain|tell)/i.test(lower)) return 'information'
+    return 'ambiguous'
+  }
+
+  const extractParameters = (message: string): any => {
+    const params: any = {}
+    const lower = message.toLowerCase()
+    
+    // Extract quality terms
+    if (/(?:good|decent|quality|premium|best|top)/i.test(lower)) {
+      params.qualityTerm = lower.match(/(?:good|decent|quality|premium|best|top)/i)?.[0]
+    }
+    
+    // Extract numerical parameters
+    const numbers = message.match(/\d+/g) || []
+    if (numbers.length > 0) {
+      params.numbers = numbers.map(Number)
+    }
+    
+    // Extract niche/category
+    const nichePatterns = [
+      { pattern: /(?:tech|technology)/i, value: 'technology' },
+      { pattern: /(?:health|healthcare)/i, value: 'health' },
+      { pattern: /(?:finance|financial)/i, value: 'finance' },
+      { pattern: /(?:business|corporate)/i, value: 'business' }
+    ]
+    
+    for (const { pattern, value } of nichePatterns) {
+      if (pattern.test(message)) {
+        params.niche = value
+        break
+      }
+    }
+    
+    return params
+  }
+
+  const identifyConstraints = (message: string): any => {
+    const constraints: any = {}
+    const lower = message.toLowerCase()
+    
+    if (/(?:budget|price|cost|under|below)/i.test(lower)) {
+      constraints.hasBudgetConstraint = true
+    }
+    
+    if (/(?:time|deadline|urgent|asap)/i.test(lower)) {
+      constraints.hasTimeConstraint = true
+    }
+    
+    return constraints
+  }
+
+  const determineRequiredTools = (message: string): string[] => {
+    const tools: string[] = []
+    const lower = message.toLowerCase()
+    
+    if (/(?:filter|apply|show|find)/i.test(lower)) tools.push('FILTER')
+    if (/(?:cart|add|remove)/i.test(lower)) tools.push('CART')
+    if (/(?:navigate|go|visit)/i.test(lower)) tools.push('NAVIGATE')
+    
+    return tools
+  }
+
+  const parseExplicitActions = (message: string): string[] => {
+    const actions: string[] = []
+    const lower = message.toLowerCase()
+    
+    if (/(?:filter|apply)/i.test(lower)) actions.push('apply_filters')
+    if (/(?:add to cart|add)/i.test(lower)) actions.push('add_to_cart')
+    if (/(?:checkout|buy)/i.test(lower)) actions.push('proceed_to_checkout')
+    
+    return actions
+  }
+
+  const inferImplicitNeeds = (message: string): string[] => {
+    const needs: string[] = []
+    const lower = message.toLowerCase()
+    
+    if (/(?:good|decent|quality)/i.test(lower)) needs.push('quality_assessment')
+    if (/(?:recommend|suggest)/i.test(lower)) needs.push('recommendations')
+    if (/(?:help|guide)/i.test(lower)) needs.push('guidance')
+    
+    return needs
+  }
+
+  const mapQualityTerms = (message: string): any => {
+    const mapping: any = {}
+    const lower = message.toLowerCase()
+    
+    if (/(?:good)/i.test(lower)) {
+      mapping.daMin = 50
+      mapping.drMin = 50
+      mapping.spamMax = 2
+      mapping.trafficMin = 10000
+    } else if (/(?:decent)/i.test(lower)) {
+      mapping.daMin = 40
+      mapping.drMin = 40
+      mapping.spamMax = 3
+      mapping.trafficMin = 5000
+    } else if (/(?:high.quality|premium)/i.test(lower)) {
+      mapping.daMin = 60
+      mapping.drMin = 60
+      mapping.spamMax = 1
+      mapping.trafficMin = 50000
+    } else if (/(?:best|top)/i.test(lower)) {
+      mapping.daMin = 70
+      mapping.drMin = 70
+      mapping.spamMax = 1
+      mapping.trafficMin = 100000
+    }
+    
+    return mapping
+  }
+
+  const validateFeasibility = (parameters: any): boolean => {
+    // Check if parameters are within valid ranges
+    if (parameters.numbers) {
+      for (const num of parameters.numbers) {
+        if (num < 0 || num > 1000000) return false
+      }
+    }
+    return true
+  }
+
+  const checkParameterConsistency = (qualityMapping: any): boolean => {
+    if (qualityMapping.daMin && qualityMapping.drMin) {
+      return qualityMapping.daMin <= qualityMapping.drMin + 10 // Allow some variance
+    }
+    return true
+  }
+
+  const validateToolCallFormat = (response: string): boolean => {
+    // Check for proper tool call format
+    const toolCallPattern = /\[[A-Z_]+\s*:[^\]]*\]/g
+    const toolCalls = response.match(toolCallPattern) || []
+    return toolCalls.length > 0
+  }
+
+  const verifyUserContextAlignment = (primaryIntent: string): boolean => {
+    // This would check against user context, for now return true
+    return true
+  }
+
+  const assessResponseCompleteness = (response: string, userMessage: string): boolean => {
+    // Check if response addresses the user's request
+    const userKeywords = userMessage.toLowerCase().split(' ').filter(w => w.length > 3)
+    const responseKeywords = response.toLowerCase().split(' ').filter(w => w.length > 3)
+    
+    const overlap = userKeywords.filter(keyword => 
+      responseKeywords.some(respKeyword => respKeyword.includes(keyword))
+    )
+    
+    return overlap.length > 0
+  }
+
+  const calculateConfidence = (qualityAssurance: any): number => {
+    let confidence = 0
+    if (qualityAssurance.parameterConsistency) confidence += 25
+    if (qualityAssurance.toolCallAccuracy) confidence += 25
+    if (qualityAssurance.userContextAlignment) confidence += 25
+    if (qualityAssurance.responseCompleteness) confidence += 25
+    return confidence
+  }
+
+  // Advanced action validation functions
+  const validateNavigateAction = (data: string, userText?: string): {isValid: boolean, confidence: number} => {
+    try {
+      if (!data) return { isValid: false, confidence: 0 }
+      
+      // Parse navigation path
+      const path = data.toLowerCase().trim()
+      const validPaths = ['/publishers', '/dashboard', '/cart', '/orders', '/settings']
+      
+      if (!validPaths.includes(path)) {
+        return { isValid: false, confidence: 0 }
+      }
+      
+      // Check if navigation makes sense in context
+      let confidence = 0.8
+      if (userText) {
+        const lowerUserText = userText.toLowerCase()
+        if (lowerUserText.includes('publisher') && path.includes('publisher')) confidence += 0.1
+        if (lowerUserText.includes('cart') && path.includes('cart')) confidence += 0.1
+        if (lowerUserText.includes('order') && path.includes('order')) confidence += 0.1
+      }
+      
+      return { isValid: true, confidence: Math.min(1, confidence) }
+    } catch (error) {
+      console.error('Navigation validation error:', error)
+      return { isValid: false, confidence: 0 }
+    }
+  }
+
+  const validateFilterAction = (data: string, userText?: string): {isValid: boolean, confidence: number} => {
+    try {
+      if (!data) return { isValid: false, confidence: 0 }
+      
+      // Parse filter parameters
+      const params: any = {}
+      const pairs = data.split('&')
+      
+      for (const pair of pairs) {
+        const [key, value] = pair.split('=')
+        if (key && value) {
+          params[key] = value
+        }
+      }
+      
+      // Validate parameter ranges
+      let confidence = 0.7
+      let isValid = true
+      
+      // DA validation
+      if (params.da) {
+        const da = parseInt(params.da)
+        if (isNaN(da) || da < 0 || da > 100) {
+          isValid = false
+        } else if (da >= 50) {
+          confidence += 0.1 // Higher confidence for reasonable DA values
+        }
+      }
+      
+      // DR validation
+      if (params.dr) {
+        const dr = parseInt(params.dr)
+        if (isNaN(dr) || dr < 0 || dr > 100) {
+          isValid = false
+        } else if (dr >= 50) {
+          confidence += 0.1
+        }
+      }
+      
+      // Spam Score validation
+      if (params.spam) {
+        const spam = parseInt(params.spam)
+        if (isNaN(spam) || spam < 0 || spam > 5) {
+          isValid = false
+        } else if (spam <= 2) {
+          confidence += 0.1
+        }
+      }
+      
+      // Traffic validation
+      if (params.traffic) {
+        const traffic = parseInt(params.traffic)
+        if (isNaN(traffic) || traffic < 0) {
+          isValid = false
+        } else if (traffic >= 10000) {
+          confidence += 0.1
+        }
+      }
+      
+      // Check if filter makes sense in context
+      if (userText) {
+        const lowerUserText = userText.toLowerCase()
+        if (lowerUserText.includes('good') && params.da && parseInt(params.da) >= 50) confidence += 0.1
+        if (lowerUserText.includes('quality') && params.spam && parseInt(params.spam) <= 2) confidence += 0.1
+        if (lowerUserText.includes('premium') && params.da && parseInt(params.da) >= 60) confidence += 0.1
+      }
+      
+      return { isValid, confidence: Math.min(1, confidence) }
+    } catch (error) {
+      console.error('Filter validation error:', error)
+      return { isValid: false, confidence: 0 }
+    }
+  }
+
+  const validateCartAction = (data: string, userText?: string): {isValid: boolean, confidence: number} => {
+    try {
+      if (!data) return { isValid: false, confidence: 0 }
+      
+      // Parse cart parameters
+      const params: any = {}
+      const pairs = data.split('&')
+      
+      for (const pair of pairs) {
+        const [key, value] = pair.split('=')
+        if (key && value) {
+          params[key] = value
+        }
+      }
+      
+      // Validate site ID
+      if (!params.siteId || !params.siteId.match(/^[a-zA-Z0-9-_]+$/)) {
+        return { isValid: false, confidence: 0 }
+      }
+      
+      let confidence = 0.8
+      
+      // Check if cart action makes sense in context
+      if (userText) {
+        const lowerUserText = userText.toLowerCase()
+        if (lowerUserText.includes('add') && params.siteId) confidence += 0.1
+        if (lowerUserText.includes('remove') && params.siteId) confidence += 0.1
+      }
+      
+      return { isValid: true, confidence: Math.min(1, confidence) }
+    } catch (error) {
+      console.error('Cart validation error:', error)
+      return { isValid: false, confidence: 0 }
+    }
+  }
+
+  const validateSimpleAction = (data: string, userText?: string): {isValid: boolean, confidence: number} => {
+    try {
+      let confidence = 0.9
+      
+      // Check if action makes sense in context
+      if (userText) {
+        const lowerUserText = userText.toLowerCase()
+        if (lowerUserText.includes('cart') && !data) confidence += 0.05
+        if (lowerUserText.includes('checkout') && !data) confidence += 0.05
+      }
+      
+      return { isValid: true, confidence: Math.min(1, confidence) }
+    } catch (error) {
+      console.error('Simple action validation error:', error)
+      return { isValid: false, confidence: 0 }
+    }
+  }
+
+  const validateCheckoutAction = (data: string, userText?: string): {isValid: boolean, confidence: number} => {
+    try {
+      let confidence = 0.8
+      
+      // Check if checkout makes sense in context
+      if (userText) {
+        const lowerUserText = userText.toLowerCase()
+        if (lowerUserText.includes('checkout') || lowerUserText.includes('buy') || lowerUserText.includes('purchase')) {
+          confidence += 0.2
+        }
+      }
+      
+      return { isValid: true, confidence: Math.min(1, confidence) }
+    } catch (error) {
+      console.error('Checkout validation error:', error)
+      return { isValid: false, confidence: 0 }
+    }
+  }
+
+  const validateRecommendAction = (data: string, userText?: string): {isValid: boolean, confidence: number} => {
+    try {
+      if (!data) return { isValid: false, confidence: 0 }
+      
+      // Parse recommendation criteria
+      const params: any = {}
+      const pairs = data.split('&')
+      
+      for (const pair of pairs) {
+        const [key, value] = pair.split('=')
+        if (key && value) {
+          params[key] = value
+        }
+      }
+      
+      let confidence = 0.7
+      
+      // Validate criteria
+      if (params.criteria) {
+        const validCriteria = ['quality', 'price', 'traffic', 'niche', 'tat']
+        if (validCriteria.includes(params.criteria.toLowerCase())) {
+          confidence += 0.2
+        }
+      }
+      
+      // Check if recommendation makes sense in context
+      if (userText) {
+        const lowerUserText = userText.toLowerCase()
+        if (lowerUserText.includes('recommend') || lowerUserText.includes('suggest')) {
+          confidence += 0.1
+        }
+      }
+      
+      return { isValid: true, confidence: Math.min(1, confidence) }
+    } catch (error) {
+      console.error('Recommendation validation error:', error)
+      return { isValid: false, confidence: 0 }
+    }
+  }
+
   // Process AI response and handle all possible actions
   const processAIResponse = async (
     response: string,
@@ -375,32 +912,119 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
     let cleanResponse = response
     let actions: Array<{ type: string; data: any }> = []
 
-    // Extract all action commands from the response
+    // Perform meta-prompting analysis
+    if (options?.userText) {
+      const metaAnalysis = performMetaPromptingAnalysis(options.userText, response)
+      
+      // Log confidence level
+      if (metaAnalysis.confidence < 75) {
+        console.warn('⚠️ Low confidence response detected:', {
+          confidence: metaAnalysis.confidence,
+          userMessage: options.userText,
+          response: response.substring(0, 100) + '...'
+        })
+      }
+    }
+
+    // Enhanced action patterns with validation
     const actionPatterns = [
-      { pattern: /\[\s*NAVIGATE\s*:\s*([\s\S]*?)\s*\]/g, type: 'navigate' },
-      { pattern: /\[\s*FILTER\s*:\s*([\s\S]*?)\s*\]/g, type: 'filter' },
-      { pattern: /\[\s*ADD_TO_CART\s*:\s*([\s\S]*?)\s*\]/g, type: 'addToCart' },
-      { pattern: /\[\s*REMOVE_FROM_CART\s*:\s*([\s\S]*?)\s*\]/g, type: 'removeFromCart' },
-      { pattern: /\[\s*VIEW_CART\s*\]/g, type: 'viewCart' },
-      { pattern: /\[\s*CLEAR_CART\s*\]/g, type: 'clearCart' },
-      { pattern: /\[\s*CART_SUMMARY\s*\]/g, type: 'cartSummary' },
-      { pattern: /\[\s*PROCEED_TO_CHECKOUT\s*\]/g, type: 'proceedToCheckout' },
-      { pattern: /\[\s*VIEW_ORDERS\s*\]/g, type: 'viewOrders' },
-      { pattern: /\[\s*PAYMENT_SUCCESS\s*:\s*([\s\S]*?)\s*\]/g, type: 'paymentSuccess' },
-      { pattern: /\[\s*PAYMENT_FAILED\s*:\s*([\s\S]*?)\s*\]/g, type: 'paymentFailed' },
-      { pattern: /\[\s*ORDER_DETAILS\s*:\s*([\s\S]*?)\s*\]/g, type: 'orderDetails' },
-      { pattern: /\[\s*RECOMMEND\s*:\s*([\s\S]*?)\s*\]/g, type: 'recommend' },
-      { pattern: /\[\s*SIMILAR_ITEMS\s*:\s*([\s\S]*?)\s*\]/g, type: 'similarItems' },
-      { pattern: /\[\s*BEST_DEALS\s*\]/g, type: 'bestDeals' }
+      { 
+        pattern: /\[\s*NAVIGATE\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'navigate',
+        validator: validateNavigateAction
+      },
+      { 
+        pattern: /\[\s*FILTER\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'filter',
+        validator: validateFilterAction
+      },
+      { 
+        pattern: /\[\s*ADD_TO_CART\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'addToCart',
+        validator: validateCartAction
+      },
+      { 
+        pattern: /\[\s*REMOVE_FROM_CART\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'removeFromCart',
+        validator: validateCartAction
+      },
+      { 
+        pattern: /\[\s*VIEW_CART\s*\]/g, 
+        type: 'viewCart',
+        validator: validateSimpleAction
+      },
+      { 
+        pattern: /\[\s*CLEAR_CART\s*\]/g, 
+        type: 'clearCart',
+        validator: validateSimpleAction
+      },
+      { 
+        pattern: /\[\s*CART_SUMMARY\s*\]/g, 
+        type: 'cartSummary',
+        validator: validateSimpleAction
+      },
+      { 
+        pattern: /\[\s*PROCEED_TO_CHECKOUT\s*\]/g, 
+        type: 'proceedToCheckout',
+        validator: validateCheckoutAction
+      },
+      { 
+        pattern: /\[\s*VIEW_ORDERS\s*\]/g, 
+        type: 'viewOrders',
+        validator: validateSimpleAction
+      },
+      { 
+        pattern: /\[\s*PAYMENT_SUCCESS\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'paymentSuccess',
+        validator: validateSimpleAction
+      },
+      { 
+        pattern: /\[\s*PAYMENT_FAILED\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'paymentFailed',
+        validator: validateSimpleAction
+      },
+      { 
+        pattern: /\[\s*ORDER_DETAILS\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'orderDetails',
+        validator: validateSimpleAction
+      },
+      { 
+        pattern: /\[\s*RECOMMEND\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'recommend',
+        validator: validateRecommendAction
+      },
+      { 
+        pattern: /\[\s*SIMILAR_ITEMS\s*:\s*([\s\S]*?)\s*\]/g, 
+        type: 'similarItems',
+        validator: validateRecommendAction
+      },
+      { 
+        pattern: /\[\s*BEST_DEALS\s*\]/g, 
+        type: 'bestDeals',
+        validator: validateSimpleAction
+      }
     ]
 
-    // Extract all actions
-    actionPatterns.forEach(({ pattern, type }) => {
+    // Extract and validate all actions
+    actionPatterns.forEach(({ pattern, type, validator }) => {
       const matches = [...response.matchAll(pattern)]
       matches.forEach(match => {
         const raw = match[1]
         const data = typeof raw === 'string' ? raw.replace(/\n/g, '').trim() : true
-        actions.push({ type, data })
+        
+        // Validate the action
+        const validation = validator(typeof data === 'string' ? data : '', options?.userText)
+        
+        if (validation.isValid) {
+          actions.push({ 
+            type, 
+            data
+          })
+          console.log(`✅ Validated action: ${type} (confidence: ${validation.confidence.toFixed(2)})`)
+        } else {
+          console.warn(`⚠️ Invalid action detected: ${type}`, data)
+        }
+        
         cleanResponse = cleanResponse.replace(match[0], '').trim()
       })
     })
@@ -442,8 +1066,60 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       } catch {}
     }
 
+  // Enhanced filter validation function
+  const validateFilterParameters = (qp: URLSearchParams): boolean => {
+    try {
+      // Validate numeric ranges
+      const daMin = qp.get('daMin')
+      const daMax = qp.get('daMax')
+      if (daMin && (isNaN(Number(daMin)) || Number(daMin) < 0 || Number(daMin) > 100)) return false
+      if (daMax && (isNaN(Number(daMax)) || Number(daMax) < 0 || Number(daMax) > 100)) return false
+      if (daMin && daMax && Number(daMin) > Number(daMax)) return false
+
+      const drMin = qp.get('drMin')
+      const drMax = qp.get('drMax')
+      if (drMin && (isNaN(Number(drMin)) || Number(drMin) < 0 || Number(drMin) > 100)) return false
+      if (drMax && (isNaN(Number(drMax)) || Number(drMax) < 0 || Number(drMax) > 100)) return false
+      if (drMin && drMax && Number(drMin) > Number(drMax)) return false
+
+      const spamMin = qp.get('spamMin')
+      const spamMax = qp.get('spamMax')
+      if (spamMin && (isNaN(Number(spamMin)) || Number(spamMin) < 0 || Number(spamMin) > 100)) return false
+      if (spamMax && (isNaN(Number(spamMax)) || Number(spamMax) < 0 || Number(spamMax) > 100)) return false
+      if (spamMin && spamMax && Number(spamMin) > Number(spamMax)) return false
+
+      const priceMin = qp.get('priceMin')
+      const priceMax = qp.get('priceMax')
+      if (priceMin && (isNaN(Number(priceMin)) || Number(priceMin) < 0)) return false
+      if (priceMax && (isNaN(Number(priceMax)) || Number(priceMax) < 0)) return false
+      if (priceMin && priceMax && Number(priceMin) > Number(priceMax)) return false
+
+      // Validate enum values
+      const backlinkNature = qp.get('backlinkNature')
+      if (backlinkNature && !['dofollow', 'nofollow', 'sponsored'].includes(backlinkNature)) return false
+
+      const linkPlacement = qp.get('linkPlacement')
+      if (linkPlacement && !['in-content', 'author-bio', 'footer'].includes(linkPlacement)) return false
+
+      const permanence = qp.get('permanence')
+      if (permanence && !['lifetime', '12-months'].includes(permanence)) return false
+
+      const trend = qp.get('trend')
+      if (trend && !['increasing', 'decreasing', 'stable'].includes(trend)) return false
+
+      const tool = qp.get('tool')
+      if (tool && !['Semrush', 'Ahrefs'].includes(tool)) return false
+
+      return true
+    } catch {
+      return false
+    }
+  }
+
     // Enhanced heuristic: extract comprehensive filters from user text when AI didn't emit [FILTER:...] tag
-    if (actions.length === 0) {
+    // Only run heuristic extraction if AI didn't provide ANY response (to avoid duplicate messages)
+    // If AI provided any response, don't run heuristic extraction at all
+    if (actions.length === 0 && !cleanResponse) {
       try {
         const source = (options?.userText || cleanResponse || '').toLowerCase().replace(/,/g, '')
         
@@ -470,8 +1146,19 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         if (simpleTatMatch) {
           qp.set('tatDaysMin', simpleTatMatch[1])
         }
+
+        // Enhanced TAT extraction for common phrases
+        const fastTatMatch = source.match(/(?:fast|quick|same\s*day|immediate|urgent|asap)/i)
+        if (fastTatMatch) {
+          qp.set('tatDaysMax', '3') // Fast turnaround
+        }
+
+        const slowTatMatch = source.match(/(?:slow|extended|long\s*term|monthly)/i)
+        if (slowTatMatch) {
+          qp.set('tatDaysMin', '30') // Longer turnaround
+        }
         
-        // Extract price filters - be more specific to avoid false positives
+        // Enhanced price extraction with better pattern matching
         const numbers = Array.from(source.matchAll(/(?:\$|usd|inr|rs\.?|€|price|cost)\s*(\d{2,7})(?:\.\d+)?/g)).map(m => parseInt(m[1], 10)).filter(n => !isNaN(n))
         let priceMin: number | undefined
         let priceMax: number | undefined
@@ -481,6 +1168,22 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         const minMatch = source.match(/(?:price\s*min|price\s*minimum|cost\s*min|cost\s*minimum|min\s*price|minimum\s*price|at\s*least|lowest)\s*(?:is\s*)?(\d{2,7})/i)
         if (minMatch) priceMin = parseInt(minMatch[1], 10)
         if (maxMatch) priceMax = parseInt(maxMatch[1], 10)
+
+        // Enhanced price extraction for common phrases
+        const cheapMatch = source.match(/(?:cheap|budget|low\s*cost|affordable|inexpensive)/i)
+        if (cheapMatch && !priceMax) {
+          priceMax = 50 // Budget-friendly
+        }
+
+        const expensiveMatch = source.match(/(?:expensive|premium|high\s*cost|luxury|premium)/i)
+        if (expensiveMatch && !priceMin) {
+          priceMin = 200 // Premium pricing
+        }
+
+        const freeMatch = source.match(/(?:free|no\s*cost|zero\s*cost)/i)
+        if (freeMatch) {
+          priceMax = 0 // Free only
+        }
 
         // Handle range phrasing like "between X and Y", "from X to Y"
         if ((/between|range|from/.test(source)) && numbers.length >= 2) {
@@ -675,25 +1378,61 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           qp.set('semrushOrganicTrafficMin', organicTrafficMatch[1])
         }
 
-        // Extract high authority patterns
-        if (/(?:high\s*authority|high\s*da|authority\s*70\+|da\s*70\+)/i.test(source)) {
+        // Enhanced quality term extraction
+        if (/(?:high\s*authority|high\s*da|authority\s*70\+|da\s*70\+|premium\s*authority)/i.test(source)) {
           qp.set('daMin', '70')
         }
 
-        // Extract low spam patterns
-        if (/(?:low\s*spam|spam\s*score\s*low|clean\s*sites?)/i.test(source)) {
+        if (/(?:excellent\s*authority|outstanding\s*authority|top\s*tier)/i.test(source)) {
+          qp.set('daMin', '80')
+        }
+
+        if (/(?:good\s*authority|decent\s*authority|solid\s*authority)/i.test(source)) {
+          qp.set('daMin', '50')
+        }
+
+        // Enhanced spam score patterns
+        if (/(?:low\s*spam|spam\s*score\s*low|clean\s*sites?|trusted\s*sites?)/i.test(source)) {
           qp.set('spamMax', '3')
         }
 
-        // Extract dofollow patterns
-        if (/(?:dofollow\s*only|only\s*dofollow|dofollow\s*links?)/i.test(source)) {
+        if (/(?:very\s*clean|ultra\s*clean|spam\s*free)/i.test(source)) {
+          qp.set('spamMax', '1')
+        }
+
+        // Enhanced link type patterns
+        if (/(?:dofollow\s*only|only\s*dofollow|dofollow\s*links?|follow\s*links?)/i.test(source)) {
           qp.set('backlinkNature', 'dofollow')
         }
 
-        // Apply filters if any were found
+        if (/(?:nofollow\s*only|only\s*nofollow|nofollow\s*links?)/i.test(source)) {
+          qp.set('backlinkNature', 'nofollow')
+        }
+
+        if (/(?:sponsored\s*only|only\s*sponsored|sponsored\s*links?)/i.test(source)) {
+          qp.set('backlinkNature', 'sponsored')
+        }
+
+        // Enhanced availability patterns
+        if (/(?:available|in\s*stock|ready|active|live)/i.test(source)) {
+          qp.set('availability', 'true')
+        }
+
+        if (/(?:unavailable|out\s*of\s*stock|inactive|offline)/i.test(source)) {
+          qp.set('availability', 'false')
+        }
+
+        // Enhanced filter validation and application
         if (qp.toString()) {
           console.log('🔍 [AI] Detected filters from text:', qp.toString())
-          actions.push({ type: 'filter', data: qp.toString() })
+          
+          // Validate filter parameters before applying
+          const isValidFilter = validateFilterParameters(qp)
+          if (isValidFilter) {
+            actions.push({ type: 'filter', data: qp.toString() })
+          } else {
+            console.log('🔍 [AI] Invalid filter parameters detected, skipping')
+          }
         } else {
           console.log('🔍 [AI] No filters detected from text:', source)
         }
@@ -772,11 +1511,12 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           if (trafficMin) parts.push(`min traffic ${trafficMin}`)
           if (organicTrafficMin) parts.push(`min organic ${organicTrafficMin}`)
 
+          // Enhanced confirmation message with better formatting
           const confirmation: Message = {
             id: (Date.now() + 2).toString(),
             content: parts.length > 0
-              ? `Okay — I’ve applied ${parts.join(', ')}. Showing updated results.`
-              : `Okay — I’ve applied your filters. Showing updated results.`,
+              ? `✅ Applied filters: ${parts.join(', ')}. Showing updated results.`
+              : `✅ Applied your filters. Showing updated results.`,
             role: 'assistant',
             timestamp: new Date()
           }
@@ -1318,13 +2058,16 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         timestamp: new Date()
       }
       addMessage(assistantMessage)
+      setStreamingMessageId(assistantMessage.id)
       
       try { window.dispatchEvent(new CustomEvent('AI_DEBUG', { detail: { step: 'afterStreamStart', ts: Date.now() } })) } catch {}
       
       // Read stream chunks with throttling
       let lastUpdate = 0
-      const updateThrottle = 200 // Update UI every 200ms max to reduce layout shifts
+      const updateThrottle = 4 // ~240fps for ChatGPT-like ultra-smooth streaming updates
       let buffer = '' // Buffer for incomplete lines
+      let updateTimeout: NodeJS.Timeout | null = null
+      let frameRequestId: number | null = null
       
       console.log('🔍 [AI] Starting stream parsing...')
       
@@ -1333,6 +2076,11 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         
         if (done) {
           console.log('🔍 [AI] Stream ended')
+          // Clean up any pending frame requests
+          if (frameRequestId) {
+            cancelAnimationFrame(frameRequestId)
+            frameRequestId = null
+          }
           break
         }
         
@@ -1371,10 +2119,29 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                 console.log('🔍 [AI] Full text so far:', fullText.substring(0, 100) + '...')
                 
                 // Clean tool tags from display text but keep them in fullText for processing
-                const displayText = cleanToolTagsFromText(fullText)
+                const cleanedText = cleanToolTagsFromText(fullText)
+                const displayText = fixIncompleteMarkdown(cleanedText, true)
                 
-                // Update with cleaned text in real-time for immediate markdown rendering
-                updateMessage(assistantMessage.id, { content: displayText })
+                // ChatGPT-style ultra-smooth updates
+                const now = Date.now()
+                if (now - lastUpdate >= updateThrottle) {
+                  updateMessage(assistantMessage.id, { content: displayText })
+                  lastUpdate = now
+                  // Always scroll during streaming for ChatGPT-like behavior
+                  if (!userScrolledUpRef.current) {
+                    smartScrollToBottom()
+                  }
+                } else {
+                  // Use requestAnimationFrame for the smoothest possible updates
+                  if (frameRequestId) cancelAnimationFrame(frameRequestId)
+                  frameRequestId = requestAnimationFrame(() => {
+                    updateMessage(assistantMessage.id, { content: displayText })
+                    // Always scroll during streaming for ChatGPT-like behavior
+                    if (!userScrolledUpRef.current) {
+                      smartScrollToBottom()
+                    }
+                  })
+                }
               }
             } catch (e) {
               // Skip invalid JSON lines
@@ -1386,8 +2153,10 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       
       // Final update to ensure all content is displayed (with tool tags cleaned)
       console.log('🔍 [AI] Final full text:', fullText)
-      const finalDisplayText = cleanToolTagsFromText(fullText)
+      const cleanedFinalText = cleanToolTagsFromText(fullText)
+      const finalDisplayText = fixIncompleteMarkdown(cleanedFinalText, false) // Not streaming anymore
       updateMessage(assistantMessage.id, { content: finalDisplayText })
+      setStreamingMessageId(null) // Clear streaming state
       
       console.timeEnd && console.timeEnd('AI_STREAM_PARSE')
       
@@ -1426,6 +2195,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
             const fallbackData = await fallbackResponse.json()
             if (fallbackData.message) {
               updateMessage(assistantMessage.id, { content: fallbackData.message })
+              setStreamingMessageId(null) // Clear streaming state for fallback
               console.log('✅ [AI] Fallback successful')
               // Process actions from fallback response
               try {
@@ -1444,6 +2214,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
         }
         
         updateMessage(assistantMessage.id, { content: 'I apologize, but I received an empty response. Please try again.' })
+        setStreamingMessageId(null) // Clear streaming state for empty response
         return
       }
       
@@ -1497,6 +2268,7 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       addMessage(errorMessage)
     } finally {
       setIsLoading(false)
+      setStreamingMessageId(null) // Clear streaming state on error
     }
   }
 
@@ -1726,14 +2498,16 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
 
         {/* Messages Area */}
         <div
-          className="flex-1 overflow-y-auto no-scrollbar px-3 sm:px-6 py-3 space-y-3 min-w-0"
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto no-scrollbar chat-container px-3 sm:px-6 py-3 space-y-3 min-w-0 relative"
           role="log"
           aria-live="polite"
           aria-relevant="additions"
         >
           
           {messages.map((message) => (
-            <div key={message.id} className="space-y-2 max-w-full overflow-hidden">
+            <div key={message.id} className="space-y-2 max-w-full overflow-hidden chat-message">
               <div
                 className={cn(
                   "flex gap-2.5",
@@ -1748,9 +2522,13 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                         ? "bg-[#6A5ACD] selection:bg-[#5a4ac0]/30 selection:text-white border-[#6A5ACD]/40" 
                         : "bg-indigo-600/95 selection:bg-indigo-500/30 selection:text-white border-indigo-300/40"
                     )}
-                    style={{ display: 'block', contain: 'layout' }}
+                    style={{ 
+                      display: 'block', 
+                      contain: 'style paint',
+                      willChange: 'auto'
+                    }}
                   >
-                    <MarkdownRenderer content={message.content} variant="chatbot" theme={theme as 'light' | 'dark'} isUserMessage={message.role === 'user'} />
+                    <OptimizedMarkdownRenderer content={message.content} variant="chatbot" theme={theme as 'light' | 'dark'} isUserMessage={message.role === 'user'} />
                   </div>
                 ) : (
                   <div className="w-full flex items-start gap-2">
@@ -1777,14 +2555,37 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
                     )} style={{ minWidth: 0 }}>
                       <div 
                         className={cn(
-                          "inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 border shadow-sm break-words",
+                          "inline-block max-w-full sm:max-w-[90%] rounded-[12px] px-3 py-2 border shadow-sm break-words streaming-message",
                           theme === 'light' 
                             ? "bg-white/90 border-[#6A5ACD]/20 text-black" 
-                            : "bg-white/10 border-white/10 text-white/95"
+                            : "bg-white/10 border-white/10 text-white/95",
+                          // Add visual indicator for streaming
+                          isLoading && message.id === streamingMessageId && "ring-2 ring-violet-500/30 animate-pulse"
                         )}
-                        style={{ contain: 'layout', wordBreak: 'break-word' }}
+                        style={{ 
+                          contain: 'style paint',
+                          wordBreak: 'break-word',
+                          willChange: 'auto'
+                        }}
                       >
-                        <MarkdownRenderer content={message.content} variant="chatbot" theme={theme as 'light' | 'dark'} isUserMessage={false} />
+                        <ChatGPTStyleStreamingRenderer 
+                          content={message.content} 
+                          variant="chatbot" 
+                          theme={theme as 'light' | 'dark'} 
+                          isUserMessage={false}
+                          isStreaming={(() => {
+                            const isCurrentlyStreaming = isLoading && message.id === streamingMessageId
+                            if (isCurrentlyStreaming) {
+                              console.log('🔄 [Chatbot] Message is streaming:', {
+                                messageId: message.id,
+                                streamingMessageId,
+                                isLoading,
+                                contentLength: message.content.length
+                              })
+                            }
+                            return isCurrentlyStreaming
+                          })()}
+                        />
                       </div>
                     </div>
                   </div>
@@ -1834,6 +2635,25 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           )}
           
           <div ref={messagesEndRef} />
+          
+          {/* Scroll to Bottom Button */}
+          {showScrollToBottom && (
+            <div className="absolute bottom-4 right-4 z-10">
+              <Button
+                onClick={scrollToBottom}
+                size="sm"
+                className={cn(
+                  "rounded-full shadow-lg transition-all duration-200 hover:scale-105",
+                  theme === 'light' 
+                    ? "bg-[#6A5ACD] hover:bg-[#5a4ac0] text-white" 
+                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                )}
+                aria-label="Scroll to bottom"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
 
