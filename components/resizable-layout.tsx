@@ -4,7 +4,7 @@ import React, { useEffect, createContext, useContext, Suspense, useCallback } fr
 import { useRouter, useSearchParams } from 'next/navigation'
 // Removed PanelGroup imports - using custom flex layout instead
 import { useLayout } from '@/contexts/LayoutContext'
-import { AIChatbotSidebar } from './ai-chatbot-sidebar'
+import AIChatbotSidebar from './ai-chatbot-sidebar'
 
 interface ResizableLayoutProps {
   children: React.ReactNode
@@ -113,7 +113,7 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
           <div className="block lg:hidden flex-1 min-w-0">
             {/* Mobile: AI Sidebar takes full width */}
             <div className="h-full bg-gray-50 dark:bg-[#1f2230] w-full overflow-hidden">
-              <AIChatbotSidebar onClose={handleSidebarToggle} />
+              <AIChatbotSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
             </div>
           </div>
           <div className="hidden lg:flex flex-1 min-w-0">
@@ -136,7 +136,7 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
               className="h-full bg-gray-50 dark:bg-[#1f2230] overflow-hidden flex-shrink-0 min-w-0"
               style={{ width: `${sidebarWidth}%`, maxWidth: `${sidebarWidth}%` }}
             >
-              <AIChatbotSidebar onClose={handleSidebarToggle} />
+              <AIChatbotSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
             </div>
           </div>
         </div>

@@ -3,6 +3,9 @@
   --font-inter: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Streamdown styles for flawless markdown rendering */
+@import '../node_modules/streamdown/dist/index.css';
+
 /* Enhanced draggable levers for input[type=range] used in publishers filters */
 input[type="range"].dual-range {
   -webkit-appearance: none;
