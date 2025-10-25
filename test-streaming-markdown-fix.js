@@ -71,3 +71,4 @@ console.log('- Layout should be stable and scrollable')
 
 console.log('\n✨ If you see this output, the streaming markdown fixes are working!')
 
+
