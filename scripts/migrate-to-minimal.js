@@ -111,3 +111,4 @@ migrateToMinimal()
     console.error('Migration failed:', error)
     process.exit(1)
   })
+

@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/db'
 import { ragSystem } from '@/lib/rag-minimal'
 
+// Note: Database filtering removed - publisher page uses external API
+
 // Navigation tool
 export async function navigateTo(route: string, userId: string) {
   console.log(`🧭 Navigating to: ${route}`)
@@ -26,7 +28,7 @@ export async function navigateTo(route: string, userId: string) {
       `
     }
   } catch (error) {
-    console.error('❌ Failed to log navigation:', error)
+    console.error('❌ Failed to log navigation:', error instanceof Error ? error.message : 'Unknown error')
   }
   
   return {
@@ -73,12 +75,12 @@ export async function searchDocuments(query: string, userId: string) {
     }
     
   } catch (error) {
-    console.error('❌ Document search failed:', error)
+    console.error('❌ Document search failed:', error instanceof Error ? error.message : 'Unknown error')
     return {
       action: 'search_failed',
       query,
       sources: [],
-      message: `Search failed: ${error.message}`,
+      message: `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       success: false
     }
   }
@@ -132,12 +134,12 @@ export async function addToCart(productId: string, quantity: number, userId: str
     }
     
   } catch (error) {
-    console.error('❌ Failed to add to cart:', error)
+    console.error('❌ Failed to add to cart:', error instanceof Error ? error.message : 'Unknown error')
     return {
       action: 'cart_failed',
       productId,
       quantity: 0,
-      message: `Failed to add to cart: ${error.message}`,
+      message: `Failed to add to cart: ${error instanceof Error ? error.message : 'Unknown error'}`,
       success: false
     }
   }
@@ -148,29 +150,43 @@ export async function applyFilters(filters: any, userId: string) {
   console.log(`🔍 Applying filters:`, filters)
   
   try {
-    // This would typically filter products or search results
-    // For now, just log the filters and return a mock response
+    // Build URL parameters for publisher page
+    const urlParams = new URLSearchParams()
     
-    const filterResults = {
-      appliedFilters: filters,
-      resultCount: Math.floor(Math.random() * 100) + 10, // Mock count
-      timestamp: new Date().toISOString()
-    }
+    // Map filter parameters to URL parameters
+    if (filters.daMin) urlParams.set('daMin', filters.daMin.toString())
+    if (filters.daMax) urlParams.set('daMax', filters.daMax.toString())
+    if (filters.paMin) urlParams.set('paMin', filters.paMin.toString())
+    if (filters.paMax) urlParams.set('paMax', filters.paMax.toString())
+    if (filters.drMin) urlParams.set('drMin', filters.drMin.toString())
+    if (filters.drMax) urlParams.set('drMax', filters.drMax.toString())
+    if (filters.spamMin) urlParams.set('spamMin', filters.spamMin.toString())
+    if (filters.spamMax) urlParams.set('spamMax', filters.spamMax.toString())
+    if (filters.priceMin) urlParams.set('priceMin', filters.priceMin.toString())
+    if (filters.priceMax) urlParams.set('priceMax', filters.priceMax.toString())
+    if (filters.niche) urlParams.set('niche', filters.niche)
+    if (filters.country) urlParams.set('country', filters.country)
+    if (filters.language) urlParams.set('language', filters.language)
+    if (filters.trafficMin) urlParams.set('trafficMin', filters.trafficMin.toString())
+    if (filters.backlinkNature) urlParams.set('backlinkNature', filters.backlinkNature)
+    if (filters.availability !== undefined) urlParams.set('availability', filters.availability.toString())
+    
+    const publisherUrl = `/publishers?${urlParams.toString()}`
     
     return {
-      action: 'filters_applied',
+      action: 'filter_applied',
       filters,
-      resultCount: filterResults.resultCount,
-      message: `Applied filters, found ${filterResults.resultCount} results`,
+      message: `Applied filters and navigating to publisher page`,
+      url: publisherUrl,
       success: true
     }
     
   } catch (error) {
-    console.error('❌ Failed to apply filters:', error)
+    console.error('❌ Failed to apply filters:', error instanceof Error ? error.message : 'Unknown error')
     return {
       action: 'filters_failed',
       filters,
-      message: `Failed to apply filters: ${error.message}`,
+      message: `Failed to apply filters: ${error instanceof Error ? error.message : 'Unknown error'}`,
       success: false
     }
   }
@@ -221,11 +237,11 @@ export async function uploadDocument(content: string, filename: string, userId: 
     }
     
   } catch (error) {
-    console.error('❌ Failed to upload document:', error)
+    console.error('❌ Failed to upload document:', error instanceof Error ? error.message : 'Unknown error')
     return {
       action: 'upload_failed',
       filename,
-      message: `Failed to upload document: ${error.message}`,
+      message: `Failed to upload document: ${error instanceof Error ? error.message : 'Unknown error'}`,
       success: false
     }
   }
@@ -262,11 +278,12 @@ export async function getUserContext(userId: string) {
     }
     
   } catch (error) {
-    console.error('❌ Failed to get user context:', error)
+    console.error('❌ Failed to get user context:', error instanceof Error ? error.message : 'Unknown error')
     return {
       action: 'context_failed',
-      message: `Failed to get user context: ${error.message}`,
+      message: `Failed to get user context: ${error instanceof Error ? error.message : 'Unknown error'}`,
       success: false
     }
   }
 }
+

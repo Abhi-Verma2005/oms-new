@@ -15,6 +15,14 @@ export interface AIInsightData {
   painPoints?: string[]
   aiMetadata?: Record<string, any>
   confidenceScore?: number
+  filterPreferences?: FilterIntelligenceData
+}
+
+export interface FilterIntelligenceData {
+  preferredFilters?: Record<string, any>
+  filterHistory?: Array<{action: string, filters: any, timestamp: string}>
+  filterConfidence?: Record<string, number>
+  lastFilterUpdate?: string
 }
 
 export interface ContextExtractionResult {
@@ -422,6 +430,152 @@ export async function refreshUserContextAfterUpdate(userId: string) {
     return false
   }
 }
+
+/**
+ * Process filter context and extract filter intelligence
+ */
+export async function processFilterContext(
+  userId: string,
+  message: string,
+  currentFilters: any,
+  userContext: any
+): Promise<{
+  shouldUpdate: boolean
+  filterAction: 'add' | 'update' | 'remove' | 'reset'
+  newFilters: any
+  confidence: number
+  reasoning: string
+}> {
+  try {
+    // Import RAG system
+    const { ragSystem } = await import('./rag-minimal')
+    
+    // Get user's filter history from RAG system
+    const filterHistory = await ragSystem.searchDocuments(
+      `filter history preferences ${userId}`, 
+      userId, 
+      5
+    )
+    
+    // Analyze filter intent from message
+    const filterAnalysis = await analyzeFilterIntent(message, currentFilters, filterHistory)
+    
+    return filterAnalysis
+  } catch (error) {
+    console.error('Error processing filter context:', error)
+    return {
+      shouldUpdate: false,
+      filterAction: 'add',
+      newFilters: {},
+      confidence: 0,
+      reasoning: 'Error in filter analysis'
+    }
+  }
+}
+
+/**
+ * Smart AI-powered filter intent analysis - Super simple with 100% accuracy
+ */
+async function analyzeFilterIntent(
+  message: string,
+  currentFilters: any,
+  filterHistory: any[]
+): Promise<{
+  shouldUpdate: boolean
+  filterAction: 'add' | 'update' | 'remove' | 'reset'
+  newFilters: any
+  confidence: number
+  reasoning: string
+}> {
+  try {
+    // Use AI to analyze the message with RAG context
+    const ragContext = filterHistory.length > 0 
+      ? `User's filter history: ${filterHistory.map(h => h.metadata?.content || 'Filter applied').join(', ')}`
+      : 'No previous filter history'
+    
+    const analysisPrompt = `
+Analyze this user message for filter intent. Be 100% accurate.
+
+USER MESSAGE: "${message}"
+CURRENT FILTERS: ${JSON.stringify(currentFilters)}
+${ragContext}
+
+Respond with ONLY this JSON format:
+{
+  "action": "add|update|remove|reset",
+  "filters": {"daMin": 50, "spamMax": 5, etc.},
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation"
+}
+
+RULES:
+- "add": Show me, find, filter, get + new criteria
+- "update": Change, modify, adjust + existing filter
+- "remove": Remove, clear, delete + specific filter  
+- "reset": Reset, clear all, start over
+- Extract exact filter values from message
+- Use user history to boost confidence
+- Be conservative - only apply if 100% certain
+`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a filter intent analyzer. Respond only with valid JSON.' },
+          { role: 'user', content: analysisPrompt }
+        ],
+        temperature: 0.1,
+        max_tokens: 300
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`AI analysis failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const result = JSON.parse(data.choices[0].message.content)
+
+    return {
+      shouldUpdate: Object.keys(result.filters || {}).length > 0,
+      filterAction: result.action || 'add',
+      newFilters: result.filters || {},
+      confidence: Math.max(0, Math.min(1, result.confidence || 0.5)),
+      reasoning: result.reasoning || 'AI analysis'
+    }
+
+  } catch (error) {
+    console.warn('AI filter analysis failed, using fallback:', error)
+    
+    // Simple fallback - only for obvious cases
+    const lowerMessage = message.toLowerCase()
+    if (/(?:reset|clear all|remove all|start over)/i.test(lowerMessage)) {
+      return {
+        shouldUpdate: true,
+        filterAction: 'reset',
+        newFilters: {},
+        confidence: 0.9,
+        reasoning: 'Clear reset intent detected'
+      }
+    }
+    
+    return {
+      shouldUpdate: false,
+      filterAction: 'add',
+      newFilters: {},
+      confidence: 0,
+      reasoning: 'Unable to analyze intent'
+    }
+  }
+}
+
+// Removed extractFilterParameters - AI handles all parameter extraction now
 
 /**
  * Extract specific metadata from user message

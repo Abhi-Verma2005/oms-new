@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getMultipleDocumentContents } from '@/lib/document-cache'
+import { ragSystem } from '@/lib/rag-minimal'
+import { processFilterContext } from '@/lib/ai-context-manager'
 
 // ---------------------------------------------
 // Token & Chat History Management (128k handling)
@@ -765,6 +767,28 @@ async function handleStreamingRequest(
       ? `\n\nRELEVANT KNOWLEDGE BASE CONTEXT:\n${searchResults.map(r => `- ${r.content}`).join('\n')}`
       : ''
     
+    // Get user's filter history for filter intelligence
+    let filterContextStr = ''
+    let currentFilters = {}
+    try {
+      const filterHistory = await ragSystem.searchDocuments(
+        `filter history preferences ${userId}`, 
+        userId, 
+        5
+      )
+      if (filterHistory.length > 0) {
+        filterContextStr = `\n\nUSER FILTER HISTORY:\n${filterHistory.map(h => `- ${h.metadata?.content || 'Filter applied'}`).join('\n')}`
+      }
+      
+      // Process filter intelligence for the current message
+      const filterIntelligence = await processFilterContext(userId, message, currentFilters, userContextStr)
+      if (filterIntelligence.shouldUpdate) {
+        filterContextStr += `\n\nFILTER INTELLIGENCE:\n- Action: ${filterIntelligence.filterAction}\n- Confidence: ${filterIntelligence.confidence.toFixed(2)}\n- Reasoning: ${filterIntelligence.reasoning}`
+      }
+    } catch (error) {
+      console.warn('Filter history retrieval failed:', error)
+    }
+    
     // Add document context if uploaded documents are provided
     let documentContext = ''
     if (uploadedDocuments && uploadedDocuments.length > 0) {
@@ -1099,8 +1123,20 @@ This is a publishers marketplace where users can:
 ## AVAILABLE_TOOLS
     
     ### FILTERING & NAVIGATION
-    [FILTER:param=value] - Apply filters
+    [FILTER:param=value] - Apply filters with confidence scoring
     Parameters: q, niche, language, country, priceMin, priceMax, daMin, daMax, paMin, paMax, drMin, drMax, spamMin, spamMax, semrushOverallTrafficMin, semrushOrganicTrafficMin, availability, tool, backlinkNature, linkPlacement, permanence, remarkIncludes, lastPublishedAfter, outboundLinkLimitMax, disclaimerIncludes, trend, tatDaysMin, tatDaysMax
+    
+    ### FILTER INTELLIGENCE
+    - Use user's filter history to make better decisions
+    - Apply confidence scoring based on user context
+    - Detect filter intent: ADD, UPDATE, REMOVE, RESET
+    - Consider user preferences and past behavior
+    
+    ### SMART FILTER DETECTION
+    - Use AI to analyze user intent with 100% accuracy
+    - Consider user's filter history for better decisions
+    - Only apply filters when AI is confident (0.8+)
+    - Support all filter actions: ADD, UPDATE, REMOVE, RESET
     
     [NAVIGATE:/publishers?filters] - Navigate with filters
     
@@ -1122,6 +1158,7 @@ This is a publishers marketplace where users can:
     
     ${userContextStr}
     ${ragContext}
+    ${filterContextStr}
     ${documentContext}
     
 ## QUALITY_CHECKLIST

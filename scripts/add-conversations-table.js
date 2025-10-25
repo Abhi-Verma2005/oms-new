@@ -86,3 +86,4 @@ addConversationsTable()
     console.error('Setup failed:', error)
     process.exit(1)
   })
+

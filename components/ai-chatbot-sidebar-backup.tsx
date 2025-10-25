@@ -14,6 +14,7 @@ import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { validateFilterWithConfidence, getFilterConfidence, storeFilterDecision } from '@/lib/filter-intelligence'
 import { 
   Send, 
   Bot, 
@@ -1066,53 +1067,43 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
       } catch {}
     }
 
-  // Enhanced filter validation function
-  const validateFilterParameters = (qp: URLSearchParams): boolean => {
+  // Enhanced filter validation function with confidence scoring
+  const validateFilterParameters = async (qp: URLSearchParams, userId?: string): Promise<{isValid: boolean, confidence: number, warnings: string[]}> => {
     try {
-      // Validate numeric ranges
-      const daMin = qp.get('daMin')
-      const daMax = qp.get('daMax')
-      if (daMin && (isNaN(Number(daMin)) || Number(daMin) < 0 || Number(daMin) > 100)) return false
-      if (daMax && (isNaN(Number(daMax)) || Number(daMax) < 0 || Number(daMax) > 100)) return false
-      if (daMin && daMax && Number(daMin) > Number(daMax)) return false
+      // Convert URLSearchParams to object
+      const filters: Record<string, any> = {}
+      for (const [key, value] of qp.entries()) {
+        filters[key] = value
+      }
 
-      const drMin = qp.get('drMin')
-      const drMax = qp.get('drMax')
-      if (drMin && (isNaN(Number(drMin)) || Number(drMin) < 0 || Number(drMin) > 100)) return false
-      if (drMax && (isNaN(Number(drMax)) || Number(drMax) < 0 || Number(drMax) > 100)) return false
-      if (drMin && drMax && Number(drMin) > Number(drMax)) return false
+      // Use enhanced validation with confidence scoring
+      const validationResult = validateFilterWithConfidence(filters)
+      
+      // Get additional confidence from user history if userId is available
+      let additionalConfidence = 0
+      if (userId) {
+        try {
+          additionalConfidence = await getFilterConfidence(userId, filters)
+        } catch (error) {
+          console.warn('Failed to get filter confidence:', error)
+        }
+      }
 
-      const spamMin = qp.get('spamMin')
-      const spamMax = qp.get('spamMax')
-      if (spamMin && (isNaN(Number(spamMin)) || Number(spamMin) < 0 || Number(spamMin) > 100)) return false
-      if (spamMax && (isNaN(Number(spamMax)) || Number(spamMax) < 0 || Number(spamMax) > 100)) return false
-      if (spamMin && spamMax && Number(spamMin) > Number(spamMax)) return false
+      // Combine validation confidence with user history confidence
+      const finalConfidence = (validationResult.confidence + additionalConfidence) / 2
 
-      const priceMin = qp.get('priceMin')
-      const priceMax = qp.get('priceMax')
-      if (priceMin && (isNaN(Number(priceMin)) || Number(priceMin) < 0)) return false
-      if (priceMax && (isNaN(Number(priceMax)) || Number(priceMax) < 0)) return false
-      if (priceMin && priceMax && Number(priceMin) > Number(priceMax)) return false
-
-      // Validate enum values
-      const backlinkNature = qp.get('backlinkNature')
-      if (backlinkNature && !['dofollow', 'nofollow', 'sponsored'].includes(backlinkNature)) return false
-
-      const linkPlacement = qp.get('linkPlacement')
-      if (linkPlacement && !['in-content', 'author-bio', 'footer'].includes(linkPlacement)) return false
-
-      const permanence = qp.get('permanence')
-      if (permanence && !['lifetime', '12-months'].includes(permanence)) return false
-
-      const trend = qp.get('trend')
-      if (trend && !['increasing', 'decreasing', 'stable'].includes(trend)) return false
-
-      const tool = qp.get('tool')
-      if (tool && !['Semrush', 'Ahrefs'].includes(tool)) return false
-
-      return true
-    } catch {
-      return false
+      return {
+        isValid: validationResult.isValid,
+        confidence: finalConfidence,
+        warnings: [...validationResult.warnings, ...validationResult.suggestions]
+      }
+    } catch (error) {
+      console.error('Enhanced filter validation error:', error)
+      return {
+        isValid: false,
+        confidence: 0,
+        warnings: ['Filter validation failed']
+      }
     }
   }
 
@@ -1427,9 +1418,15 @@ export function AIChatbotSidebar({ onClose }: AIChatbotSidebarProps) {
           console.log('🔍 [AI] Detected filters from text:', qp.toString())
           
           // Validate filter parameters before applying
-          const isValidFilter = validateFilterParameters(qp)
-          if (isValidFilter) {
-            actions.push({ type: 'filter', data: qp.toString() })
+          const validationResult = await validateFilterParameters(qp, userId)
+          if (validationResult.isValid) {
+            actions.push({ 
+              type: 'filter', 
+              data: qp.toString(),
+              confidence: validationResult.confidence,
+              warnings: validationResult.warnings
+            })
+            console.log(`🔍 [AI] Filter applied with confidence: ${validationResult.confidence.toFixed(2)}`)
           } else {
             console.log('🔍 [AI] Invalid filter parameters detected, skipping')
           }
