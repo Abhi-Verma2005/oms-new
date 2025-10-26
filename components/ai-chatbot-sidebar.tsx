@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Send, Bot, User, Loader2, X, Minimize2, Maximize2, CheckCircle, ExternalLink, Upload, FileText } from 'lucide-react'
+import { Send, Bot, User, Loader2, X, Minimize2, Maximize2, CheckCircle, ExternalLink, Upload, FileText, Loader2 as Spinner, CheckCircle as Check, XCircle, Clock, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUserContextForAI } from '@/stores/user-context-store'
 import { useDropzone } from 'react-dropzone'
@@ -45,6 +45,205 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   const [toolActions, setToolActions] = useState<any[]>([])
   const [showToolFeedback, setShowToolFeedback] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([])
+  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([])
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([])
+  const [documentStatuses, setDocumentStatuses] = useState<Map<string, string>>(new Map())
+  const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
+
+  // Load documents on mount
+  useEffect(() => {
+    loadUserDocuments()
+    return () => {
+      // FIXED: Cleanup all intervals on unmount
+      intervalRefs.current.forEach(interval => clearInterval(interval))
+    }
+  }, [userId])
+
+  // Load user's documents
+  const loadUserDocuments = async () => {
+    try {
+      const response = await fetch(`/api/user-documents?userId=${userId}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setUploadedDocuments(result.documents)
+        
+        // Auto-select completed documents
+        const completedDocs = result.documents
+          .filter((d: any) => d.processing_status === 'completed')
+          .map((d: any) => d.id)
+        setSelectedDocuments(completedDocs)
+      }
+    } catch (error) {
+      console.error('Failed to load documents:', error)
+    }
+  }
+
+  // FIXED: Upload with proper error handling and progress tracking
+  const handleDocumentUpload = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files)
+    setUploadingFiles(fileArray.map(f => f.name))
+    
+    for (const file of fileArray) {
+      try {
+        // Validate file client-side
+        if (file.size > 10 * 1024 * 1024) {
+          const errorMsg: Message = {
+            role: 'assistant',
+            content: `❌ File "${file.name}" is too large (max 10MB)`
+          }
+          setMessages(prev => [...prev, errorMsg])
+          continue
+        }
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('userId', userId)
+        
+        const response = await fetch('/api/upload-document', {
+          method: 'POST',
+          body: formData
+        })
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          // Add to documents list
+          setUploadedDocuments(prev => [...prev, result.document])
+          
+          // Success message
+          const successMsg: Message = {
+            role: 'assistant',
+            content: `📄 Uploading "${result.document.original_name}"... Processing will complete shortly.`
+          }
+          setMessages(prev => [...prev, successMsg])
+          
+          // Start polling for this document
+          pollDocumentStatus(result.document.id)
+          
+        } else if (response.status === 409) {
+          // Duplicate file
+          const duplicateMsg: Message = {
+            role: 'assistant',
+            content: `ℹ️ "${file.name}" is already uploaded. Using existing document.`
+          }
+          setMessages(prev => [...prev, duplicateMsg])
+          
+        } else {
+          throw new Error(result.error || 'Upload failed')
+        }
+        
+      } catch (error) {
+        console.error(`Upload failed for ${file.name}:`, error)
+        const errorMsg: Message = {
+          role: 'assistant',
+          content: `❌ Failed to upload "${file.name}": ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
+        setMessages(prev => [...prev, errorMsg])
+      }
+    }
+    
+    setUploadingFiles([])
+  }
+
+  // FIXED: Proper status polling with cleanup
+  const pollDocumentStatus = (documentId: string) => {
+    let pollCount = 0
+    const maxPolls = 15 // 30 seconds max (2s interval)
+    
+    const interval = setInterval(async () => {
+      pollCount++
+      
+      try {
+        const response = await fetch(`/api/document-status/${documentId}`)
+        const result = await response.json()
+        
+        if (result.success) {
+          const status = result.document.processing_status
+          
+          // Update status map
+          setDocumentStatuses(prev => new Map(prev).set(documentId, status))
+          
+          if (status === 'completed') {
+            // Clear interval
+            clearInterval(interval)
+            intervalRefs.current.delete(documentId)
+            
+            // Reload documents
+            loadUserDocuments()
+            
+            // Success message
+            const msg: Message = {
+              role: 'assistant',
+              content: `✅ Document "${result.document.original_name}" is ready! I can now use its content to help you find publishers. (${result.document.chunk_count} sections indexed)`
+            }
+            setMessages(prev => [...prev, msg])
+            
+          } else if (status === 'failed') {
+            // Clear interval
+            clearInterval(interval)
+            intervalRefs.current.delete(documentId)
+            
+            // Error message
+            const msg: Message = {
+              role: 'assistant',
+              content: `❌ Failed to process "${result.document.original_name}": ${result.document.error_message || 'Unknown error'}`
+            }
+            setMessages(prev => [...prev, msg])
+          }
+        }
+      } catch (error) {
+        console.error('Status polling error:', error)
+      }
+      
+      // Stop after max polls
+      if (pollCount >= maxPolls) {
+        clearInterval(interval)
+        intervalRefs.current.delete(documentId)
+      }
+    }, 2000)
+    
+    // Track interval for cleanup
+    intervalRefs.current.set(documentId, interval)
+  }
+
+  // Toggle document selection
+  const toggleDocumentSelection = (documentId: string) => {
+    setSelectedDocuments(prev => 
+      prev.includes(documentId)
+        ? prev.filter(id => id !== documentId)
+        : [...prev, documentId]
+    )
+  }
+
+  // Delete document
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/delete-document/${documentId}?userId=${userId}`, {
+        method: 'DELETE'
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        // Remove from state
+        setUploadedDocuments(prev => prev.filter(d => d.id !== documentId))
+        setSelectedDocuments(prev => prev.filter(id => id !== documentId))
+        
+        const msg: Message = {
+          role: 'assistant',
+          content: `🗑️ Document deleted successfully.`
+        }
+        setMessages(prev => [...prev, msg])
+      }
+    } catch (error) {
+      console.error('Delete failed:', error)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value)
@@ -87,7 +286,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
         body: JSON.stringify({
           messages: [...messages, userMessage],
           userId,
-          currentFilters
+          currentFilters,
+          selectedDocuments // Include selected documents
         })
       })
 
@@ -236,58 +436,6 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     }
   }
 
-  // Document upload handler
-  const handleDocumentUpload = async (files: File[]) => {
-    setUploadingFiles(files.map(f => f.name))
-    
-    try {
-      for (const file of files) {
-        // Read file content
-        const content = await file.text()
-        
-        // Upload to RAG system via streaming API
-        const response = await fetch('/api/chat-streaming', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [...messages, { role: 'user', content: `Upload document: ${file.name}` }],
-            userId,
-            documentUpload: {
-              content,
-              filename: file.name,
-              type: file.type
-            }
-          })
-        })
-
-        if (!response.ok) {
-          throw new Error(`Upload failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-        
-        // Add success message to chat
-        const successMessage: Message = {
-          role: 'assistant',
-          content: data.content
-        }
-        setMessages(prev => [...prev, successMessage])
-        
-        // Handle tool results
-        if (data.toolResults && data.toolResults.length > 0) {
-          setToolActions(data.toolResults)
-          setShowToolFeedback(true)
-          setTimeout(() => setShowToolFeedback(false), 3000)
-        }
-      }
-      
-    } catch (error) {
-      console.error('Upload error:', error)
-      setError(error instanceof Error ? error : new Error('Upload failed'))
-    } finally {
-      setUploadingFiles([])
-    }
-  }
 
   // Dropzone configuration
   const { getInputProps, open } = useDropzone({
@@ -501,6 +649,120 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   </div>
                   
               
+          {/* Document Upload Section */}
+          <div className="border-t border-gray-200 bg-gray-50 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-900">📁 Your Documents</h4>
+              <label 
+                htmlFor="doc-upload" 
+                className="cursor-pointer text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <Upload className="w-3 h-3" />
+                Upload
+              </label>
+              <input
+                type="file"
+                id="doc-upload"
+                className="hidden"
+                onChange={(e) => e.target.files && handleDocumentUpload(e.target.files)}
+                accept=".txt,.pdf,.docx,.doc,.csv,.json,.xlsx,.xls"
+                multiple
+              />
+            </div>
+            
+            {uploadingFiles.length > 0 && (
+              <div className="mb-3 space-y-1">
+                {uploadingFiles.map(filename => (
+                  <div key={filename} className="flex items-center gap-2 text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                    <Spinner className="w-3 h-3 animate-spin" />
+                    <span className="truncate">Uploading {filename}...</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {uploadedDocuments.length > 0 ? (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {uploadedDocuments.map(doc => {
+                  const status = documentStatuses.get(doc.id) || doc.processing_status
+                  const isCompleted = status === 'completed'
+                  const isProcessing = status === 'processing'
+                  const isFailed = status === 'failed'
+                  
+                  return (
+                    <div 
+                      key={doc.id} 
+                      className={`flex items-center gap-2 p-2 rounded text-xs ${
+                        isCompleted ? 'bg-white border border-gray-200' : 
+                        isProcessing ? 'bg-blue-50 border border-blue-200' :
+                        'bg-red-50 border border-red-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedDocuments.includes(doc.id)}
+                        onChange={() => toggleDocumentSelection(doc.id)}
+                        disabled={!isCompleted}
+                        className="w-3 h-3 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      
+                      <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate font-medium text-gray-900">
+                          {doc.original_name}
+                        </p>
+                        {isCompleted && doc.chunk_count && (
+                          <p className="text-gray-500">
+                            {doc.chunk_count} sections • {(doc.file_size / 1024).toFixed(0)}KB
+                          </p>
+                        )}
+                        {isFailed && doc.error_message && (
+                          <p className="text-red-600 truncate">
+                            {doc.error_message}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isProcessing && <Spinner className="w-4 h-4 animate-spin text-blue-500" />}
+                        {isCompleted && <Check className="w-4 h-4 text-green-500" />}
+                        {isFailed && <XCircle className="w-4 h-4 text-red-500" />}
+                        {status === 'pending' && <Clock className="w-4 h-4 text-yellow-500" />}
+                        
+                        {isCompleted && (
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete document"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500 text-xs">
+                <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p>No documents uploaded yet</p>
+                <p className="mt-1 text-gray-400">
+                  Upload documents to get personalized recommendations
+                </p>
+              </div>
+            )}
+            
+            {selectedDocuments.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <p className="text-xs text-gray-600">
+                  ✓ {selectedDocuments.length} document{selectedDocuments.length > 1 ? 's' : ''} selected
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Input Area */}
           <div className="border-t border-gray-200 dark:border-gray-700 p-4">
             <form onSubmit={handleSubmit} className="flex gap-2">

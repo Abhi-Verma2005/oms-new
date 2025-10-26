@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Account {
-  id                String   @id @default(cuid())
+  id                String   @id @default(cuid()) 
   userId            String   @map("user_id")
   type              String
   provider          String
@@ -1095,21 +1095,45 @@ model RAGPerformanceMetrics {
 }
 
 model user_documents {
-  id            String    @id
-  user_id       String
-  original_name String
-  file_name     String
-  file_url      String
-  file_size     Int?
-  mime_type     String?
-  uploaded_at   DateTime  @default(now())
-  last_accessed DateTime?
-  access_count  Int       @default(0)
-  is_active     Boolean   @default(true)
-  users         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  id                 String                    @id
+  user_id            String
+  original_name      String
+  file_name          String
+  file_url           String
+  file_size          Int?
+  mime_type          String?
+  uploaded_at        DateTime                  @default(now())
+  last_accessed      DateTime?
+  access_count       Int                       @default(0)
+  is_active          Boolean                   @default(true)
+  chunk_count        Int                       @default(0) @map("chunk_count")
+  content_summary    String?                   @map("content_summary")
+  error_message      String?                   @map("error_message")
+  file_hash          String?                   @map("file_hash") @db.VarChar(64)
+  pinecone_namespace String?                   @map("pinecone_namespace")
+  processing_status  String                    @default("pending") @map("processing_status")
+  chunk_metadata     document_chunk_metadata[]
+  users              User                      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([file_name])
   @@index([user_id, uploaded_at])
+  @@index([processing_status])
+  @@index([file_hash])
+}
+
+model document_chunk_metadata {
+  id          String         @id
+  document_id String         @map("document_id")
+  user_id     String         @map("user_id")
+  chunk_index Int            @map("chunk_index")
+  token_count Int?           @map("token_count")
+  pinecone_id String         @map("pinecone_id")
+  created_at  DateTime       @default(now())
+  document    user_documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([document_id])
+  @@index([user_id])
+  @@index([pinecone_id])
 }
 
 enum ActivityCategory {
@@ -1185,4 +1209,3 @@ enum InteractionType {
   PREFERENCE_CHANGE
   OTHER
 }
-

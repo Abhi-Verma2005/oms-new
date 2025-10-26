@@ -1,0 +1,122 @@
+{
+  "customer_insights": {
+    "total_customers": 1250,
+    "segments": {
+      "enterprise": {
+        "count": 150,
+        "avg_revenue": 125000,
+        "churn_rate": 0.02,
+        "satisfaction_score": 4.7
+      },
+      "mid_market": {
+        "count": 400,
+        "avg_revenue": 45000,
+        "churn_rate": 0.05,
+        "satisfaction_score": 4.3
+      },
+      "smb": {
+        "count": 700,
+        "avg_revenue": 12000,
+        "churn_rate": 0.08,
+        "satisfaction_score": 4.1
+      }
+    },
+    "geographic_distribution": {
+      "north_america": 45,
+      "europe": 30,
+      "asia_pacific": 20,
+      "other": 5
+    },
+    "industry_breakdown": {
+      "technology": 35,
+      "finance": 20,
+      "healthcare": 15,
+      "retail": 12,
+      "manufacturing": 10,
+      "other": 8
+    },
+    "key_metrics": {
+      "monthly_recurring_revenue": 2500000,
+      "annual_recurring_revenue": 30000000,
+      "customer_acquisition_cost": 2500,
+      "customer_lifetime_value": 45000,
+      "net_promoter_score": 65,
+      "average_deal_size": 35000,
+      "sales_cycle_length_days": 45
+    },
+    "growth_trends": {
+      "q1_2024": {
+        "new_customers": 85,
+        "revenue": 1800000,
+        "churn": 12
+      },
+      "q2_2024": {
+        "new_customers": 95,
+        "revenue": 2100000,
+        "churn": 8
+      },
+      "q3_2024": {
+        "new_customers": 110,
+        "revenue": 2300000,
+        "churn": 15
+      },
+      "q4_2024": {
+        "new_customers": 125,
+        "revenue": 2500000,
+        "churn": 10
+      }
+    },
+    "customer_feedback": {
+      "top_positive_feedback": [
+        "Easy to use interface",
+        "Excellent customer support",
+        "Powerful analytics features",
+        "Seamless integrations",
+        "Cost-effective solution"
+      ],
+      "top_negative_feedback": [
+        "Learning curve for advanced features",
+        "Limited customization options",
+        "Mobile app needs improvement",
+        "Reporting could be more flexible",
+        "Integration setup complexity"
+      ],
+      "feature_requests": [
+        "Advanced AI insights",
+        "Custom dashboard builder",
+        "Mobile app improvements",
+        "More integration options",
+        "White-label solutions"
+      ]
+    },
+    "competitive_analysis": {
+      "main_competitors": [
+        {
+          "name": "Competitor A",
+          "market_share": 25,
+          "strengths": ["Brand recognition", "Enterprise features"],
+          "weaknesses": ["High cost", "Complex setup"]
+        },
+        {
+          "name": "Competitor B", 
+          "market_share": 20,
+          "strengths": ["User-friendly", "Good support"],
+          "weaknesses": ["Limited features", "Scalability issues"]
+        },
+        {
+          "name": "Competitor C",
+          "market_share": 15,
+          "strengths": ["Innovation", "AI features"],
+          "weaknesses": ["New to market", "Limited integrations"]
+        }
+      ],
+      "our_advantages": [
+        "Best price-to-feature ratio",
+        "Superior customer support",
+        "Most comprehensive integrations",
+        "Advanced analytics capabilities",
+        "Flexible deployment options"
+      ]
+    }
+  }
+}

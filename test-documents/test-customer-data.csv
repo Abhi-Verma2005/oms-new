@@ -1,0 +1,11 @@
+Customer ID,Name,Email,Company,Industry,Revenue,Last Purchase,Status,Priority
+CUST001,John Smith,john.smith@techcorp.com,TechCorp Inc,Technology,5000000,2025-01-15,Active,High
+CUST002,Sarah Johnson,sarah.j@startupx.com,StartupX,Startup,500000,2025-01-10,Active,Medium
+CUST003,Mike Chen,mike.chen@enterprise.com,Enterprise Solutions,Enterprise,50000000,2025-01-12,Active,High
+CUST004,Lisa Brown,lisa.brown@retail.com,RetailMax,Retail,2000000,2025-01-08,Inactive,Low
+CUST005,David Wilson,david.w@finance.com,FinancePro,Finance,10000000,2025-01-14,Active,High
+CUST006,Emma Davis,emma.d@health.com,HealthTech,Healthcare,3000000,2025-01-11,Active,Medium
+CUST007,Alex Rodriguez,alex.r@manufacturing.com,ManufacturingCo,Manufacturing,15000000,2025-01-09,Active,Medium
+CUST008,Rachel Green,rachel.g@education.com,EduTech,Education,800000,2025-01-13,Active,Low
+CUST009,Tom Anderson,tom.a@consulting.com,ConsultingFirm,Consulting,5000000,2025-01-07,Inactive,Medium
+CUST010,Nina Patel,nina.p@ecommerce.com,EcommercePro,E-commerce,12000000,2025-01-16,Active,High

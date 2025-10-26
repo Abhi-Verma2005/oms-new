@@ -34,9 +34,6 @@ export async function POST(req: NextRequest) {
 **CURRENT FILTERS:**
 ${currentFiltersContext}
 
-**CONVERSATION CONTEXT:**
-${messages.length > 1 ? `Previous conversation: ${messages.slice(-3).map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n')}` : 'This is the start of our conversation.'}
-
 **COMPREHENSIVE FILTER KNOWLEDGE:**
 
 **Quality Metrics:**
@@ -137,42 +134,12 @@ ${messages.length > 1 ? `Previous conversation: ${messages.slice(-3).map(m => `$
   * "You want high-quality sites that are affordable. I'll find sites with good authority but reasonable pricing."
   * "For maximum impact, I'll look for sites with DA 50+ and low spam scores."
 
-**CONTEXTUAL UNDERSTANDING:**
-
-**Business Context Recognition:**
-- "for my new product launch" → Suggest high-quality, established sites with good traffic
-- "for testing purposes" → Suggest budget-friendly, lower-quality sites for experimentation
-- "for long-term strategy" → Suggest high-quality, established sites with strong authority
-- "for quick wins" → Suggest medium-quality, affordable sites with good ROI potential
-- "for my existing blog" → Consider current site metrics and suggest complementary sites
-- "for my e-commerce store" → Focus on sites with good conversion potential
-
-**Campaign Context:**
-- "Black Friday campaign" → Suggest sites with high traffic and seasonal relevance
-- "holiday season" → Consider seasonal content and traffic patterns
-- "product launch" → Prioritize authority and credibility
-- "brand awareness" → Focus on high-traffic, reputable sites
-- "link building" → Balance quality with affordability
-
-**Budget Context:**
-- "I have $500 total budget" → Suggest multiple sites within budget
-- "unlimited budget" → Focus on highest quality options
-- "need to test first" → Suggest lower-cost options for initial testing
-- "ROI focused" → Prioritize sites with best value proposition
-
-**Timeline Context:**
-- "need results this week" → Suggest sites with quick turnaround
-- "long-term strategy" → Focus on established, stable sites
-- "urgent campaign" → Prioritize available, responsive sites
-
 **RESPONSE STYLE:**
 - Be conversational and helpful
-- Show understanding of their business needs and context
-- Reference previous conversation when relevant
+- Show understanding of their needs
 - Don't mention technical parameter names
 - Focus on what they'll get, not how you'll do it
 - Be confident about your recommendations
-- Provide business insights and strategic advice
 
 **EXAMPLES:**
 
@@ -207,7 +174,7 @@ Be intelligent, helpful, and show that you understand both the technical aspects
         model: 'gpt-4o',
         messages: [stage1SystemMessage, ...messages],
               temperature: 0.7,
-        max_tokens: 800,
+        max_tokens: 500,
               stream: true
             })
           })
@@ -284,47 +251,7 @@ ${currentFiltersContext}
 **1. DETERMINE INTENT:**
 - ACTION: User wants to see/modify filtered results → Call applyFilters
 - INFORMATION: User wants to learn/understand → No tool needed
-- EXPLORATION: User wants to discover options → Call applyFilters with broad criteria
-- COMPARISON: User wants to compare options → Call applyFilters with multiple criteria
-- RECOMMENDATION: User wants suggestions → Call applyFilters with intelligent defaults
-- EDUCATION: User wants to learn → No tool needed, provide educational response
-- PLANNING: User wants strategic advice → Provide recommendations + call applyFilters
-- UNCLEAR: Ambiguous request → Ask for clarification or use best judgment
-- ERROR: Invalid request → Handle gracefully with helpful suggestions
-
-**ADVANCED USER INTENTS:**
-
-**EXPLORATION MODE:**
-- "show me what's available" → Apply broad, diverse filters
-- "what options do I have?" → Show variety of quality levels and niches
-- "browse around" → Apply minimal filters for discovery
-
-**COMPARISON MODE:**
-- "compare these two" → Apply specific filters for comparison
-- "vs that one" → Apply alternative filters for comparison
-- "which is better?" → Apply quality-focused filters
-
-**RECOMMENDATION MODE:**
-- "what would you suggest?" → Apply intelligent defaults based on context
-- "recommend some sites" → Apply balanced quality/price filters
-- "what's best for me?" → Apply personalized filters based on conversation
-
-**EDUCATION MODE:**
-- "teach me about..." → Provide educational content, no filters
-- "how does X work?" → Explain concepts, no filters
-- "what should I know?" → Provide strategic advice, no filters
-
-**PLANNING MODE:**
-- "help me plan..." → Provide strategic advice + apply relevant filters
-- "strategy for..." → Suggest approach + apply supporting filters
-- "roadmap for..." → Provide step-by-step plan + apply initial filters
-
-**ERROR HANDLING:**
-- Invalid filter values (DA > 100, negative prices) → Suggest valid ranges
-- Conflicting requests → Resolve by prioritizing based on context
-- Empty results scenarios → Suggest alternative approaches
-- Ambiguous terms → Ask for clarification or provide options
-- Technical errors → Provide fallback suggestions
+- UNCLEAR: Ambiguous request → Use judgment
 
 **2. IDENTIFY OPERATION TYPE:**
 
@@ -405,38 +332,6 @@ ${currentFiltersContext}
 - "low traffic", "growing" → trafficMin: 1000
 - "any traffic" → Remove trafficMin
 
-**COMPLEX SCENARIOS:**
-
-**Conflicting Filters:**
-- "cheap high-quality" → Resolve by prioritizing quality (daMin: 50, priceMax: 300)
-- "expensive budget" → Resolve by prioritizing budget (priceMax: 200)
-- "low spam premium" → Resolve by prioritizing premium (daMin: 60, spamMax: 2)
-
-**Range Modifications:**
-- "tighter price range" → Reduce current price range by 25%
-- "wider DA range" → Expand current DA range by 50%
-- "more strict spam" → Lower spamMax by 2 points
-- "less strict quality" → Lower daMin by 10 points
-
-**Relative Adjustments:**
-- "more expensive" → Increase priceMin by 50%, decrease priceMax by 25%
-- "cheaper" → Decrease priceMax by 50%
-- "higher quality" → Increase daMin by 10 points
-- "lower spam" → Decrease spamMax by 2 points
-- "stricter" → Increase quality thresholds, decrease spam tolerance
-- "looser" → Decrease quality thresholds, increase spam tolerance
-
-**Multiple Operations:**
-- "change both country and price" → Replace both country and price filters
-- "update quality and add traffic" → Replace quality filters, add traffic filter
-- "clear price but keep quality" → Remove price filters, keep quality filters
-
-**Contextual Understanding:**
-- "for my new product launch" → Suggest high-quality, established sites
-- "for testing" → Suggest budget-friendly, lower-quality sites
-- "for long-term strategy" → Suggest high-quality, established sites
-- "for quick wins" → Suggest medium-quality, affordable sites
-
 **4. SMART FILTER MERGING:**
 
 **For APPEND operations:**
@@ -449,40 +344,14 @@ ${currentFiltersContext}
 - Replace only the mentioned filter type
 - Keep all other filters unchanged
 
-**For MULTIPLE REPLACE operations:**
-- Start with current filters
-- Replace all mentioned filter types
-- Keep all other filters unchanged
-
 **For CLEAR ALL operations:**
 - Start with empty filters
 - Add only the new filters mentioned
-
-**For PARTIAL CLEAR operations:**
-- Start with current filters
-- Remove specific filter categories (quality, price, geographic, etc.)
-- Keep all other filters unchanged
 
 **For REMOVE operations:**
 - Start with current filters
 - Remove only the mentioned filter type
 - Keep all other filters unchanged
-
-**For RANGE MODIFICATION operations:**
-- Start with current filters
-- Modify existing ranges by specified percentage
-- Keep all other filters unchanged
-
-**For RELATIVE ADJUSTMENT operations:**
-- Start with current filters
-- Adjust existing values relatively
-- Keep all other filters unchanged
-
-**CONFLICT RESOLUTION:**
-- When conflicts arise, prioritize based on context
-- "cheap high-quality" → Prioritize quality, adjust price accordingly
-- "expensive budget" → Prioritize budget, adjust quality accordingly
-- Always explain the resolution in reasoning
 
 **5. RESPONSE FORMAT:**
 
@@ -563,172 +432,7 @@ Analysis:
   "confidence": 0.90
 }
 
-Example 5 - MULTIPLE REPLACE:
-User: "change both country and price"
-Current: { niche: "tech", country: "india", daMin: 50, priceMax: 500 }
-Response: "I'll update both the country and price filters..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Multiple replacement request - user wants to change both country and price filters while keeping niche and quality",
-  "toolName": "applyFilters",
-  "parameters": {
-    "niche": "tech",
-    "country": "us",
-    "daMin": 50,
-    "priceMax": 300
-  },
-  "confidence": 0.90
-}
-
-Example 6 - PARTIAL CLEAR:
-User: "clear quality filters but keep niche"
-Current: { niche: "tech", daMin: 50, drMin: 50, spamMax: 3, priceMax: 300 }
-Response: "I'll remove the quality restrictions while keeping your tech niche..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Partial clear request - user wants to remove quality filters (daMin, drMin, spamMax) while keeping niche and price",
-  "toolName": "applyFilters",
-  "parameters": {
-    "niche": "tech",
-    "priceMax": 300
-  },
-  "confidence": 0.95
-}
-
-Example 7 - RANGE MODIFICATION:
-User: "make the price range tighter"
-Current: { priceMin: 100, priceMax: 800 }
-Response: "I'll narrow the price range for more focused results..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Range modification request - user wants to tighten the current price range by 25%",
-  "toolName": "applyFilters",
-  "parameters": {
-    "priceMin": 150,
-    "priceMax": 600
-  },
-  "confidence": 0.88
-}
-
-Example 8 - RELATIVE ADJUSTMENT:
-User: "make it more expensive"
-Current: { priceMin: 200, priceMax: 500 }
-Response: "I'll adjust the price range to focus on higher-end options..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Relative adjustment request - user wants to increase price focus by raising priceMin and adjusting priceMax",
-  "toolName": "applyFilters",
-  "parameters": {
-    "priceMin": 300,
-    "priceMax": 375
-  },
-  "confidence": 0.85
-}
-
-Example 9 - CONFLICTING FILTERS:
-User: "show me cheap high-quality sites"
-Current: {}
-Response: "I'll find high-quality sites that offer good value for money..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Conflicting filters resolved by prioritizing quality - user wants high quality but affordable, so setting quality thresholds with reasonable price limit",
-  "toolName": "applyFilters",
-  "parameters": {
-    "daMin": 50,
-    "drMin": 50,
-    "spamMax": 3,
-    "priceMax": 300
-  },
-  "confidence": 0.92
-}
-
-Example 10 - CONTEXTUAL UNDERSTANDING:
-User: "for my new product launch"
-Current: {}
-Response: "I'll find high-quality, established sites perfect for launching your new product..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Contextual request - user needs high-quality, established sites for product launch, prioritizing authority and credibility",
-  "toolName": "applyFilters",
-  "parameters": {
-    "daMin": 60,
-    "drMin": 60,
-    "spamMax": 2,
-    "trafficMin": 10000
-  },
-  "confidence": 0.94
-}
-
-Example 11 - EXPLORATION:
-User: "show me what's available"
-Current: {}
-Response: "I'll show you a variety of options across different quality levels and niches..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Exploration request - user wants to discover available options, so applying broad filters to show variety",
-  "toolName": "applyFilters",
-  "parameters": {
-    "daMin": 20,
-    "priceMax": 1000
-  },
-  "confidence": 0.90
-}
-
-Example 12 - RECOMMENDATION:
-User: "what would you suggest for my tech startup?"
-Current: {}
-Response: "For a tech startup, I'd recommend high-quality sites that offer good value..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Recommendation request - user wants personalized suggestions for tech startup, applying balanced quality/price filters",
-  "toolName": "applyFilters",
-  "parameters": {
-    "niche": "tech",
-    "daMin": 40,
-    "drMin": 40,
-    "spamMax": 4,
-    "priceMax": 500
-  },
-  "confidence": 0.92
-}
-
-Example 13 - EDUCATION:
-User: "teach me about backlink strategies"
-Response: "Backlink strategies involve several key principles..."
-Analysis:
-{
-  "shouldExecuteTool": false,
-  "reasoning": "Education request - user wants to learn about backlink strategies, no filter operation needed",
-  "toolName": null,
-  "parameters": {},
-  "confidence": 0.95
-}
-
-Example 14 - PLANNING:
-User: "help me plan a 3-month link building campaign"
-Response: "I'll help you create a strategic 3-month plan and find the right sites to start with..."
-Analysis:
-{
-  "shouldExecuteTool": true,
-  "reasoning": "Planning request - user wants strategic advice and initial site recommendations for campaign planning",
-  "toolName": "applyFilters",
-  "parameters": {
-    "daMin": 30,
-    "priceMax": 300,
-    "spamMax": 5
-  },
-  "confidence": 0.88
-}
-
-Example 15 - INFORMATION:
+Example 5 - INFORMATION:
 User: "what is domain authority?"
 Response: "Domain Authority (DA) is a metric..."
 Analysis:
@@ -756,7 +460,7 @@ Be intelligent about understanding the user's intent and perform the correct fil
                 { role: 'user', content: `Analyze this request and determine tool execution.` }
               ],
               temperature: 0.1,
-              max_tokens: 1000
+              max_tokens: 500
             })
           })
 
@@ -765,34 +469,7 @@ Be intelligent about understanding the user's intent and perform the correct fil
           }
 
           const stage2Data = await stage2Response.json()
-          const rawContent = stage2Data.choices[0]?.message?.content || '{}'
-          
-          // Clean and parse JSON response
-          let analysis
-          try {
-            // Remove any text before the first { and after the last }
-            const jsonStart = rawContent.indexOf('{')
-            const jsonEnd = rawContent.lastIndexOf('}') + 1
-            
-            if (jsonStart !== -1 && jsonEnd > jsonStart) {
-              const jsonContent = rawContent.substring(jsonStart, jsonEnd)
-              analysis = JSON.parse(jsonContent)
-            } else {
-              throw new Error('No valid JSON found in response')
-            }
-          } catch (parseError) {
-            console.error('❌ JSON Parse Error:', parseError)
-            console.error('Raw content:', rawContent)
-            
-            // Fallback: create a basic analysis
-            analysis = {
-              shouldExecuteTool: false,
-              reasoning: 'Failed to parse AI response, defaulting to no action',
-              toolName: null,
-              parameters: {},
-              confidence: 0.1
-            }
-          }
+          const analysis = JSON.parse(stage2Data.choices[0]?.message?.content || '{}')
           
           console.log(`🎯 Stage 2 Analysis:`)
           console.log(`   Should Execute: ${analysis.shouldExecuteTool}`)

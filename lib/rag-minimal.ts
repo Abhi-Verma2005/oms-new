@@ -1,5 +1,6 @@
 import { Pinecone } from '@pinecone-database/pinecone'
 import { OpenAI } from 'openai'
+import { getNamespace } from './rag-namespace'
 
 // Initialize Pinecone
 const pinecone = new Pinecone({
@@ -58,14 +59,265 @@ export class MinimalRAG {
   async generateEmbedding(text: string): Promise<number[]> {
     try {
       const response = await this.openai.embeddings.create({
-        model: 'text-embedding-ada-002',
-        input: text
+        model: 'text-embedding-3-small', // Updated to newer model
+        input: text,
+        dimensions: 1536
       })
       
       return response.data[0].embedding
     } catch (error) {
       console.error('❌ Embedding generation failed:', error)
       throw error
+    }
+  }
+
+  // FIXED: Smart chunking with paragraph boundaries
+  chunkDocument(
+    content: string, 
+    documentId: string,
+    documentName: string,
+    userId: string,
+    chunkSize: number = 1000,
+    overlap: number = 200
+  ): Array<{text: string; index: number; metadata: any}> {
+    const chunks = []
+    let chunkIndex = 0
+    
+    // Split by paragraphs (double newlines)
+    const paragraphs = content.split(/\n\n+/).filter(p => p.trim())
+    let currentChunk = ''
+    
+    for (const paragraph of paragraphs) {
+      const trimmedPara = paragraph.trim()
+      
+      // Check if adding this paragraph would exceed chunk size
+      if ((currentChunk + '\n\n' + trimmedPara).length > chunkSize && currentChunk.length > 0) {
+        // Save current chunk
+        chunks.push({
+          text: currentChunk.trim(),
+          index: chunkIndex,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            chunkIndex,
+            totalChunks: 0 // Updated later
+          }
+        })
+        
+        // Create overlap: take last ~200 chars from current chunk
+        const overlapText = currentChunk.slice(-overlap).trim()
+        currentChunk = overlapText + '\n\n' + trimmedPara
+        chunkIndex++
+      } else {
+        currentChunk += (currentChunk ? '\n\n' : '') + trimmedPara
+      }
+    }
+    
+    // Add final chunk
+    if (currentChunk.trim()) {
+      chunks.push({
+        text: currentChunk.trim(),
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          totalChunks: 0
+        }
+      })
+    }
+    
+    // Update total chunks count
+    const totalChunks = chunks.length
+    chunks.forEach(chunk => chunk.metadata.totalChunks = totalChunks)
+    
+    return chunks
+  }
+
+  // FIXED: Batch embedding generation with consistent model
+  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+    try {
+      const response = await this.openai.embeddings.create({
+        model: 'text-embedding-3-small', // Consistent model, cheaper than ada-002
+        input: texts,
+        dimensions: 1536 // Explicit dimension specification
+      })
+      
+      return response.data.map(item => item.embedding)
+    } catch (error) {
+      console.error('❌ Embedding generation failed:', error)
+      throw error
+    }
+  }
+
+  // FIXED: Add document with proper namespace isolation
+  async addDocumentWithChunking(
+    content: string, 
+    metadata: {
+      documentId: string
+      filename: string
+      type: string
+      size: number
+    },
+    userId: string
+  ): Promise<{ success: boolean; chunks: any[]; error?: string }> {
+    try {
+      if (!this.index) {
+        await this.initialize()
+      }
+
+      console.log(`📄 Processing document: ${metadata.filename} for user ${userId}`)
+      
+      // 1. Chunk the document
+      const chunks = this.chunkDocument(
+        content, 
+        metadata.documentId, 
+        metadata.filename, 
+        userId
+      )
+      
+      if (chunks.length === 0) {
+        throw new Error('No chunks created from document')
+      }
+      
+      console.log(`✂️ Created ${chunks.length} chunks`)
+      
+      // 2. Generate embeddings for all chunks
+      const chunkTexts = chunks.map(c => c.text)
+      const embeddings = await this.generateEmbeddings(chunkTexts)
+      
+      // 3. Prepare vectors with rich metadata
+      const vectors = chunks.map((chunk, i) => ({
+        id: `${metadata.documentId}_chunk_${chunk.index}`,
+        values: embeddings[i],
+        metadata: {
+          ...chunk.metadata,
+          type: 'document_chunk', // Identify as document chunk
+          text: chunk.text, // Store full text in Pinecone metadata
+          timestamp: new Date().toISOString(),
+          fileType: metadata.type,
+          fileSize: metadata.size
+        }
+      }))
+      
+      // 4. FIXED: Upsert to user's namespace
+      const namespace = getNamespace('documents', userId)
+      await this.index.namespace(namespace).upsert(vectors)
+      
+      console.log(`✅ Uploaded ${chunks.length} chunks to namespace: ${namespace}`)
+      return { success: true, chunks }
+      
+    } catch (error) {
+      console.error('❌ Failed to add document:', error)
+      return { 
+        success: false, 
+        chunks: [],
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }
+    }
+  }
+
+  // FIXED: Search with proper namespace and token limits
+  async searchDocumentChunks(
+    query: string, 
+    userId: string, 
+    limit: number = 5,
+    maxTokens: number = 8000 // Increased token limit for better context
+  ): Promise<Array<{
+    id: string
+    content: string
+    score: number
+    documentId: string
+    documentName: string
+    chunkIndex: number
+    metadata: any
+  }>> {
+    try {
+      if (!this.index) {
+        await this.initialize()
+      }
+
+      console.log(`🔍 Searching documents for user ${userId}: "${query.substring(0, 50)}..."`)
+      
+      // Generate query embedding
+      const queryEmbedding = await this.generateEmbedding(query)
+      
+      // FIXED: Search in user's document namespace only
+      const namespace = getNamespace('documents', userId)
+      const results = await this.index.namespace(namespace).query({
+        vector: queryEmbedding,
+        topK: limit * 2, // Get more results for token filtering
+        includeMetadata: true
+      })
+      
+      // Extract and format chunks
+      let chunks = results.matches?.map(match => ({
+        id: match.id,
+        content: match.metadata?.text as string || '',
+        score: match.score || 0,
+        documentId: match.metadata?.documentId as string,
+        documentName: match.metadata?.documentName as string,
+        chunkIndex: match.metadata?.chunkIndex as number,
+        metadata: match.metadata || {}
+      })) || []
+      
+      // FIXED: Token-aware filtering (rough estimate: 4 chars = 1 token)
+      let totalTokens = 0
+      const filteredChunks = []
+      
+      for (const chunk of chunks) {
+        const estimatedTokens = Math.ceil(chunk.content.length / 4)
+        if (totalTokens + estimatedTokens <= maxTokens) {
+          filteredChunks.push(chunk)
+          totalTokens += estimatedTokens
+        } else {
+          break // Stop adding chunks
+        }
+      }
+      
+      console.log(`✅ Found ${filteredChunks.length} relevant chunks (~${totalTokens} tokens)`)
+      return filteredChunks
+      
+    } catch (error) {
+      console.error('❌ Document search failed:', error)
+      return []
+    }
+  }
+
+  // FIXED: Proper document deletion from namespace
+  async deleteUserDocument(documentId: string, userId: string): Promise<boolean> {
+    try {
+      if (!this.index) {
+        await this.initialize()
+      }
+
+      console.log(`🗑️ Deleting document ${documentId} for user ${userId}`)
+      
+      const namespace = getNamespace('documents', userId)
+      
+      // Get all chunk IDs for this document
+      const results = await this.index.namespace(namespace).query({
+        vector: new Array(1536).fill(0),
+        filter: { documentId: { $eq: documentId } },
+        topK: 10000,
+        includeMetadata: true
+      })
+      
+      const chunkIds = results.matches?.map(m => m.id) || []
+      
+      if (chunkIds.length > 0) {
+        // Delete all chunks
+        await this.index.namespace(namespace).deleteMany(chunkIds)
+        console.log(`✅ Deleted ${chunkIds.length} chunks from Pinecone`)
+      }
+      
+      return true
+      
+    } catch (error) {
+      console.error('❌ Document deletion failed:', error)
+      return false
     }
   }
 
