@@ -2082,6 +2082,8 @@ export default function PublishersClient() {
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
   
+  // AI filter updates are now handled via URL changes (simplified)
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(() => Number(searchParams?.get('page') || 1))
   const [totalItems, setTotalItems] = useState(0)

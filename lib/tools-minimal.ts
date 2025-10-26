@@ -150,43 +150,45 @@ export async function applyFilters(filters: any, userId: string) {
   console.log(`🔍 Applying filters:`, filters)
   
   try {
-    // Build URL parameters for publisher page
+    // Extract reasoning from filters
+    const { reasoning, ...actualFilters } = filters
+    
+    // Build URL parameters
     const urlParams = new URLSearchParams()
     
     // Map filter parameters to URL parameters
-    if (filters.daMin) urlParams.set('daMin', filters.daMin.toString())
-    if (filters.daMax) urlParams.set('daMax', filters.daMax.toString())
-    if (filters.paMin) urlParams.set('paMin', filters.paMin.toString())
-    if (filters.paMax) urlParams.set('paMax', filters.paMax.toString())
-    if (filters.drMin) urlParams.set('drMin', filters.drMin.toString())
-    if (filters.drMax) urlParams.set('drMax', filters.drMax.toString())
-    if (filters.spamMin) urlParams.set('spamMin', filters.spamMin.toString())
-    if (filters.spamMax) urlParams.set('spamMax', filters.spamMax.toString())
-    if (filters.priceMin) urlParams.set('priceMin', filters.priceMin.toString())
-    if (filters.priceMax) urlParams.set('priceMax', filters.priceMax.toString())
-    if (filters.niche) urlParams.set('niche', filters.niche)
-    if (filters.country) urlParams.set('country', filters.country)
-    if (filters.language) urlParams.set('language', filters.language)
-    if (filters.trafficMin) urlParams.set('trafficMin', filters.trafficMin.toString())
-    if (filters.backlinkNature) urlParams.set('backlinkNature', filters.backlinkNature)
-    if (filters.availability !== undefined) urlParams.set('availability', filters.availability.toString())
+    if (actualFilters.priceMin) urlParams.set('priceMin', actualFilters.priceMin.toString())
+    if (actualFilters.priceMax) urlParams.set('priceMax', actualFilters.priceMax.toString())
+    if (actualFilters.daMin) urlParams.set('daMin', actualFilters.daMin.toString())
+    if (actualFilters.daMax) urlParams.set('daMax', actualFilters.daMax.toString())
+    if (actualFilters.paMin) urlParams.set('paMin', actualFilters.paMin.toString())
+    if (actualFilters.paMax) urlParams.set('paMax', actualFilters.paMax.toString())
+    if (actualFilters.drMin) urlParams.set('drMin', actualFilters.drMin.toString())
+    if (actualFilters.drMax) urlParams.set('drMax', actualFilters.drMax.toString())
+    if (actualFilters.spamMin) urlParams.set('spamMin', actualFilters.spamMin.toString())
+    if (actualFilters.spamMax) urlParams.set('spamMax', actualFilters.spamMax.toString())
+    if (actualFilters.niche) urlParams.set('niche', actualFilters.niche)
+    if (actualFilters.country) urlParams.set('country', actualFilters.country)
+    if (actualFilters.language) urlParams.set('language', actualFilters.language)
+    if (actualFilters.trafficMin) urlParams.set('trafficMin', actualFilters.trafficMin.toString())
+    if (actualFilters.backlinkNature) urlParams.set('backlinkNature', actualFilters.backlinkNature)
+    if (actualFilters.availability !== undefined) urlParams.set('availability', actualFilters.availability.toString())
     
     const publisherUrl = `/publishers?${urlParams.toString()}`
     
     return {
       action: 'filter_applied',
-      filters,
-      message: `Applied filters and navigating to publisher page`,
+      filters: actualFilters,
+      reasoning: reasoning, // Pass reasoning to frontend
+      message: `Applied filters successfully`,
       url: publisherUrl,
       success: true
     }
-    
   } catch (error) {
-    console.error('❌ Failed to apply filters:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('❌ Filter application error:', error)
     return {
-      action: 'filters_failed',
-      filters,
-      message: `Failed to apply filters: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      action: 'filter_error',
+      message: 'Failed to apply filters',
       success: false
     }
   }

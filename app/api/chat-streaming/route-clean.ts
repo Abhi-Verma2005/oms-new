@@ -52,44 +52,44 @@ ${currentFiltersContext}
 - If user wants to filter/search websites, acknowledge their request naturally
 - If user asks questions, provide informative answers
 - Be friendly, concise, and helpful
-- DO NOT mention technical operations, filters, or parameters
+- DO NOT mention or execute any technical operations
 - Just respond as a helpful human would
 
 **EXAMPLES:**
 
 User: "Show me affordable tech sites"
-You: "I'll help you find affordable tech publishers for you."
+You: "I'll help you find affordable tech publishers. Let me search for sites under $500 in the technology niche."
 
 User: "What is Domain Authority?"
 You: "Domain Authority (DA) is a metric developed by Moz that predicts how well a website will rank on search engines. It ranges from 0-100, with higher scores indicating stronger authority and better ranking potential."
 
 User: "I need sites from India with good quality"
-You: "I'll look for high-quality publishers from India for you."
+You: "I'll look for high-quality publishers from India for you. I'll find sites with strong authority metrics and low spam scores."
 
 User: "Also show ones with high traffic"
-You: "I'll add the high traffic requirement to your current search."
+You: "I'll add the high traffic requirement to your current search. Looking for publishers with significant monthly traffic now."
 
-Keep responses brief, natural, and conversational. Do not mention specific filter values or technical details.`
+Keep responses brief, natural, and conversational.`
     }
 
     let stage1Response = ''
     
     // Call LLM for text response (streaming)
     const stage1Stream = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.OPENAI_API_KEY || process.env.OPEN_AI_KEY}`,
-            },
-            body: JSON.stringify({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY || process.env.OPEN_AI_KEY}`,
+      },
+      body: JSON.stringify({
         model: 'gpt-4o',
         messages: [stage1SystemMessage, ...messages],
-              temperature: 0.7,
+        temperature: 0.7,
         max_tokens: 500,
-              stream: true
-            })
-          })
-          
+        stream: true
+      })
+    })
+
     if (!stage1Stream.ok) {
       throw new Error(`Stage 1 API error: ${stage1Stream.status}`)
     }
@@ -306,17 +306,17 @@ Be precise and confident in your analysis.`
               const result = await applyFilters(analysis.parameters, userId)
               console.log(`✅ Filter executed successfully`)
               
-              // Send tool result to client (using old format for compatibility)
+              // Send tool result to client
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-                toolResults: [{
+                type: 'tool_result',
+                stage: 2,
+                toolResult: {
                   ...result,
                   analysis: {
                     reasoning: analysis.reasoning,
                     confidence: analysis.confidence
                   }
-                }],
-                message: `🧠 Smart AI: ${result.message}`,
-                intelligence: 'Applied filters based on your request'
+                }
               })}\n\n`))
               
             } catch (error) {
@@ -345,7 +345,7 @@ Be precise and confident in your analysis.`
             
             const shouldStore = stage1Response.length > 50
             if (shouldStore) {
-            await ragSystem.storeConversation(userId, conversationMessages)
+              await ragSystem.storeConversation(userId, conversationMessages)
               console.log(`💾 Conversation stored`)
             }
           } catch (error) {

@@ -119,16 +119,20 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                 // Handle tool results
                 if (parsed.toolResults) {
                   toolResults = parsed.toolResults
-                  setToolActions(toolResults)
+                  setToolActions(parsed.toolResults)
                   setShowToolFeedback(true)
                   
                   // Handle tool execution
-                  for (const toolResult of toolResults) {
+                  for (const toolResult of parsed.toolResults) {
                     switch (toolResult.action) {
                       case 'filter_applied':
                         if (toolResult.url) {
-                          const url = new URL(toolResult.url, window.location.origin)
-                          router.push(url.pathname + url.search)
+                          console.log('🔍 Applying filters to URL:', toolResult.url)
+                          
+                          // Simply navigate to the new URL - this will trigger all the necessary updates
+                          router.push(toolResult.url)
+                          
+                          console.log('✅ Filters applied to URL:', toolResult.url)
                           setTimeout(() => setShowToolFeedback(false), 2000)
                         }
                         break
@@ -137,18 +141,18 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                           router.push(toolResult.route)
                           setTimeout(() => setShowToolFeedback(false), 2000)
                         }
-              break
+                        break
                       case 'cart_updated':
                         console.log('🛒 Cart updated:', toolResult.message)
                         setTimeout(() => setShowToolFeedback(false), 3000)
-              break
+                        break
                       case 'search_completed':
                         console.log('🔍 RAG Search completed:', toolResult.message)
                         if (toolResult.sources && toolResult.sources.length > 0) {
                           console.log('📚 Found documents:', toolResult.sources)
                         }
                         setTimeout(() => setShowToolFeedback(false), 3000)
-              break
+                        break
                     }
                   }
                 }
