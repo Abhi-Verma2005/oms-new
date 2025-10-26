@@ -61,13 +61,33 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     setError(null)
 
     try {
+      // Get current filter state from URL
+      const currentFilters: any = {}
+      if (searchParams.get('daMin')) currentFilters.daMin = parseInt(searchParams.get('daMin')!)
+      if (searchParams.get('daMax')) currentFilters.daMax = parseInt(searchParams.get('daMax')!)
+      if (searchParams.get('drMin')) currentFilters.drMin = parseInt(searchParams.get('drMin')!)
+      if (searchParams.get('drMax')) currentFilters.drMax = parseInt(searchParams.get('drMax')!)
+      if (searchParams.get('spamMin')) currentFilters.spamMin = parseInt(searchParams.get('spamMin')!)
+      if (searchParams.get('spamMax')) currentFilters.spamMax = parseInt(searchParams.get('spamMax')!)
+      if (searchParams.get('priceMin')) currentFilters.priceMin = parseInt(searchParams.get('priceMin')!)
+      if (searchParams.get('priceMax')) currentFilters.priceMax = parseInt(searchParams.get('priceMax')!)
+      if (searchParams.get('paMin')) currentFilters.paMin = parseInt(searchParams.get('paMin')!)
+      if (searchParams.get('paMax')) currentFilters.paMax = parseInt(searchParams.get('paMax')!)
+      if (searchParams.get('niche')) currentFilters.niche = searchParams.get('niche')
+      if (searchParams.get('country')) currentFilters.country = searchParams.get('country')
+      if (searchParams.get('language')) currentFilters.language = searchParams.get('language')
+      if (searchParams.get('trafficMin')) currentFilters.trafficMin = parseInt(searchParams.get('trafficMin')!)
+      if (searchParams.get('backlinkNature')) currentFilters.backlinkNature = searchParams.get('backlinkNature')
+      if (searchParams.get('availability') !== null) currentFilters.availability = searchParams.get('availability') === 'true'
+
       // Create streaming response
       const response = await fetch('/api/chat-streaming', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...messages, userMessage],
-          userId
+          userId,
+          currentFilters
         })
       })
 
