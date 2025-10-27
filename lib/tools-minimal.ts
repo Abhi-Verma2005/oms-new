@@ -157,6 +157,7 @@ export async function applyFilters(filters: any, userId: string) {
     const urlParams = new URLSearchParams()
     
     // Map filter parameters to URL parameters
+    // Quality metrics
     if (actualFilters.priceMin) urlParams.set('priceMin', actualFilters.priceMin.toString())
     if (actualFilters.priceMax) urlParams.set('priceMax', actualFilters.priceMax.toString())
     if (actualFilters.daMin) urlParams.set('daMin', actualFilters.daMin.toString())
@@ -167,18 +168,41 @@ export async function applyFilters(filters: any, userId: string) {
     if (actualFilters.drMax) urlParams.set('drMax', actualFilters.drMax.toString())
     if (actualFilters.spamMin) urlParams.set('spamMin', actualFilters.spamMin.toString())
     if (actualFilters.spamMax) urlParams.set('spamMax', actualFilters.spamMax.toString())
+    
+    // Geographic and language
     if (actualFilters.niche) urlParams.set('niche', actualFilters.niche)
     if (actualFilters.country) urlParams.set('country', actualFilters.country)
     if (actualFilters.language) urlParams.set('language', actualFilters.language)
+    
+    // Traffic metrics
     if (actualFilters.trafficMin) urlParams.set('trafficMin', actualFilters.trafficMin.toString())
     if (actualFilters.trafficMax) urlParams.set('trafficMax', actualFilters.trafficMax.toString())
-    if (actualFilters.semrushTrafficMin) urlParams.set('semrushTrafficMin', actualFilters.semrushTrafficMin.toString())
-    if (actualFilters.semrushTrafficMax) urlParams.set('semrushTrafficMax', actualFilters.semrushTrafficMax.toString())
-    if (actualFilters.trafficTrend) urlParams.set('trafficTrend', actualFilters.trafficTrend)
+    if (actualFilters.semrushOverallTrafficMin) urlParams.set('semrushOverallTrafficMin', actualFilters.semrushOverallTrafficMin.toString())
+    if (actualFilters.semrushOrganicTrafficMin) urlParams.set('semrushOrganicTrafficMin', actualFilters.semrushOrganicTrafficMin.toString())
+    if (actualFilters.trend) urlParams.set('trend', actualFilters.trend)
+    
+    // Backlink quality
     if (actualFilters.backlinkNature) urlParams.set('backlinkNature', actualFilters.backlinkNature)
+    if (actualFilters.linkPlacement) urlParams.set('linkPlacement', actualFilters.linkPlacement)
+    if (actualFilters.permanence) urlParams.set('permanence', actualFilters.permanence)
+    if (actualFilters.backlinksAllowedMin) urlParams.set('backlinksAllowedMin', actualFilters.backlinksAllowedMin.toString())
+    
+    // Publishing constraints
     if (actualFilters.availability !== undefined) urlParams.set('availability', actualFilters.availability.toString())
-    if (actualFilters.tatMin) urlParams.set('tatMin', actualFilters.tatMin.toString())
-    if (actualFilters.tatMax) urlParams.set('tatMax', actualFilters.tatMax.toString())
+    if (actualFilters.outboundLinkLimitMax) urlParams.set('outboundLinkLimitMax', actualFilters.outboundLinkLimitMax.toString())
+    
+    // Turnaround time (TAT) - support both naming conventions
+    if (actualFilters.tatDaysMin) urlParams.set('tatDaysMin', actualFilters.tatDaysMin.toString())
+    if (actualFilters.tatDaysMax) urlParams.set('tatDaysMax', actualFilters.tatDaysMax.toString())
+    if (actualFilters.tatMin) urlParams.set('tatDaysMin', actualFilters.tatMin.toString())
+    if (actualFilters.tatMax) urlParams.set('tatDaysMax', actualFilters.tatMax.toString())
+    
+    // Search metadata
+    if (actualFilters.sampleUrl) urlParams.set('sampleUrl', actualFilters.sampleUrl)
+    if (actualFilters.remarkIncludes) urlParams.set('remarkIncludes', actualFilters.remarkIncludes)
+    if (actualFilters.guidelinesUrlIncludes) urlParams.set('guidelinesUrlIncludes', actualFilters.guidelinesUrlIncludes)
+    if (actualFilters.disclaimerIncludes) urlParams.set('disclaimerIncludes', actualFilters.disclaimerIncludes)
+    if (actualFilters.lastPublishedAfter) urlParams.set('lastPublishedAfter', actualFilters.lastPublishedAfter)
     
     const publisherUrl = `/publishers?${urlParams.toString()}`
     

@@ -84,12 +84,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
       
       if (result.success) {
         setUploadedDocuments(result.documents)
-        
-        // Auto-select completed documents
-        const completedDocs = result.documents
-          .filter((d: any) => d.processing_status === 'completed')
-          .map((d: any) => d.id)
-        setSelectedDocuments(completedDocs)
+        // Don't auto-select any documents - user will choose via "Add Context"
       }
     } catch (error) {
       console.error('Failed to load documents:', error)
@@ -235,6 +230,19 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
         ? prev.filter(id => id !== documentId)
         : [...prev, documentId]
     )
+  }
+
+  // Select all completed documents
+  const selectAllDocuments = () => {
+    const completedDocs = uploadedDocuments
+      .filter(d => d.processing_status === 'completed')
+      .map(d => d.id)
+    setSelectedDocuments(completedDocs)
+  }
+
+  // Remove all selected documents
+  const removeAllDocuments = () => {
+    setSelectedDocuments([])
   }
 
   // Delete document
@@ -749,7 +757,125 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
           {/* Input Area */}
           <div className="border rounded-lg" style={{ borderColor: '#4a5568', margin: '16px', marginTop: 0 }}>
             <form onSubmit={handleSubmit}>
-              <div className="p-3">
+              <div className="p-2">
+                {/* Add Context Button (shown when no files selected) */}
+                {selectedDocuments.length === 0 && (
+                  <div className="mb-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex items-center gap-2 px-3 py-1.5 border rounded-md text-xs text-gray-400 hover:text-white hover:border-purple-500 transition-colors"
+                          style={{ backgroundColor: '#2d374860', borderColor: '#4a5568' }}
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Context</span>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="max-w-[280px] max-h-[300px] overflow-y-auto" style={{ backgroundColor: '#1A202C', borderColor: '#2d3748' }}>
+                        <div className="px-2 py-1.5">
+                          <DropdownMenuItem
+                            className="text-sm text-gray-400 hover:text-white"
+                            style={{ backgroundColor: 'transparent' }}
+                            onSelect={() => {
+                              const input = document.createElement('input')
+                              input.type = 'file'
+                              input.multiple = true
+                              input.accept = '.txt,.pdf,.docx,.doc,.csv,.json,.xlsx,.xls'
+                              input.onchange = (e: any) => {
+                                if (e.target.files) {
+                                  handleDocumentUpload(e.target.files)
+                                }
+                              }
+                              input.click()
+                            }}
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload New Document
+                          </DropdownMenuItem>
+                        </div>
+                        <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
+                        <div className="px-2 py-1.5">
+                          <Input
+                            type="text"
+                            placeholder="Search documents..."
+                            value={documentSearch}
+                            onChange={(e) => setDocumentSearch(e.target.value)}
+                            className="bg-gray-900 border-gray-700 text-white text-sm h-8"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
+                        {uploadedDocuments.filter(d => d.processing_status === 'completed').length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 flex gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  selectAllDocuments()
+                                }}
+                                className="flex-1 px-2 py-1 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 hover:border-purple-500 rounded transition-colors"
+                              >
+                                Select All
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  removeAllDocuments()
+                                }}
+                                className="flex-1 px-2 py-1 text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 rounded transition-colors"
+                              >
+                                Remove All
+                              </button>
+                            </div>
+                            <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
+                          </>
+                        )}
+                        {uploadedDocuments.length > 0 ? (
+                          uploadedDocuments
+                            .filter(doc => !documentSearch || doc.original_name.toLowerCase().includes(documentSearch.toLowerCase()))
+                            .map(doc => {
+                            const status = documentStatuses.get(doc.id) || doc.processing_status
+                            const isCompleted = status === 'completed'
+                            const isSelected = selectedDocuments.includes(doc.id)
+                            
+                            return (
+                              <DropdownMenuItem
+                                key={doc.id}
+                                className={`flex items-center gap-2 cursor-pointer ${!isCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                style={isSelected ? { backgroundColor: '#2d374860' } : {}}
+                                disabled={!isCompleted}
+                                onSelect={(e) => {
+                                  e.preventDefault()
+                                  if (isCompleted) {
+                                    toggleDocumentSelection(doc.id)
+                                  }
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  disabled={!isCompleted}
+                                  className="w-3 h-3"
+                                />
+                                <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                <span className="text-sm text-gray-300 truncate max-w-[180px]">{doc.original_name}</span>
+                              </DropdownMenuItem>
+                            )
+                          })
+                        ) : (
+                          <div className="px-2 py-3 text-center text-sm text-gray-400">
+                            No documents uploaded
+                          </div>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+
                 {/* Selected Documents */}
                 {selectedDocuments.length > 0 && (
                   <div className="flex gap-1 overflow-x-auto mb-2" style={{ maxWidth: 'calc(100% - 6rem)' }}>
@@ -783,8 +909,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Start a conversation..."
-                  className="text-white placeholder:text-gray-400 px-3 py-2 pr-12 focus:ring-0 resize-none"
-                  style={{ backgroundColor: 'transparent', border: 'none', minHeight: '44px', maxHeight: '150px', height: 'auto', boxShadow: 'none' }}
+                  className="text-white placeholder:text-gray-400 px-3 py-1.5 pr-12 focus:ring-0 resize-none"
+                  style={{ backgroundColor: 'transparent', border: 'none', minHeight: '36px', maxHeight: '120px', height: 'auto', boxShadow: 'none' }}
                   disabled={isLoading}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -796,7 +922,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
               </div>
 
               {/* Buttons Row */}
-              <div className="flex items-center justify-between px-3 pb-3 pt-0 gap-2">
+              <div className="flex items-center justify-between px-2 pb-2 pt-0 gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -840,6 +966,33 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                       />
                     </div>
                     <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
+                    {uploadedDocuments.filter(d => d.processing_status === 'completed').length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              selectAllDocuments()
+                            }}
+                            className="flex-1 px-2 py-1 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 hover:border-purple-500 rounded transition-colors"
+                          >
+                            Select All
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              removeAllDocuments()
+                            }}
+                            className="flex-1 px-2 py-1 text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 rounded transition-colors"
+                          >
+                            Remove All
+                          </button>
+                        </div>
+                        <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
+                      </>
+                    )}
                     {uploadedDocuments.length > 0 ? (
                       uploadedDocuments
                         .filter(doc => !documentSearch || doc.original_name.toLowerCase().includes(documentSearch.toLowerCase()))
@@ -911,7 +1064,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
             
             {/* Upload Progress */}
             {uploadingFiles.length > 0 && (
-              <div className="px-3 pb-3 space-y-1">
+              <div className="px-2 pb-2 space-y-1">
                 {uploadingFiles.map((filename, index) => (
                   <div key={index} className="flex items-center gap-2 text-xs text-gray-400">
                     <Loader2 className="w-3 h-3 animate-spin" />
