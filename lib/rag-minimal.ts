@@ -1058,7 +1058,8 @@ export class MinimalRAG {
     query: string, 
     userId: string, 
     limit: number = 5,
-    maxTokens: number = 8000 // Increased token limit for better context
+    maxTokens: number = 8000, // Increased token limit for better context
+    selectedDocuments?: string[] // NEW: Filter by specific documents
   ): Promise<Array<{
     id: string
     content: string
@@ -1082,11 +1083,22 @@ export class MinimalRAG {
       const namespace = getNamespace('documents', userId)
       console.log(`🔍 Searching in Pinecone namespace: ${namespace}`)
       
-      const results = await this.index.namespace(namespace).query({
+      // FIXED: Add filter for selected documents if provided
+      const queryOptions: any = {
         vector: queryEmbedding,
         topK: limit * 2, // Get more results for token filtering
         includeMetadata: true
-      })
+      }
+      
+      // If specific documents are selected, filter by documentId
+      if (selectedDocuments && selectedDocuments.length > 0) {
+        console.log(`📎 Filtering by ${selectedDocuments.length} selected documents:`, selectedDocuments)
+        queryOptions.filter = {
+          documentId: { $in: selectedDocuments }
+        }
+      }
+      
+      const results = await this.index.namespace(namespace).query(queryOptions)
       
       console.log(`📊 Pinecone query results: ${results.matches?.length || 0} matches found`)
       
@@ -1116,6 +1128,9 @@ export class MinimalRAG {
       }
       
       console.log(`✅ Found ${filteredChunks.length} relevant chunks (~${totalTokens} tokens)`)
+      if (selectedDocuments && selectedDocuments.length > 0) {
+        console.log(`📎 All chunks from selected documents only`)
+      }
       return filteredChunks
       
     } catch (error) {

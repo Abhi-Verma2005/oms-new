@@ -30,21 +30,24 @@ export async function POST(req: NextRequest) {
     
     if (selectedDocuments && selectedDocuments.length > 0) {
       try {
-        console.log(`📄 Searching document context for ${selectedDocuments.length} documents...`)
+        console.log(`📄 Searching document context for ${selectedDocuments.length} documents:`, selectedDocuments)
         
-        // Search with token limits
+        // FIXED: Pass selectedDocuments to filter search results
         const relevantChunks = await ragSystem.searchDocumentChunks(
           userMessage, 
           userId, 
           3, // Top 3 chunks (reduced)
-          2000 // Max 2000 tokens (reduced)
+          2000, // Max 2000 tokens (reduced)
+          selectedDocuments // Pass selected documents to filter results
         )
         
         if (relevantChunks.length > 0) {
           // Enhanced document context formatting for CSV and other documents
           documentContext = formatDocumentContextForAllTypes(relevantChunks, userMessage)
           
-          console.log(`✅ Found ${relevantChunks.length} relevant document chunks`)
+          console.log(`✅ Found ${relevantChunks.length} relevant document chunks from selected documents`)
+        } else {
+          console.log(`⚠️ No relevant chunks found in selected documents`)
         }
       } catch (error) {
         console.error('❌ Document context error:', error)
