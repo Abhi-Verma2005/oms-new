@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         
         if (relevantChunks.length > 0) {
           // Enhanced document context formatting for CSV and other documents
-          documentContext = formatDocumentContextForCSV(relevantChunks, userMessage)
+          documentContext = formatDocumentContextForAllTypes(relevantChunks, userMessage)
           
           console.log(`✅ Found ${relevantChunks.length} relevant document chunks`)
         }
@@ -592,16 +592,56 @@ Be intelligent about understanding the user's intent and perform the correct fil
   }
 }
 
-// Helper function to format document context for CSV, XLSX and other documents
-function formatDocumentContextForCSV(chunks: any[], userMessage: string): string {
+// Helper function to format document context for CSV, XLSX, DOCX, PDF and other documents
+function formatDocumentContextForAllTypes(chunks: any[], userMessage: string): string {
   const csvChunks = chunks.filter(chunk => chunk.metadata?.chunkType?.startsWith('csv_'))
   const xlsxChunks = chunks.filter(chunk => chunk.metadata?.chunkType?.startsWith('xlsx_'))
+  const docxChunks = chunks.filter(chunk => chunk.metadata?.chunkType?.startsWith('docx_'))
+  const pdfChunks = chunks.filter(chunk => chunk.metadata?.chunkType?.startsWith('pdf_'))
   const otherChunks = chunks.filter(chunk => 
     !chunk.metadata?.chunkType?.startsWith('csv_') && 
-    !chunk.metadata?.chunkType?.startsWith('xlsx_')
+    !chunk.metadata?.chunkType?.startsWith('xlsx_') &&
+    !chunk.metadata?.chunkType?.startsWith('docx_') &&
+    !chunk.metadata?.chunkType?.startsWith('pdf_')
   )
   
   let context = '**📄 RELEVANT DOCUMENT CONTEXT:**\n\n'
+  
+  // DOCX-specific context with priority ordering
+  if (docxChunks.length > 0) {
+    context += '**📄 Word Document Analysis:**\n'
+    
+    // Sort DOCX chunks by priority (high -> medium -> low)
+    const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 }
+    docxChunks.sort((a, b) => {
+      const aPriority = priorityOrder[a.metadata?.priority] ?? 2
+      const bPriority = priorityOrder[b.metadata?.priority] ?? 2
+      return aPriority - bPriority
+    })
+    
+    docxChunks.forEach((chunk, i) => {
+      const chunkType = chunk.metadata?.chunkType
+      const relevance = (chunk.score * 100).toFixed(0)
+      
+      if (chunkType === 'docx_summary') {
+        context += `[Document Summary - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'docx_outline') {
+        context += `[Document Outline - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'docx_section') {
+        const heading = chunk.metadata?.heading ? ` - ${chunk.metadata.heading}` : ''
+        context += `[Section${heading} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'docx_table') {
+        context += `[Table ${chunk.metadata?.tableIndex + 1} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'docx_list') {
+        const listType = chunk.metadata?.listType === 'ordered' ? 'Numbered' : 'Bulleted'
+        context += `[${listType} List ${chunk.metadata?.listIndex + 1} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'docx_content_analysis') {
+        context += `[Content Analysis - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'docx_paragraph') {
+        context += `[Paragraphs ${chunk.metadata?.paragraphRange} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      }
+    })
+  }
   
   // XLSX-specific context with priority ordering
   if (xlsxChunks.length > 0) {
@@ -665,6 +705,39 @@ function formatDocumentContextForCSV(chunks: any[], userMessage: string): string
     })
   }
   
+  // PDF-specific context with priority ordering
+  if (pdfChunks.length > 0) {
+    context += '**📄 PDF Document Analysis:**\n'
+    
+    // Sort PDF chunks by priority (high -> medium -> low)
+    const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 }
+    pdfChunks.sort((a, b) => {
+      const aPriority = priorityOrder[a.metadata?.priority] ?? 2
+      const bPriority = priorityOrder[b.metadata?.priority] ?? 2
+      return aPriority - bPriority
+    })
+    
+    pdfChunks.forEach((chunk, i) => {
+      const chunkType = chunk.metadata?.chunkType
+      const relevance = (chunk.score * 100).toFixed(0)
+      
+      if (chunkType === 'pdf_summary') {
+        context += `[Document Summary - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'pdf_outline') {
+        context += `[Document Outline - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'pdf_table') {
+        context += `[Table ${chunk.metadata?.tableIndex + 1} - Page ${chunk.metadata?.pageNumber} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'pdf_content_analysis') {
+        context += `[Content Analysis - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'pdf_section') {
+        const sectionTitle = chunk.metadata?.sectionTitle ? ` - ${chunk.metadata.sectionTitle}` : ''
+        context += `[Section${sectionTitle} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'pdf_page') {
+        context += `[Page ${chunk.metadata?.pageNumber} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      }
+    })
+  }
+  
   // Other document context
   if (otherChunks.length > 0) {
     context += '**📄 Other Document Content:**\n'
@@ -673,7 +746,7 @@ function formatDocumentContextForCSV(chunks: any[], userMessage: string): string
     })
   }
   
-  context += '**Instructions:** Use this document context to provide accurate, data-driven responses. Reference specific values, columns, rows, and sheets when relevant. For Excel workbooks, prioritize workbook summaries and sheet overviews for general questions, and specific columns/statistics for detailed analysis.'
+  context += '**Instructions:** Use this document context to provide accurate, data-driven responses. Reference specific values, columns, rows, sheets, sections, tables, lists, and pages when relevant. For Excel workbooks, prioritize workbook summaries and sheet overviews for general questions, and specific columns/statistics for detailed analysis. For Word documents, prioritize document summaries and outlines for general questions, and specific sections/tables for detailed analysis. For PDF documents, prioritize document summaries and outlines for general questions, and specific sections/tables/pages for detailed analysis.'
   
   return context
 }

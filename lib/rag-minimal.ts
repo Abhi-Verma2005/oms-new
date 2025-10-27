@@ -1,7 +1,7 @@
 import { Pinecone } from '@pinecone-database/pinecone'
 import { OpenAI } from 'openai'
 import { getNamespace } from './rag-namespace'
-import { CSVRow, CSVMetadata, XLSXMetadata } from './file-processor'
+import { CSVRow, CSVMetadata, XLSXMetadata, DOCXMetadata, PDFMetadata } from './file-processor'
 
 // Initialize Pinecone
 const pinecone = new Pinecone({
@@ -72,7 +72,7 @@ export class MinimalRAG {
     }
   }
 
-  // Enhanced chunking with CSV and XLSX support
+  // Enhanced chunking with CSV, XLSX and DOCX support
   chunkDocument(
     content: string, 
     documentId: string,
@@ -81,7 +81,9 @@ export class MinimalRAG {
     chunkSize: number = 1000,
     overlap: number = 200,
     csvMetadata?: CSVMetadata,
-    xlsxMetadata?: XLSXMetadata
+    xlsxMetadata?: XLSXMetadata,
+    docxMetadata?: DOCXMetadata,
+    pdfMetadata?: PDFMetadata
   ): Array<{text: string; index: number; metadata: any}> {
     // Check if this is CSV data
     if (csvMetadata && csvMetadata.headers && csvMetadata.headers.length > 0) {
@@ -91,6 +93,16 @@ export class MinimalRAG {
     // Check if this is XLSX data
     if (xlsxMetadata && xlsxMetadata.sheets && xlsxMetadata.sheets.length > 0) {
       return this.chunkXLSXDocument(content, xlsxMetadata, documentId, documentName, userId)
+    }
+    
+    // Check if this is DOCX data
+    if (docxMetadata && docxMetadata.structure && docxMetadata.structure.headings.length > 0) {
+      return this.chunkDOCXDocument(content, docxMetadata, documentId, documentName, userId)
+    }
+    
+    // Check if this is PDF data
+    if (pdfMetadata && pdfMetadata.structure && pdfMetadata.structure.pages.length > 0) {
+      return this.chunkPDFDocument(content, pdfMetadata, documentId, documentName, userId)
     }
     
     // Default paragraph-based chunking for other documents
@@ -575,6 +587,332 @@ export class MinimalRAG {
     return analysis
   }
 
+  // DOCX-specific chunking with multiple strategies
+  private chunkDOCXDocument(
+    docxContent: string, 
+    docxMetadata: DOCXMetadata, 
+    documentId: string, 
+    documentName: string, 
+    userId: string
+  ): Array<{text: string; index: number; metadata: any}> {
+    const chunks = []
+    let chunkIndex = 0
+    
+    // Strategy 1: Document summary chunk (HIGHEST PRIORITY)
+    const documentSummary = this.generateDOCXSummary(docxMetadata)
+    chunks.push({
+      text: documentSummary,
+      index: chunkIndex,
+      metadata: {
+        documentId,
+        documentName,
+        userId,
+        chunkIndex,
+        chunkType: 'docx_summary',
+        priority: 'high',
+        totalChunks: 0
+      }
+    })
+    chunkIndex++
+    
+    // Strategy 2: Document outline chunk
+    if (docxMetadata.structure.headings.length > 0) {
+      const outlineChunk = this.generateDOCXOutline(docxMetadata)
+      chunks.push({
+        text: outlineChunk,
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          chunkType: 'docx_outline',
+          priority: 'high',
+          totalChunks: 0
+        }
+      })
+      chunkIndex++
+    }
+    
+    // Strategy 3: Section-based chunking (by headings)
+    if (docxMetadata.structure.headings.length > 0) {
+      const sectionChunks = this.generateDOCXSectionChunks(docxMetadata, documentId, documentName, userId)
+      chunks.push(...sectionChunks.map(chunk => ({
+        ...chunk,
+        index: chunkIndex++,
+        metadata: {
+          ...chunk.metadata,
+          chunkType: 'docx_section',
+          priority: 'medium',
+          totalChunks: 0
+        }
+      })))
+    }
+    
+    // Strategy 4: Table-specific chunks
+    if (docxMetadata.structure.tables.length > 0) {
+      docxMetadata.structure.tables.forEach((table, index) => {
+        const tableChunk = this.generateDOCXTableChunk(table, index)
+        chunks.push({
+          text: tableChunk,
+          index: chunkIndex,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            chunkIndex,
+            chunkType: 'docx_table',
+            tableIndex: index,
+            tableRows: table.rows,
+            tableColumns: table.columns,
+            priority: 'medium',
+            totalChunks: 0
+          }
+        })
+        chunkIndex++
+      })
+    }
+    
+    // Strategy 5: List-specific chunks
+    if (docxMetadata.structure.lists.length > 0) {
+      docxMetadata.structure.lists.forEach((list, index) => {
+        const listChunk = this.generateDOCXListChunk(list, index)
+        chunks.push({
+          text: listChunk,
+          index: chunkIndex,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            chunkIndex,
+            chunkType: 'docx_list',
+            listIndex: index,
+            listType: list.type,
+            itemCount: list.items.length,
+            priority: 'low',
+            totalChunks: 0
+          }
+        })
+        chunkIndex++
+      })
+    }
+    
+    // Strategy 6: Content analysis chunk
+    const contentAnalysisChunk = this.generateDOCXContentAnalysis(docxMetadata)
+    chunks.push({
+      text: contentAnalysisChunk,
+      index: chunkIndex,
+      metadata: {
+        documentId,
+        documentName,
+        userId,
+        chunkIndex,
+        chunkType: 'docx_content_analysis',
+        priority: 'medium',
+        totalChunks: 0
+      }
+    })
+    chunkIndex++
+    
+    // Strategy 7: Paragraph-based chunking for remaining content
+    const paragraphChunks = this.generateDOCXParagraphChunks(docxMetadata, documentId, documentName, userId)
+    chunks.push(...paragraphChunks.map(chunk => ({
+      ...chunk,
+      index: chunkIndex++,
+      metadata: {
+        ...chunk.metadata,
+        chunkType: 'docx_paragraph',
+        priority: 'low',
+        totalChunks: 0
+      }
+    })))
+    
+    // Update total chunks count
+    const totalChunks = chunks.length
+    chunks.forEach(chunk => chunk.metadata.totalChunks = totalChunks)
+    
+    return chunks
+  }
+
+  private generateDOCXSummary(docxMetadata: DOCXMetadata): string {
+    let summary = `Word Document Summary\n\n`
+    
+    // Document information
+    if (docxMetadata.documentInfo.title) summary += `Title: ${docxMetadata.documentInfo.title}\n`
+    if (docxMetadata.documentInfo.author) summary += `Author: ${docxMetadata.documentInfo.author}\n`
+    if (docxMetadata.documentInfo.pages) summary += `Pages: ${docxMetadata.documentInfo.pages}\n`
+    if (docxMetadata.documentInfo.words) summary += `Words: ${docxMetadata.documentInfo.words}\n`
+    if (docxMetadata.documentInfo.characters) summary += `Characters: ${docxMetadata.documentInfo.characters}\n`
+    
+    summary += `\nDocument Structure:\n`
+    summary += `- Headings: ${docxMetadata.structure.headings.length}\n`
+    summary += `- Paragraphs: ${docxMetadata.structure.paragraphs.length}\n`
+    summary += `- Tables: ${docxMetadata.structure.tables.length}\n`
+    summary += `- Lists: ${docxMetadata.structure.lists.length}\n`
+    summary += `- Images: ${docxMetadata.structure.images.length}\n`
+    summary += `- Hyperlinks: ${docxMetadata.structure.hyperlinks.length}\n\n`
+    
+    // Content analysis
+    summary += `Content Analysis:\n`
+    summary += `- Language: ${docxMetadata.contentAnalysis.language}\n`
+    summary += `- Readability Score: ${docxMetadata.contentAnalysis.readabilityScore.toFixed(1)}\n`
+    summary += `- Complexity Level: ${docxMetadata.contentAnalysis.complexityLevel}\n`
+    summary += `- Document Type: ${docxMetadata.contentAnalysis.documentType}\n`
+    summary += `- Topic Keywords: ${docxMetadata.contentAnalysis.topicKeywords.join(', ')}\n\n`
+    
+    // Document outline preview
+    if (docxMetadata.structure.headings.length > 0) {
+      summary += `Document Outline:\n`
+      docxMetadata.structure.headings.slice(0, 10).forEach(heading => {
+        const indent = '  '.repeat(heading.level - 1)
+        summary += `${indent}${heading.text}\n`
+      })
+      if (docxMetadata.structure.headings.length > 10) {
+        summary += `  ... and ${docxMetadata.structure.headings.length - 10} more headings\n`
+      }
+    }
+    
+    return summary
+  }
+
+  private generateDOCXOutline(docxMetadata: DOCXMetadata): string {
+    let outline = `Document Outline\n\n`
+    
+    docxMetadata.structure.headings.forEach(heading => {
+      const indent = '  '.repeat(heading.level - 1)
+      outline += `${indent}${heading.text} (Level ${heading.level})\n`
+    })
+    
+    return outline
+  }
+
+  private generateDOCXSectionChunks(docxMetadata: DOCXMetadata, documentId: string, documentName: string, userId: string): Array<{text: string; metadata: any}> {
+    const chunks = []
+    
+    // Group paragraphs by headings
+    const sections = []
+    let currentSection = { heading: null, paragraphs: [] }
+    
+    docxMetadata.structure.paragraphs.forEach(paragraph => {
+      // Check if this paragraph starts a new section
+      const nearbyHeading = docxMetadata.structure.headings.find(h => 
+        Math.abs(h.position - paragraph.position) <= 2
+      )
+      
+      if (nearbyHeading && nearbyHeading !== currentSection.heading) {
+        if (currentSection.paragraphs.length > 0) {
+          sections.push({ ...currentSection })
+        }
+        currentSection = { heading: nearbyHeading, paragraphs: [paragraph] }
+      } else {
+        currentSection.paragraphs.push(paragraph)
+      }
+    })
+    
+    if (currentSection.paragraphs.length > 0) {
+      sections.push(currentSection)
+    }
+    
+    // Create chunks for each section
+    sections.forEach((section, index) => {
+      if (section.paragraphs.length > 0) {
+        const sectionText = section.paragraphs.map(p => p.text).join('\n\n')
+        chunks.push({
+          text: `Section: ${section.heading?.text || 'Introduction'}\n\n${sectionText}`,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            sectionIndex: index,
+            heading: section.heading?.text,
+            paragraphCount: section.paragraphs.length,
+            positionRange: `${section.paragraphs[0]?.position || 0}-${section.paragraphs[section.paragraphs.length - 1]?.position || 0}`
+          }
+        })
+      }
+    })
+    
+    return chunks
+  }
+
+  private generateDOCXTableChunk(table: DOCXMetadata['structure']['tables'][0], index: number): string {
+    let chunk = `Table ${index + 1}\n\n`
+    chunk += `Dimensions: ${table.rows} rows × ${table.columns} columns\n`
+    chunk += `Position: ${table.position}\n`
+    chunk += `Has Headers: ${table.hasHeaders ? 'Yes' : 'No'}\n\n`
+    chunk += `Content:\n${table.content}`
+    
+    return chunk
+  }
+
+  private generateDOCXListChunk(list: DOCXMetadata['structure']['lists'][0], index: number): string {
+    let chunk = `${list.type === 'ordered' ? 'Numbered' : 'Bulleted'} List ${index + 1}\n\n`
+    chunk += `Position: ${list.position}\n`
+    chunk += `Level: ${list.level}\n`
+    chunk += `Items: ${list.items.length}\n\n`
+    chunk += `Content:\n`
+    list.items.forEach((item, itemIndex) => {
+      chunk += `${itemIndex + 1}. ${item}\n`
+    })
+    
+    return chunk
+  }
+
+  private generateDOCXContentAnalysis(docxMetadata: DOCXMetadata): string {
+    let analysis = `Content Analysis\n\n`
+    
+    analysis += `Language: ${docxMetadata.contentAnalysis.language}\n`
+    analysis += `Readability Score: ${docxMetadata.contentAnalysis.readabilityScore.toFixed(1)}\n`
+    analysis += `Complexity Level: ${docxMetadata.contentAnalysis.complexityLevel}\n`
+    analysis += `Document Type: ${docxMetadata.contentAnalysis.documentType}\n\n`
+    
+    analysis += `Topic Keywords:\n`
+    docxMetadata.contentAnalysis.topicKeywords.forEach((keyword, index) => {
+      analysis += `${index + 1}. ${keyword}\n`
+    })
+    
+    analysis += `\nFormatting Features:\n`
+    if (docxMetadata.formatting.hasBold) analysis += `- Bold text\n`
+    if (docxMetadata.formatting.hasItalic) analysis += `- Italic text\n`
+    if (docxMetadata.formatting.hasUnderline) analysis += `- Underlined text\n`
+    if (docxMetadata.formatting.hasStrikethrough) analysis += `- Strikethrough text\n`
+    if (docxMetadata.formatting.hasHighlight) analysis += `- Highlighted text\n`
+    if (docxMetadata.formatting.hasSuperscript) analysis += `- Superscript text\n`
+    if (docxMetadata.formatting.hasSubscript) analysis += `- Subscript text\n`
+    
+    if (docxMetadata.formatting.fontStyles.length > 0) {
+      analysis += `- Font Styles: ${docxMetadata.formatting.fontStyles.join(', ')}\n`
+    }
+    
+    analysis += `- Font Size Range: ${docxMetadata.formatting.fontSizeRanges.min}-${docxMetadata.formatting.fontSizeRanges.max}px\n`
+    
+    return analysis
+  }
+
+  private generateDOCXParagraphChunks(docxMetadata: DOCXMetadata, documentId: string, documentName: string, userId: string): Array<{text: string; metadata: any}> {
+    const chunks = []
+    const paragraphsPerChunk = 3
+    
+    for (let i = 0; i < docxMetadata.structure.paragraphs.length; i += paragraphsPerChunk) {
+      const chunkParagraphs = docxMetadata.structure.paragraphs.slice(i, i + paragraphsPerChunk)
+      const chunkText = chunkParagraphs.map(p => p.text).join('\n\n')
+      
+      chunks.push({
+        text: chunkText,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          paragraphRange: `${i}-${i + chunkParagraphs.length - 1}`,
+          positionRange: `${chunkParagraphs[0]?.position || 0}-${chunkParagraphs[chunkParagraphs.length - 1]?.position || 0}`,
+          wordCount: chunkParagraphs.reduce((sum, p) => sum + p.wordCount, 0)
+        }
+      })
+    }
+    
+    return chunks
+  }
+
   private generateStatisticalAnalysis(numericColumns: string[], rows: CSVRow[], csvMetadata: CSVMetadata): string {
     let stats = `Statistical Analysis\n\n`
     
@@ -628,7 +966,7 @@ export class MinimalRAG {
     }
   }
 
-  // FIXED: Add document with proper namespace isolation and CSV/XLSX support
+  // FIXED: Add document with proper namespace isolation and CSV/XLSX/DOCX support
   async addDocumentWithChunking(
     content: string, 
     metadata: {
@@ -638,6 +976,8 @@ export class MinimalRAG {
       size: number
       csvMetadata?: CSVMetadata
       xlsxMetadata?: XLSXMetadata
+      docxMetadata?: DOCXMetadata
+      pdfMetadata?: PDFMetadata
     },
     userId: string
   ): Promise<{ success: boolean; chunks: any[]; error?: string }> {
@@ -657,7 +997,9 @@ export class MinimalRAG {
         1000, // chunkSize
         200,  // overlap
         metadata.csvMetadata, // Pass CSV metadata
-        metadata.xlsxMetadata  // Pass XLSX metadata
+        metadata.xlsxMetadata, // Pass XLSX metadata
+        metadata.docxMetadata, // Pass DOCX metadata
+        metadata.pdfMetadata   // Pass PDF metadata
       )
       
       if (chunks.length === 0) {
@@ -682,7 +1024,8 @@ export class MinimalRAG {
           fileType: metadata.type,
           fileSize: metadata.size,
           isCSV: !!metadata.csvMetadata,
-          isXLSX: !!metadata.xlsxMetadata
+          isXLSX: !!metadata.xlsxMetadata,
+          isDOCX: !!metadata.docxMetadata
         }
       }))
       
@@ -1013,6 +1356,292 @@ export class MinimalRAG {
       console.error('❌ Failed to delete user data:', error)
       return false
     }
+  }
+
+  // PDF Chunking Methods
+  private chunkPDFDocument(
+    pdfContent: string, 
+    pdfMetadata: PDFMetadata, 
+    documentId: string, 
+    documentName: string, 
+    userId: string
+  ): Array<{text: string; index: number; metadata: any}> {
+    const chunks = []
+    let chunkIndex = 0
+    
+    // Strategy 1: Document summary chunk (HIGHEST PRIORITY)
+    const documentSummary = this.generatePDFSummary(pdfMetadata)
+    chunks.push({
+      text: documentSummary,
+      index: chunkIndex,
+      metadata: {
+        documentId,
+        documentName,
+        userId,
+        chunkIndex,
+        chunkType: 'pdf_summary',
+        priority: 'high',
+        totalChunks: 0
+      }
+    })
+    chunkIndex++
+    
+    // Strategy 2: Document outline chunk
+    if (pdfMetadata.structure.headings.length > 0) {
+      const outlineChunk = this.generatePDFOutline(pdfMetadata)
+      chunks.push({
+        text: outlineChunk,
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          chunkType: 'pdf_outline',
+          priority: 'high',
+          totalChunks: 0
+        }
+      })
+      chunkIndex++
+    }
+    
+    // Strategy 3: Section-based chunking (by headings)
+    if (pdfMetadata.structure.headings.length > 0) {
+      const sectionChunks = this.generatePDFSectionChunks(pdfMetadata, documentId, documentName, userId)
+      chunks.push(...sectionChunks.map(chunk => ({
+        ...chunk,
+        index: chunkIndex++
+      })))
+    }
+    
+    // Strategy 4: Table-specific chunks
+    if (pdfMetadata.structure.tables.length > 0) {
+      pdfMetadata.structure.tables.forEach((table, tableIndex) => {
+        const tableChunk = this.generatePDFTableChunk(table, tableIndex, pdfMetadata)
+        chunks.push({
+          text: tableChunk,
+          index: chunkIndex,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            chunkIndex,
+            chunkType: 'pdf_table',
+            priority: 'medium',
+            tableIndex,
+            pageNumber: table.pageNumber,
+            rows: table.rows,
+            columns: table.columns,
+            totalChunks: 0
+          }
+        })
+        chunkIndex++
+      })
+    }
+    
+    // Strategy 5: Content analysis chunk
+    const contentAnalysisChunk = this.generatePDFContentAnalysis(pdfMetadata)
+    chunks.push({
+      text: contentAnalysisChunk,
+      index: chunkIndex,
+      metadata: {
+        documentId,
+        documentName,
+        userId,
+        chunkIndex,
+        chunkType: 'pdf_content_analysis',
+        priority: 'medium',
+        totalChunks: 0
+      }
+    })
+    chunkIndex++
+    
+    // Strategy 6: Page-based chunking for detailed content
+    const pageChunks = this.generatePDFPageChunks(pdfMetadata, documentId, documentName, userId)
+    chunks.push(...pageChunks.map(chunk => ({
+      ...chunk,
+      index: chunkIndex++
+    })))
+    
+    // Update total chunks count
+    chunks.forEach(chunk => {
+      chunk.metadata.totalChunks = chunks.length
+    })
+    
+    console.log(`📄 PDF chunking completed: ${chunks.length} chunks created`)
+    return chunks
+  }
+
+  private generatePDFSummary(pdfMetadata: PDFMetadata): string {
+    let summary = `PDF Document Summary\n\n`
+    
+    summary += `Document Information:\n`
+    summary += `- Title: ${pdfMetadata.documentInfo.title || 'Untitled'}\n`
+    summary += `- Author: ${pdfMetadata.documentInfo.author || 'Unknown'}\n`
+    summary += `- Pages: ${pdfMetadata.documentInfo.pageCount}\n`
+    summary += `- Total Words: ${pdfMetadata.contentAnalysis.totalWordCount}\n`
+    summary += `- Document Type: ${pdfMetadata.contentAnalysis.documentType}\n`
+    summary += `- Language: ${pdfMetadata.contentAnalysis.language}\n`
+    summary += `- Readability Score: ${pdfMetadata.contentAnalysis.readabilityScore}/100\n\n`
+    
+    summary += `Document Structure:\n`
+    summary += `- Headings: ${pdfMetadata.structure.headings.length}\n`
+    summary += `- Paragraphs: ${pdfMetadata.structure.paragraphs.length}\n`
+    summary += `- Tables: ${pdfMetadata.structure.tables.length}\n`
+    summary += `- Images: ${pdfMetadata.structure.images.length}\n`
+    summary += `- Form Fields: ${pdfMetadata.structure.formFields.length}\n\n`
+    
+    if (pdfMetadata.contentAnalysis.topicKeywords.length > 0) {
+      summary += `Key Topics: ${pdfMetadata.contentAnalysis.topicKeywords.join(', ')}\n\n`
+    }
+    
+    summary += `Content Features:\n`
+    summary += `- Has Footnotes: ${pdfMetadata.contentAnalysis.hasFootnotes ? 'Yes' : 'No'}\n`
+    summary += `- Has References: ${pdfMetadata.contentAnalysis.hasReferences ? 'Yes' : 'No'}\n`
+    summary += `- Has Bibliography: ${pdfMetadata.contentAnalysis.hasBibliography ? 'Yes' : 'No'}\n`
+    summary += `- Average Words per Page: ${pdfMetadata.contentAnalysis.avgWordsPerPage}\n`
+    
+    return summary
+  }
+
+  private generatePDFOutline(pdfMetadata: PDFMetadata): string {
+    let outline = `PDF Document Outline\n\n`
+    
+    if (pdfMetadata.structure.headings.length === 0) {
+      outline += `No structured headings found in this document.\n`
+      return outline
+    }
+    
+    outline += `Document Structure:\n\n`
+    
+    pdfMetadata.structure.headings.forEach(heading => {
+      const indent = '  '.repeat(heading.level - 1)
+      outline += `${indent}${heading.level}. ${heading.text} (Page ${heading.pageNumber})\n`
+    })
+    
+    return outline
+  }
+
+  private generatePDFSectionChunks(pdfMetadata: PDFMetadata, documentId: string, documentName: string, userId: string): Array<{text: string; metadata: any}> {
+    const chunks = []
+    
+    // Group paragraphs by headings
+    const sections = new Map<string, typeof pdfMetadata.structure.paragraphs>()
+    
+    pdfMetadata.structure.paragraphs.forEach(paragraph => {
+      // Find the closest heading before this paragraph
+      const relevantHeading = pdfMetadata.structure.headings
+        .filter(h => h.pageNumber <= paragraph.pageNumber)
+        .sort((a, b) => b.position - a.position)[0]
+      
+      const sectionKey = relevantHeading ? relevantHeading.text : 'Introduction'
+      
+      if (!sections.has(sectionKey)) {
+        sections.set(sectionKey, [])
+      }
+      sections.get(sectionKey)!.push(paragraph)
+    })
+    
+    // Create chunks for each section
+    sections.forEach((paragraphs, sectionTitle) => {
+      const sectionText = paragraphs.map(p => p.text).join('\n\n')
+      const wordCount = paragraphs.reduce((sum, p) => sum + p.wordCount, 0)
+      
+      chunks.push({
+        text: `Section: ${sectionTitle}\n\n${sectionText}`,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          sectionTitle,
+          paragraphCount: paragraphs.length,
+          wordCount,
+          pageRange: `${paragraphs[0]?.pageNumber || 1}-${paragraphs[paragraphs.length - 1]?.pageNumber || 1}`
+        }
+      })
+    })
+    
+    return chunks
+  }
+
+  private generatePDFTableChunk(table: PDFMetadata['structure']['tables'][0], tableIndex: number, pdfMetadata: PDFMetadata): string {
+    let tableChunk = `Table ${tableIndex + 1} (Page ${table.pageNumber})\n\n`
+    
+    tableChunk += `Table Information:\n`
+    tableChunk += `- Rows: ${table.rows}\n`
+    tableChunk += `- Columns: ${table.columns}\n`
+    tableChunk += `- Page: ${table.pageNumber}\n\n`
+    
+    tableChunk += `Table Content:\n${table.content}\n\n`
+    
+    // Add context about the table's position in the document
+    const surroundingParagraphs = pdfMetadata.structure.paragraphs.filter(p => 
+      Math.abs(p.pageNumber - table.pageNumber) <= 1
+    )
+    
+    if (surroundingParagraphs.length > 0) {
+      tableChunk += `Context:\n`
+      surroundingParagraphs.slice(0, 2).forEach(p => {
+        tableChunk += `- ${p.text.substring(0, 100)}${p.text.length > 100 ? '...' : ''}\n`
+      })
+    }
+    
+    return tableChunk
+  }
+
+  private generatePDFContentAnalysis(pdfMetadata: PDFMetadata): string {
+    let analysis = `PDF Content Analysis\n\n`
+    
+    analysis += `Document Statistics:\n`
+    analysis += `- Total Pages: ${pdfMetadata.documentInfo.pageCount}\n`
+    analysis += `- Total Words: ${pdfMetadata.contentAnalysis.totalWordCount}\n`
+    analysis += `- Average Words per Page: ${pdfMetadata.contentAnalysis.avgWordsPerPage}\n`
+    analysis += `- Readability Score: ${pdfMetadata.contentAnalysis.readabilityScore}/100\n\n`
+    
+    analysis += `Content Distribution:\n`
+    analysis += `- Headings: ${pdfMetadata.structure.headings.length}\n`
+    analysis += `- Paragraphs: ${pdfMetadata.structure.paragraphs.length}\n`
+    analysis += `- Tables: ${pdfMetadata.structure.tables.length}\n`
+    analysis += `- Images: ${pdfMetadata.structure.images.length}\n`
+    analysis += `- Form Fields: ${pdfMetadata.structure.formFields.length}\n\n`
+    
+    analysis += `Document Features:\n`
+    analysis += `- Language: ${pdfMetadata.contentAnalysis.language}\n`
+    analysis += `- Document Type: ${pdfMetadata.contentAnalysis.documentType}\n`
+    analysis += `- Has Footnotes: ${pdfMetadata.contentAnalysis.hasFootnotes ? 'Yes' : 'No'}\n`
+    analysis += `- Has References: ${pdfMetadata.contentAnalysis.hasReferences ? 'Yes' : 'No'}\n`
+    analysis += `- Has Bibliography: ${pdfMetadata.contentAnalysis.hasBibliography ? 'Yes' : 'No'}\n\n`
+    
+    if (pdfMetadata.contentAnalysis.topicKeywords.length > 0) {
+      analysis += `Key Topics: ${pdfMetadata.contentAnalysis.topicKeywords.join(', ')}\n`
+    }
+    
+    return analysis
+  }
+
+  private generatePDFPageChunks(pdfMetadata: PDFMetadata, documentId: string, documentName: string, userId: string): Array<{text: string; metadata: any}> {
+    const chunks = []
+    
+    // Create chunks for pages with significant content
+    pdfMetadata.structure.pages.forEach((page, pageIndex) => {
+      if (page.wordCount > 50) { // Only chunk pages with substantial content
+        chunks.push({
+          text: `Page ${page.pageNumber} Content\n\n${page.text}`,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            pageNumber: page.pageNumber,
+            wordCount: page.wordCount,
+            hasImages: page.hasImages,
+            hasTables: page.hasTables,
+            hasFormFields: page.hasFormFields
+          }
+        })
+      }
+    })
+    
+    return chunks
   }
 }
 

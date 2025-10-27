@@ -13,6 +13,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
+  // External packages for server-side rendering
+  serverExternalPackages: ['pdf-parse'],
+  
   images: {
     domains: ['emiactech.com'],
     remotePatterns: [
