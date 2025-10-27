@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
         }
       })
     } catch (error) {
-      console.log('User creation skipped:', error.message)
+      console.log('User creation skipped:', error instanceof Error ? error.message : 'Unknown error')
     }
     
     const document = await prisma.user_documents.create({
@@ -164,8 +164,26 @@ async function processDocumentAsync(
     // 1. Extract content
     const extractionResult = await fileProcessor.extractContent(file)
     
-    if (!extractionResult.success || !extractionResult.content) {
-      throw new Error(extractionResult.error || 'Content extraction failed')
+    if (!extractionResult.success) {
+      console.log(`⚠️ Content extraction failed: ${extractionResult.error}`)
+      console.log(`📄 Attempting to process document anyway with empty content...`)
+      
+      // Continue processing with empty content instead of failing
+      const content = ''
+      const contentSummary = 'Content extraction failed - document uploaded but not processed'
+      
+      // Update document status to failed but don't throw error
+      await prisma.user_documents.update({
+        where: { id: documentId },
+        data: {
+          content_summary: contentSummary,
+          processing_status: 'failed',
+          error_message: extractionResult.error || 'Content extraction failed'
+        }
+      })
+      
+      console.log(`❌ Document ${documentId} processing failed: ${extractionResult.error}`)
+      return
     }
 
     const content = extractionResult.content
@@ -174,14 +192,16 @@ async function processDocumentAsync(
     // 2. Generate content summary (first 200 chars)
     const contentSummary = content.substring(0, 200) + (content.length > 200 ? '...' : '')
     
-    // 3. Add to RAG system with chunking
+    // 3. Add to RAG system with chunking and metadata
     const result = await ragSystem.addDocumentWithChunking(
       content,
       {
         documentId,
         filename: file.name,
         type: file.type,
-        size: file.size
+        size: file.size,
+        csvMetadata: extractionResult.metadata?.csvMetadata, // Pass CSV metadata
+        xlsxMetadata: extractionResult.metadata?.xlsxMetadata // Pass XLSX metadata
       },
       userId
     )

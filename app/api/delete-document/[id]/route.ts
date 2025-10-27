@@ -4,9 +4,10 @@ import { ragSystem } from '@/lib/rag-minimal'
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get('userId')
     
@@ -19,7 +20,7 @@ export async function DELETE(
     // Verify ownership
     const document = await prisma.user_documents.findFirst({
       where: { 
-        id: params.id,
+        id,
         user_id: userId
       }
     })
@@ -31,11 +32,11 @@ export async function DELETE(
     }
 
     // Delete from Pinecone
-    await ragSystem.deleteUserDocument(params.id, userId)
+    await ragSystem.deleteUserDocument(id, userId)
 
     // Soft delete from database
     await prisma.user_documents.update({
-      where: { id: params.id },
+      where: { id },
       data: { is_active: false }
     })
 

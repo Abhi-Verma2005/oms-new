@@ -1,6 +1,7 @@
 import { Pinecone } from '@pinecone-database/pinecone'
 import { OpenAI } from 'openai'
 import { getNamespace } from './rag-namespace'
+import { CSVRow, CSVMetadata, XLSXMetadata } from './file-processor'
 
 // Initialize Pinecone
 const pinecone = new Pinecone({
@@ -71,15 +72,28 @@ export class MinimalRAG {
     }
   }
 
-  // FIXED: Smart chunking with paragraph boundaries
+  // Enhanced chunking with CSV and XLSX support
   chunkDocument(
     content: string, 
     documentId: string,
     documentName: string,
     userId: string,
     chunkSize: number = 1000,
-    overlap: number = 200
+    overlap: number = 200,
+    csvMetadata?: CSVMetadata,
+    xlsxMetadata?: XLSXMetadata
   ): Array<{text: string; index: number; metadata: any}> {
+    // Check if this is CSV data
+    if (csvMetadata && csvMetadata.headers && csvMetadata.headers.length > 0) {
+      return this.chunkCSVDocument(content, csvMetadata, documentId, documentName, userId)
+    }
+    
+    // Check if this is XLSX data
+    if (xlsxMetadata && xlsxMetadata.sheets && xlsxMetadata.sheets.length > 0) {
+      return this.chunkXLSXDocument(content, xlsxMetadata, documentId, documentName, userId)
+    }
+    
+    // Default paragraph-based chunking for other documents
     const chunks = []
     let chunkIndex = 0
     
@@ -101,6 +115,7 @@ export class MinimalRAG {
             documentName,
             userId,
             chunkIndex,
+            chunkType: 'paragraph',
             totalChunks: 0 // Updated later
           }
         })
@@ -124,6 +139,7 @@ export class MinimalRAG {
           documentName,
           userId,
           chunkIndex,
+          chunkType: 'paragraph',
           totalChunks: 0
         }
       })
@@ -134,6 +150,466 @@ export class MinimalRAG {
     chunks.forEach(chunk => chunk.metadata.totalChunks = totalChunks)
     
     return chunks
+  }
+
+  // CSV-specific chunking with multiple strategies
+  private chunkCSVDocument(
+    csvContent: string, 
+    csvMetadata: CSVMetadata, 
+    documentId: string, 
+    documentName: string, 
+    userId: string
+  ): Array<{text: string; index: number; metadata: any}> {
+    const chunks = []
+    let chunkIndex = 0
+    
+    // Parse the CSV content to get rows
+    const lines = csvContent.split('\n').filter(line => line.trim())
+    if (lines.length < 2) return []
+    
+    const headers = csvMetadata.headers
+    const rows: CSVRow[] = []
+    
+    // Parse rows from the content
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i]
+      if (line.includes('Row')) {
+        // Extract row data from formatted line
+        const values = line.split('Row')[1].split(':')[1]?.split('|').map(v => v.trim().replace(/"/g, '')) || []
+        const row: CSVRow = {}
+        headers.forEach((header, index) => {
+          row[header] = values[index] || ''
+        })
+        rows.push(row)
+      }
+    }
+    
+    // Strategy 1: Summary chunk (for overview queries) - HIGHEST PRIORITY
+    const summaryChunk = this.generateCSVSummary(headers, rows, csvMetadata)
+    chunks.push({
+      text: summaryChunk,
+      index: chunkIndex,
+      metadata: {
+        documentId,
+        documentName,
+        userId,
+        chunkIndex,
+        chunkType: 'csv_summary',
+        priority: 'high',
+        totalChunks: 0
+      }
+    })
+    chunkIndex++
+    
+    // Strategy 2: Column-based chunking (for analysis queries)
+    headers.forEach((header, index) => {
+      const columnData = rows.map(row => `${header}: ${row[header]}`).join('\n')
+      const columnChunk = `Column Analysis: ${header}\n\n${columnData}`
+      
+      chunks.push({
+        text: columnChunk,
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          chunkType: 'csv_column',
+          columnName: header,
+          columnIndex: index,
+          columnType: csvMetadata.columnTypes[header],
+          priority: 'medium',
+          totalChunks: 0
+        }
+      })
+      chunkIndex++
+    })
+    
+    // Strategy 3: Row-based chunking (for data queries)
+    const rowsPerChunk = 20 // Increased for better context
+    for (let i = 0; i < rows.length; i += rowsPerChunk) {
+      const chunkRows = rows.slice(i, i + rowsPerChunk)
+      const chunkText = this.formatRowsForChunk(headers, chunkRows, i === 0, csvMetadata)
+      
+      chunks.push({
+        text: chunkText,
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          chunkType: 'csv_rows',
+          rowRange: `${i}-${i + chunkRows.length - 1}`,
+          headers: i === 0 ? headers : undefined, // Include headers in first chunk
+          priority: 'low',
+          totalChunks: 0
+        }
+      })
+      chunkIndex++
+    }
+    
+    // Strategy 4: Statistical analysis chunks (for numeric columns)
+    const numericColumns = headers.filter(header => 
+      csvMetadata.columnTypes[header] === 'number' || 
+      csvMetadata.columnTypes[header] === 'integer'
+    )
+    
+    if (numericColumns.length > 0) {
+      const statsChunk = this.generateStatisticalAnalysis(numericColumns, rows, csvMetadata)
+      chunks.push({
+        text: statsChunk,
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          chunkType: 'csv_statistics',
+          priority: 'medium',
+          totalChunks: 0
+        }
+      })
+      chunkIndex++
+    }
+    
+    // Update total chunks count
+    const totalChunks = chunks.length
+    chunks.forEach(chunk => chunk.metadata.totalChunks = totalChunks)
+    
+    return chunks
+  }
+
+  private formatRowsForChunk(headers: string[], rows: CSVRow[], includeHeaders: boolean, csvMetadata?: CSVMetadata): string {
+    let text = ''
+    
+    if (includeHeaders) {
+      text += `CSV Data - Headers: ${headers.join(' | ')}\n\n`
+    }
+    
+    text += `Data Rows:\n`
+    rows.forEach((row, index) => {
+      const values = headers.map(header => {
+        const value = row[header] || ''
+        // Format values based on type
+        if (csvMetadata?.columnTypes?.[header] === 'number' || csvMetadata?.columnTypes?.[header] === 'integer') {
+          return typeof value === 'number' ? value.toString() : value
+        } else if (csvMetadata?.columnTypes?.[header] === 'date') {
+          return value.toString()
+        } else {
+          return `"${value}"` // Quote string values
+        }
+      }).join(' | ')
+      text += `Row ${index + 1}: ${values}\n`
+    })
+    
+    return text
+  }
+
+  private generateCSVSummary(headers: string[], rows: CSVRow[], csvMetadata: CSVMetadata): string {
+    let summary = `CSV Document Summary\n\n`
+    summary += `Document: ${csvMetadata.headers.length} columns, ${csvMetadata.rowCount} rows\n\n`
+    
+    summary += `Columns:\n`
+    headers.forEach(header => {
+      const type = csvMetadata.columnTypes[header] || 'unknown'
+      summary += `- ${header} (${type})\n`
+    })
+    
+    summary += `\nSample Data:\n`
+    const sampleRows = rows.slice(0, 3)
+    sampleRows.forEach((row, index) => {
+      const values = headers.map(header => row[header] || '').join(' | ')
+      summary += `Row ${index + 1}: ${values}\n`
+    })
+    
+    if (rows.length > 3) {
+      summary += `... and ${rows.length - 3} more rows\n`
+    }
+    
+    return summary
+  }
+
+  // XLSX-specific chunking with multiple strategies
+  private chunkXLSXDocument(
+    xlsxContent: string, 
+    xlsxMetadata: XLSXMetadata, 
+    documentId: string, 
+    documentName: string, 
+    userId: string
+  ): Array<{text: string; index: number; metadata: any}> {
+    const chunks = []
+    let chunkIndex = 0
+    
+    // Strategy 1: Workbook summary chunk (HIGHEST PRIORITY)
+    const workbookSummary = this.generateXLSXSummary(xlsxMetadata)
+    chunks.push({
+      text: workbookSummary,
+      index: chunkIndex,
+      metadata: {
+        documentId,
+        documentName,
+        userId,
+        chunkIndex,
+        chunkType: 'xlsx_summary',
+        priority: 'high',
+        totalChunks: 0
+      }
+    })
+    chunkIndex++
+    
+    // Strategy 2: Sheet-specific chunks
+    xlsxMetadata.sheets.forEach((sheet, sheetIndex) => {
+      // Sheet overview chunk
+      const sheetOverview = this.generateSheetOverview(sheet, sheetIndex)
+      chunks.push({
+        text: sheetOverview,
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          chunkType: 'xlsx_sheet_overview',
+          sheetName: sheet.name,
+          sheetIndex,
+          priority: 'high',
+          totalChunks: 0
+        }
+      })
+      chunkIndex++
+      
+      // Column analysis chunks
+      sheet.headers.forEach((header, colIndex) => {
+        const columnAnalysis = this.generateColumnAnalysis(header, sheet, colIndex)
+        chunks.push({
+          text: columnAnalysis,
+          index: chunkIndex,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            chunkIndex,
+            chunkType: 'xlsx_column',
+            sheetName: sheet.name,
+            columnName: header,
+            columnIndex: colIndex,
+            columnType: sheet.dataTypes[header],
+            priority: 'medium',
+            totalChunks: 0
+          }
+        })
+        chunkIndex++
+      })
+      
+      // Statistical analysis for numeric columns
+      const numericColumns = sheet.headers.filter(header => 
+        sheet.dataTypes[header] === 'number' || sheet.dataTypes[header] === 'integer'
+      )
+      
+      if (numericColumns.length > 0) {
+        const statsAnalysis = this.generateXLSXStatisticalAnalysis(numericColumns, sheet)
+        chunks.push({
+          text: statsAnalysis,
+          index: chunkIndex,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            chunkIndex,
+            chunkType: 'xlsx_statistics',
+            sheetName: sheet.name,
+            priority: 'medium',
+            totalChunks: 0
+          }
+        })
+        chunkIndex++
+      }
+      
+      // Merged cells analysis
+      if (sheet.mergedCells.length > 0) {
+        const mergedCellsAnalysis = this.generateMergedCellsAnalysis(sheet)
+        chunks.push({
+          text: mergedCellsAnalysis,
+          index: chunkIndex,
+          metadata: {
+            documentId,
+            documentName,
+            userId,
+            chunkIndex,
+            chunkType: 'xlsx_merged_cells',
+            sheetName: sheet.name,
+            priority: 'low',
+            totalChunks: 0
+          }
+        })
+        chunkIndex++
+      }
+    })
+    
+    // Strategy 3: Cross-sheet analysis
+    if (xlsxMetadata.sheets.length > 1) {
+      const crossSheetAnalysis = this.generateCrossSheetAnalysis(xlsxMetadata)
+      chunks.push({
+        text: crossSheetAnalysis,
+        index: chunkIndex,
+        metadata: {
+          documentId,
+          documentName,
+          userId,
+          chunkIndex,
+          chunkType: 'xlsx_cross_sheet',
+          priority: 'medium',
+          totalChunks: 0
+        }
+      })
+      chunkIndex++
+    }
+    
+    // Update total chunks count
+    const totalChunks = chunks.length
+    chunks.forEach(chunk => chunk.metadata.totalChunks = totalChunks)
+    
+    return chunks
+  }
+
+  private generateXLSXSummary(xlsxMetadata: XLSXMetadata): string {
+    let summary = `Excel Workbook Summary\n\n`
+    summary += `Document: ${xlsxMetadata.totalSheets} sheets\n\n`
+    
+    summary += `Workbook Features:\n`
+    if (xlsxMetadata.hasFormulas) summary += `- Contains formulas\n`
+    if (xlsxMetadata.hasCharts) summary += `- Contains charts\n`
+    if (xlsxMetadata.hasMacros) summary += `- Contains macros\n`
+    
+    summary += `\nSheets Overview:\n`
+    xlsxMetadata.sheets.forEach((sheet, index) => {
+      summary += `${index + 1}. ${sheet.name}: ${sheet.rowCount} rows × ${sheet.columnCount} columns`
+      if (sheet.hasFormulas) summary += ` (has formulas)`
+      if (sheet.hasCharts) summary += ` (has charts)`
+      if (sheet.mergedCells.length > 0) summary += ` (${sheet.mergedCells.length} merged cells)`
+      summary += `\n`
+    })
+    
+    return summary
+  }
+
+  private generateSheetOverview(sheet: XLSXMetadata['sheets'][0], sheetIndex: number): string {
+    let overview = `Sheet: ${sheet.name}\n\n`
+    overview += `Dimensions: ${sheet.rowCount} rows × ${sheet.columnCount} columns\n`
+    overview += `Headers: ${sheet.headers.join(' | ')}\n\n`
+    
+    overview += `Data Types:\n`
+    sheet.headers.forEach(header => {
+      overview += `- ${header}: ${sheet.dataTypes[header]}\n`
+    })
+    
+    if (sheet.hasFormulas) {
+      overview += `\n⚠️ This sheet contains formulas\n`
+    }
+    if (sheet.hasCharts) {
+      overview += `📊 This sheet contains charts\n`
+    }
+    if (sheet.mergedCells.length > 0) {
+      overview += `🔗 This sheet has ${sheet.mergedCells.length} merged cells\n`
+    }
+    
+    return overview
+  }
+
+  private generateColumnAnalysis(header: string, sheet: XLSXMetadata['sheets'][0], colIndex: number): string {
+    let analysis = `Column Analysis: ${header}\n\n`
+    analysis += `Type: ${sheet.dataTypes[header]}\n`
+    analysis += `Position: Column ${colIndex + 1}\n`
+    
+    if (sheet.dataTypes[header] === 'number' || sheet.dataTypes[header] === 'integer') {
+      analysis += `This is a numeric column suitable for calculations and statistical analysis.\n`
+    } else if (sheet.dataTypes[header] === 'date') {
+      analysis += `This is a date column for temporal analysis.\n`
+    } else if (sheet.dataTypes[header] === 'formula') {
+      analysis += `This column contains formulas for calculated values.\n`
+    } else {
+      analysis += `This is a text column for categorical analysis.\n`
+    }
+    
+    return analysis
+  }
+
+  private generateXLSXStatisticalAnalysis(numericColumns: string[], sheet: XLSXMetadata['sheets'][0]): string {
+    let stats = `Statistical Analysis for Sheet: ${sheet.name}\n\n`
+    
+    numericColumns.forEach(column => {
+      stats += `${column}:\n`
+      stats += `  Type: ${sheet.dataTypes[column]}\n`
+      stats += `  Column Index: ${sheet.headers.indexOf(column) + 1}\n`
+      stats += `  Suitable for: Mathematical operations, trend analysis, comparisons\n\n`
+    })
+    
+    return stats
+  }
+
+  private generateMergedCellsAnalysis(sheet: XLSXMetadata['sheets'][0]): string {
+    let analysis = `Merged Cells Analysis for Sheet: ${sheet.name}\n\n`
+    
+    sheet.mergedCells.forEach((mergedCell, index) => {
+      analysis += `Merged Cell ${index + 1}:\n`
+      analysis += `  Range: ${mergedCell.range}\n`
+      analysis += `  Value: ${mergedCell.value}\n\n`
+    })
+    
+    return analysis
+  }
+
+  private generateCrossSheetAnalysis(xlsxMetadata: XLSXMetadata): string {
+    let analysis = `Cross-Sheet Analysis\n\n`
+    analysis += `This workbook contains ${xlsxMetadata.totalSheets} sheets:\n\n`
+    
+    xlsxMetadata.sheets.forEach((sheet, index) => {
+      analysis += `${index + 1}. ${sheet.name}\n`
+      analysis += `   - ${sheet.rowCount} rows, ${sheet.columnCount} columns\n`
+      analysis += `   - Headers: ${sheet.headers.slice(0, 3).join(', ')}${sheet.headers.length > 3 ? '...' : ''}\n`
+    })
+    
+    analysis += `\nCross-sheet relationships and data consistency can be analyzed across these sheets.`
+    
+    return analysis
+  }
+
+  private generateStatisticalAnalysis(numericColumns: string[], rows: CSVRow[], csvMetadata: CSVMetadata): string {
+    let stats = `Statistical Analysis\n\n`
+    
+    numericColumns.forEach(column => {
+      const values = rows.map(row => Number(row[column])).filter(val => !isNaN(val))
+      
+      if (values.length > 0) {
+        const sorted = [...values].sort((a, b) => a - b)
+        const min = sorted[0]
+        const max = sorted[sorted.length - 1]
+        const sum = values.reduce((acc, val) => acc + val, 0)
+        const avg = sum / values.length
+        const median = sorted.length % 2 === 0 
+          ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+          : sorted[Math.floor(sorted.length / 2)]
+        
+        // Calculate quartiles
+        const q1Index = Math.floor(sorted.length * 0.25)
+        const q3Index = Math.floor(sorted.length * 0.75)
+        const q1 = sorted[q1Index]
+        const q3 = sorted[q3Index]
+        
+        stats += `${column}:\n`
+        stats += `  Count: ${values.length}\n`
+        stats += `  Min: ${min}\n`
+        stats += `  Max: ${max}\n`
+        stats += `  Average: ${avg.toFixed(2)}\n`
+        stats += `  Median: ${median}\n`
+        stats += `  Q1: ${q1}\n`
+        stats += `  Q3: ${q3}\n`
+        stats += `  Range: ${max - min}\n\n`
+      }
+    })
+    
+    return stats
   }
 
   // FIXED: Batch embedding generation with consistent model
@@ -152,7 +628,7 @@ export class MinimalRAG {
     }
   }
 
-  // FIXED: Add document with proper namespace isolation
+  // FIXED: Add document with proper namespace isolation and CSV/XLSX support
   async addDocumentWithChunking(
     content: string, 
     metadata: {
@@ -160,6 +636,8 @@ export class MinimalRAG {
       filename: string
       type: string
       size: number
+      csvMetadata?: CSVMetadata
+      xlsxMetadata?: XLSXMetadata
     },
     userId: string
   ): Promise<{ success: boolean; chunks: any[]; error?: string }> {
@@ -170,12 +648,16 @@ export class MinimalRAG {
 
       console.log(`📄 Processing document: ${metadata.filename} for user ${userId}`)
       
-      // 1. Chunk the document
+      // 1. Chunk the document with metadata if available
       const chunks = this.chunkDocument(
         content, 
         metadata.documentId, 
         metadata.filename, 
-        userId
+        userId,
+        1000, // chunkSize
+        200,  // overlap
+        metadata.csvMetadata, // Pass CSV metadata
+        metadata.xlsxMetadata  // Pass XLSX metadata
       )
       
       if (chunks.length === 0) {
@@ -198,15 +680,24 @@ export class MinimalRAG {
           text: chunk.text, // Store full text in Pinecone metadata
           timestamp: new Date().toISOString(),
           fileType: metadata.type,
-          fileSize: metadata.size
+          fileSize: metadata.size,
+          isCSV: !!metadata.csvMetadata,
+          isXLSX: !!metadata.xlsxMetadata
         }
       }))
       
       // 4. FIXED: Upsert to user's namespace
       const namespace = getNamespace('documents', userId)
-      await this.index.namespace(namespace).upsert(vectors)
+      console.log(`📤 Uploading ${chunks.length} chunks to Pinecone namespace: ${namespace}`)
       
-      console.log(`✅ Uploaded ${chunks.length} chunks to namespace: ${namespace}`)
+      try {
+        await this.index.namespace(namespace).upsert(vectors)
+        console.log(`✅ Successfully uploaded ${chunks.length} chunks to namespace: ${namespace}`)
+      } catch (upsertError) {
+        console.error('❌ Pinecone upsert failed:', upsertError)
+        throw upsertError
+      }
+      
       return { success: true, chunks }
       
     } catch (error) {
@@ -246,11 +737,15 @@ export class MinimalRAG {
       
       // FIXED: Search in user's document namespace only
       const namespace = getNamespace('documents', userId)
+      console.log(`🔍 Searching in Pinecone namespace: ${namespace}`)
+      
       const results = await this.index.namespace(namespace).query({
         vector: queryEmbedding,
         topK: limit * 2, // Get more results for token filtering
         includeMetadata: true
       })
+      
+      console.log(`📊 Pinecone query results: ${results.matches?.length || 0} matches found`)
       
       // Extract and format chunks
       let chunks = results.matches?.map(match => ({

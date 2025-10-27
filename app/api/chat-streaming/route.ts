@@ -7,7 +7,7 @@ export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, userId, documentUpload, currentFilters: requestCurrentFilters } = await req.json()
+    const { messages, userId, documentUpload, currentFilters: requestCurrentFilters, selectedDocuments } = await req.json()
     
     if (!userId || !messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
@@ -24,6 +24,34 @@ export async function POST(req: NextRequest) {
       ? `Current filters: ${JSON.stringify(currentFilters, null, 2)}`
       : 'No filters currently applied'
 
+    // FIXED: Smart document context retrieval
+    let documentContext = ''
+    let documentInsights = null
+    
+    if (selectedDocuments && selectedDocuments.length > 0) {
+      try {
+        console.log(`📄 Searching document context for ${selectedDocuments.length} documents...`)
+        
+        // Search with token limits
+        const relevantChunks = await ragSystem.searchDocumentChunks(
+          userMessage, 
+          userId, 
+          3, // Top 3 chunks (reduced)
+          2000 // Max 2000 tokens (reduced)
+        )
+        
+        if (relevantChunks.length > 0) {
+          // Enhanced document context formatting for CSV and other documents
+          documentContext = formatDocumentContextForCSV(relevantChunks, userMessage)
+          
+          console.log(`✅ Found ${relevantChunks.length} relevant document chunks`)
+        }
+      } catch (error) {
+        console.error('❌ Document context error:', error)
+        // Continue without document context
+      }
+    }
+
     // ===== STAGE 1: TEXT RESPONSE GENERATION =====
     console.log('\n📝 STAGE 1: Generating conversational response...')
     
@@ -33,6 +61,8 @@ export async function POST(req: NextRequest) {
 
 **CURRENT FILTERS:**
 ${currentFiltersContext}
+
+${documentContext}
 
 **COMPREHENSIVE FILTER KNOWLEDGE:**
 
@@ -560,4 +590,90 @@ Be intelligent about understanding the user's intent and perform the correct fil
       { status: 500 }
     )
   }
+}
+
+// Helper function to format document context for CSV, XLSX and other documents
+function formatDocumentContextForCSV(chunks: any[], userMessage: string): string {
+  const csvChunks = chunks.filter(chunk => chunk.metadata?.chunkType?.startsWith('csv_'))
+  const xlsxChunks = chunks.filter(chunk => chunk.metadata?.chunkType?.startsWith('xlsx_'))
+  const otherChunks = chunks.filter(chunk => 
+    !chunk.metadata?.chunkType?.startsWith('csv_') && 
+    !chunk.metadata?.chunkType?.startsWith('xlsx_')
+  )
+  
+  let context = '**📄 RELEVANT DOCUMENT CONTEXT:**\n\n'
+  
+  // XLSX-specific context with priority ordering
+  if (xlsxChunks.length > 0) {
+    context += '**📊 Excel Workbook Analysis:**\n'
+    
+    // Sort XLSX chunks by priority (high -> medium -> low)
+    const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 }
+    xlsxChunks.sort((a, b) => {
+      const aPriority = priorityOrder[a.metadata?.priority] ?? 2
+      const bPriority = priorityOrder[b.metadata?.priority] ?? 2
+      return aPriority - bPriority
+    })
+    
+    xlsxChunks.forEach((chunk, i) => {
+      const chunkType = chunk.metadata?.chunkType
+      const relevance = (chunk.score * 100).toFixed(0)
+      
+      if (chunkType === 'xlsx_summary') {
+        context += `[Workbook Summary - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'xlsx_sheet_overview') {
+        context += `[Sheet: ${chunk.metadata?.sheetName} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'xlsx_statistics') {
+        context += `[Statistical Analysis - Sheet: ${chunk.metadata?.sheetName} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'xlsx_column') {
+        const columnType = chunk.metadata?.columnType ? ` (${chunk.metadata.columnType})` : ''
+        context += `[Column: ${chunk.metadata?.columnName}${columnType} - Sheet: ${chunk.metadata?.sheetName} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'xlsx_merged_cells') {
+        context += `[Merged Cells - Sheet: ${chunk.metadata?.sheetName} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'xlsx_cross_sheet') {
+        context += `[Cross-Sheet Analysis - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      }
+    })
+  }
+  
+  // CSV-specific context with priority ordering
+  if (csvChunks.length > 0) {
+    context += '**📊 CSV Data Analysis:**\n'
+    
+    // Sort CSV chunks by priority (high -> medium -> low)
+    const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 }
+    csvChunks.sort((a, b) => {
+      const aPriority = priorityOrder[a.metadata?.priority] ?? 2
+      const bPriority = priorityOrder[b.metadata?.priority] ?? 2
+      return aPriority - bPriority
+    })
+    
+    csvChunks.forEach((chunk, i) => {
+      const chunkType = chunk.metadata?.chunkType
+      const relevance = (chunk.score * 100).toFixed(0)
+      
+      if (chunkType === 'csv_summary') {
+        context += `[Summary - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'csv_statistics') {
+        context += `[Statistical Analysis - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'csv_column') {
+        const columnType = chunk.metadata?.columnType ? ` (${chunk.metadata.columnType})` : ''
+        context += `[Column: ${chunk.metadata?.columnName}${columnType} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      } else if (chunkType === 'csv_rows') {
+        context += `[Rows ${chunk.metadata?.rowRange} - ${chunk.documentName}] (Relevance: ${relevance}%)\n${chunk.content}\n\n`
+      }
+    })
+  }
+  
+  // Other document context
+  if (otherChunks.length > 0) {
+    context += '**📄 Other Document Content:**\n'
+    otherChunks.forEach((chunk, i) => {
+      context += `[${chunk.documentName} - Section ${chunk.chunkIndex + 1}] (Relevance: ${(chunk.score * 100).toFixed(0)}%)\n${chunk.content}\n\n`
+    })
+  }
+  
+  context += '**Instructions:** Use this document context to provide accurate, data-driven responses. Reference specific values, columns, rows, and sheets when relevant. For Excel workbooks, prioritize workbook summaries and sheet overviews for general questions, and specific columns/statistics for detailed analysis.'
+  
+  return context
 }
