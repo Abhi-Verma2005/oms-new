@@ -4,13 +4,25 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Send, Bot, User, Loader2, X, Minimize2, Maximize2, CheckCircle, ExternalLink, Upload, FileText, Loader2 as Spinner, CheckCircle as Check, XCircle, Clock, Trash2 } from 'lucide-react'
+import { 
+  Send, Bot, User, Loader2, X, Minimize2, Maximize2, CheckCircle, ExternalLink, Upload, FileText, Loader2 as Spinner, CheckCircle as Check, XCircle, Clock, Trash2,
+  Scissors, Paperclip, BookOpen, Filter, Plus, Mic, Brain, Telescope, Monitor, Presentation, BookmarkCheck,
+  Search, Settings, Gift, Heart, HelpCircle, Mail, ChevronDown
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUserContextForAI } from '@/stores/user-context-store'
 import { useDropzone } from 'react-dropzone'
 import { Streamdown } from 'streamdown'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -26,7 +38,6 @@ interface AIChatbotSidebarProps {
 export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous' }: AIChatbotSidebarProps) {
   const [isMinimized, setIsMinimized] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
   const { getUserContextForAI } = useUserContextForAI()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -49,6 +60,12 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   const [selectedDocuments, setSelectedDocuments] = useState<string[]>([])
   const [documentStatuses, setDocumentStatuses] = useState<Map<string, string>>(new Map())
   const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
+  const [documentSearch, setDocumentSearch] = useState('')
+  
+  // Change inputRef to support textarea
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   // Load documents on mount
   useEffect(() => {
@@ -108,8 +125,12 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
         const result = await response.json()
         
         if (result.success) {
-          // Add to documents list
-          setUploadedDocuments(prev => [...prev, result.document])
+          // Add to documents list immediately
+          const newDoc = {
+            ...result.document,
+            processing_status: 'processing'
+          }
+          setUploadedDocuments(prev => [...prev, newDoc])
           
           // Success message
           const successMsg: Message = {
@@ -245,11 +266,11 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
@@ -349,10 +370,14 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                         if (toolResult.url) {
                           console.log('🔍 Applying filters to URL:', toolResult.url)
                           
-                          // Simply navigate to the new URL - this will trigger all the necessary updates
-                          router.push(toolResult.url)
+                          // Preserve sidebar state in URL
+                          const urlWithSidebar = `${toolResult.url}&sidebar=open`
                           
-                          console.log('✅ Filters applied to URL:', toolResult.url)
+                          console.log('✅ Navigating to:', urlWithSidebar)
+                          
+                          // Use window.location to force a full page reload and ensure filters are applied
+                          window.location.href = urlWithSidebar
+                          
                           setTimeout(() => setShowToolFeedback(false), 2000)
                         }
                         break
@@ -403,6 +428,61 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
       inputRef.current.focus()
     }
   }, [isOpen])
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition()
+        recognitionRef.current.continuous = true
+        recognitionRef.current.interimResults = false
+        recognitionRef.current.lang = 'en-US'
+
+        recognitionRef.current.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0].transcript)
+            .join('')
+          setInput(prev => prev + (prev ? ' ' : '') + transcript)
+        }
+
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error)
+          setIsListening(false)
+        }
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false)
+        }
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert('Speech recognition is not supported in this browser.')
+      return
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    } else {
+      try {
+        recognitionRef.current.start()
+        setIsListening(true)
+      } catch (error) {
+        console.error('Failed to start recognition:', error)
+        setIsListening(false)
+      }
+    }
+  }
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -506,18 +586,18 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
       {/* Tool Action Feedback */}
       {showToolFeedback && toolActions.length > 0 && (
         <div className="fixed top-4 right-4 z-50 max-w-sm">
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
-              <CheckCircle className="w-4 h-4 text-green-600" />
+          <div className="rounded-lg shadow-lg p-4 space-y-2" style={{ backgroundColor: '#1A202C', borderColor: '#2d3748' }}>
+            <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <CheckCircle className="w-4 h-4 text-green-500" />
               Actions Executed
             </div>
             {toolActions.map((action, index) => (
-              <div key={index} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+              <div key={index} className="flex items-center gap-2 text-xs text-gray-300">
                 {action.action === 'filter_applied' && <ExternalLink className="w-3 h-3" />}
                 {action.action === 'navigate' && <ExternalLink className="w-3 h-3" />}
-                {action.action === 'cart_updated' && <CheckCircle className="w-3 h-3 text-green-600" />}
-                {action.action === 'search_completed' && <CheckCircle className="w-3 h-3 text-blue-600" />}
-                {action.action === 'document_uploaded' && <FileText className="w-3 h-3 text-purple-600" />}
+                {action.action === 'cart_updated' && <CheckCircle className="w-3 h-3 text-green-500" />}
+                {action.action === 'search_completed' && <CheckCircle className="w-3 h-3 text-blue-500" />}
+                {action.action === 'document_uploaded' && <FileText className="w-3 h-3 text-purple-500" />}
                 <span>{action.message}</span>
               </div>
             ))}
@@ -525,46 +605,34 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
         </div>
       )}
 
-      <div className={cn(
-        "h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300",
-        isMinimized ? "w-16" : "w-96"
-      )}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        {!isMinimized && (
-          <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-blue-600" />
-            <span className="font-semibold text-gray-900 dark:text-white">AI Assistant</span>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
-            </div>
+      <div 
+        className={cn(
+          "h-full border-l flex flex-col transition-all duration-300",
+          isMinimized ? "w-16" : "w-full max-w-4xl mx-auto pt-16"
         )}
-                 <div className="flex gap-2">
-            {messages.length > 0 && (
-              <Button
-                variant="ghost"
-                       size="icon"
-                onClick={clearChat}
-                       className="w-8 h-8"
-                title="Clear chat"
-              >
-                       <X className="w-4 h-4" />
-              </Button>
-            )}
+        style={{ backgroundColor: '#1A202C', borderColor: '#2d3748' }}
+      >
+      {/* Header */}
+      <div className="flex items-center justify-end px-4 py-2 border-b" style={{ borderColor: '#2d3748' }}>
+        <div className="flex gap-2">
+          {!isMinimized && messages.length > 0 && (
             <Button
               variant="ghost"
-                     size="icon"
-                     onClick={() => setIsMinimized(!isMinimized)}
-                     className="w-8 h-8"
-                   >
-                     {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-                   </Button>
+              size="icon"
+              onClick={clearChat}
+              className="w-6 h-6 text-gray-400 hover:text-red-400"
+              title="Clear chat"
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          )}
                    <Button
                      variant="ghost"
                      size="icon"
                      onClick={onToggle}
-                     className="w-8 h-8"
-                   >
-                     <X className="w-4 h-4" />
+            className="w-6 h-6 text-gray-400 hover:text-white"
+            >
+              <X className="w-3 h-3" />
             </Button>
           </div>
         </div>
@@ -572,18 +640,27 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
       {!isMinimized && (
         <>
           {/* Messages Area */}
-          <div ref={scrollAreaRef} className="flex-1 p-4 overflow-y-auto">
+          <div ref={scrollAreaRef} className="flex-1 p-6 overflow-y-auto">
+            {messages.length === 0 ? (
+                      <div className="space-y-6">
+                {/* Greeting */}
+                <div className="flex items-start gap-3">
+                  <svg
+                    className="fill-purple-500 flex-shrink-0"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={32}
+                    height={32}
+                  >
+                    <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+                  </svg>
+                  <div>
+                    <h2 className="text-3xl font-bold text-white mb-2">Hi,</h2>
+                    <p className="text-xl text-white/90">How can I assist you today?</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-4">
-        {messages.length === 0 && (
-                <div className="text-center text-gray-500 py-8">
-                  <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-sm">Hello! How can I help you today?</p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    I can help you filter websites, navigate pages, and manage your cart.
-                  </p>
-          </div>
-        )}
-
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -591,18 +668,27 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  {message.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-blue-600" />
-                  </div>
-                  )}
+                    {message.role === 'assistant' && (
+                      <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="fill-purple-400"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width={20}
+                          height={20}
+                          viewBox="0 0 32 32"
+                        >
+                          <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+                        </svg>
+                      </div>
+                    )}
                   
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                    className={`max-w-[80%] ${
                       message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
+                        ? 'text-white rounded-2xl px-4 py-3'
+                        : 'text-gray-100 px-4'
                     }`}
+                    style={message.role === 'user' ? { backgroundColor: '#7c3aed' } : {}}
                   >
                     <div className="text-sm">
                       <Streamdown isAnimating={isLoading}>
@@ -612,200 +698,229 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                     </div>
 
                   {message.role === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-gray-600" />
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2d374860' }}>
+                        <User className="w-4 h-4 text-gray-400" />
                   </div>
                 )}
             </div>
           ))}
           
-          {isLoading && (
-            <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-blue-600" />
-                </div>
-                  <div className="bg-gray-100 rounded-lg px-4 py-2">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm text-gray-600">Thinking...</span>
-                </div>
-              </div>
-            </div>
-          )}
+                {isLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="fill-purple-400"
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={20}
+                        height={20}
+                        viewBox="0 0 32 32"
+                      >
+                        <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+                      </svg>
+                    </div>
+                    <div className="rounded-2xl px-4 py-3" style={{ backgroundColor: '#2d374880' }}>
+                      <div className="flex items-center gap-1">
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                          <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                          <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
           
               {error && (
                 <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <X className="w-4 h-4 text-red-600" />
+                    <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                      <X className="w-4 h-4 text-red-500" />
             </div>
-                  <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2">
-                    <div className="text-sm text-red-600">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3">
+                      <div className="text-sm text-red-500">
                       Error: {error.message}
         </div>
             </div>
                         </div>
                       )}
-                    </div>
-                  </div>
-                  
-              
-          {/* Document Upload Section */}
-          <div className="border-t border-gray-200 bg-gray-50 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-900">📁 Your Documents</h4>
-              <label 
-                htmlFor="doc-upload" 
-                className="cursor-pointer text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-              >
-                <Upload className="w-3 h-3" />
-                Upload
-              </label>
-              <input
-                type="file"
-                id="doc-upload"
-                className="hidden"
-                onChange={(e) => e.target.files && handleDocumentUpload(e.target.files)}
-                accept=".txt,.pdf,.docx,.doc,.csv,.json,.xlsx,.xls"
-                multiple
-              />
-            </div>
-            
-            {uploadingFiles.length > 0 && (
-              <div className="mb-3 space-y-1">
-                {uploadingFiles.map(filename => (
-                  <div key={filename} className="flex items-center gap-2 text-xs text-gray-600 bg-blue-50 p-2 rounded">
-                    <Spinner className="w-3 h-3 animate-spin" />
-                    <span className="truncate">Uploading {filename}...</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {uploadedDocuments.length > 0 ? (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {uploadedDocuments.map(doc => {
-                  const status = documentStatuses.get(doc.id) || doc.processing_status
-                  const isCompleted = status === 'completed'
-                  const isProcessing = status === 'processing'
-                  const isFailed = status === 'failed'
-                  
-                  return (
-                    <div 
-                      key={doc.id} 
-                      className={`flex items-center gap-2 p-2 rounded text-xs ${
-                        isCompleted ? 'bg-white border border-gray-200' : 
-                        isProcessing ? 'bg-blue-50 border border-blue-200' :
-                        'bg-red-50 border border-red-200'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedDocuments.includes(doc.id)}
-                        onChange={() => toggleDocumentSelection(doc.id)}
-                        disabled={!isCompleted}
-                        className="w-3 h-3 cursor-pointer disabled:cursor-not-allowed"
-                      />
-                      
-                      <FileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                      
-                      <div className="flex-1 min-w-0">
-                        <p className="truncate font-medium text-gray-900">
-                          {doc.original_name}
-                        </p>
-                        {isCompleted && doc.chunk_count && (
-                          <p className="text-gray-500">
-                            {doc.chunk_count} sections • {(doc.file_size / 1024).toFixed(0)}KB
-                          </p>
-                        )}
-                        {isFailed && doc.error_message && (
-                          <p className="text-red-600 truncate">
-                            {doc.error_message}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {isProcessing && <Spinner className="w-4 h-4 animate-spin text-blue-500" />}
-                        {isCompleted && <Check className="w-4 h-4 text-green-500" />}
-                        {isFailed && <XCircle className="w-4 h-4 text-red-500" />}
-                        {status === 'pending' && <Clock className="w-4 h-4 text-yellow-500" />}
-                        
-                        {isCompleted && (
-                          <button
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            className="text-gray-400 hover:text-red-600 transition-colors"
-                            title="Delete document"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-gray-500 text-xs">
-                <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p>No documents uploaded yet</p>
-                <p className="mt-1 text-gray-400">
-                  Upload documents to get personalized recommendations
-                </p>
-              </div>
-            )}
-            
-            {selectedDocuments.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-600">
-                  ✓ {selectedDocuments.length} document{selectedDocuments.length > 1 ? 's' : ''} selected
-                </p>
               </div>
             )}
           </div>
-
+                  
           {/* Input Area */}
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <div className="flex-1 relative">
-                <Input
+          <div className="border rounded-lg" style={{ borderColor: '#4a5568', margin: '16px', marginTop: 0 }}>
+            <form onSubmit={handleSubmit}>
+              <div className="p-3">
+                {/* Selected Documents */}
+                {selectedDocuments.length > 0 && (
+                  <div className="flex gap-1 overflow-x-auto mb-2" style={{ maxWidth: 'calc(100% - 6rem)' }}>
+                    {selectedDocuments.map(docId => {
+                      const doc = uploadedDocuments.find(d => d.id === docId)
+                      if (!doc) return null
+                      return (
+                        <div 
+                          key={docId}
+                          className="flex items-center gap-1.5 px-2.5 py-1 border rounded-md text-xs flex-shrink-0"
+                          style={{ backgroundColor: '#2d374860', borderColor: '#4a5568' }}
+                        >
+                          <FileText className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-300 whitespace-nowrap">{doc.original_name}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleDocumentSelection(docId)}
+                            className="text-gray-500 hover:text-white transition-colors flex-shrink-0"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Text input */}
+                <Textarea
                   ref={inputRef}
                   value={input}
-                  onChange={handleInputChange}
-                  placeholder="Type your message or upload a document..."
-                  className="pr-12"
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Start a conversation..."
+                  className="text-white placeholder:text-gray-400 px-3 py-2 pr-12 focus:ring-0 resize-none"
+                  style={{ backgroundColor: 'transparent', border: 'none', minHeight: '44px', maxHeight: '150px', height: 'auto', boxShadow: 'none' }}
                   disabled={isLoading}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSubmit(e)
+                    }
+                  }}
                 />
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                  <input {...getInputProps()} className="hidden" />
+              </div>
+
+              {/* Buttons Row */}
+              <div className="flex items-center justify-between px-3 pb-3 pt-0 gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="max-w-[280px] max-h-[300px] overflow-y-auto" style={{ backgroundColor: '#1A202C', borderColor: '#2d3748' }}>
+                    <div className="px-2 py-1.5">
+                      <DropdownMenuItem
+                        className="text-sm text-gray-400 hover:text-white"
+                        style={{ backgroundColor: 'transparent' }}
+                        onSelect={() => {
+                          const input = document.createElement('input')
+                          input.type = 'file'
+                          input.multiple = true
+                          input.accept = '.txt,.pdf,.docx,.doc,.csv,.json,.xlsx,.xls'
+                          input.onchange = (e: any) => {
+                            if (e.target.files) {
+                              handleDocumentUpload(e.target.files)
+                            }
+                          }
+                          input.click()
+                        }}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload New Document
+                      </DropdownMenuItem>
+                    </div>
+                    <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
+                    <div className="px-2 py-1.5">
+                      <Input
+                        type="text"
+                        placeholder="Search documents..."
+                        value={documentSearch}
+                        onChange={(e) => setDocumentSearch(e.target.value)}
+                        className="bg-gray-900 border-gray-700 text-white text-sm h-8"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
+                    {uploadedDocuments.length > 0 ? (
+                      uploadedDocuments
+                        .filter(doc => !documentSearch || doc.original_name.toLowerCase().includes(documentSearch.toLowerCase()))
+                        .map(doc => {
+                        const status = documentStatuses.get(doc.id) || doc.processing_status
+                        const isCompleted = status === 'completed'
+                        const isSelected = selectedDocuments.includes(doc.id)
+                        
+                        return (
+                          <DropdownMenuItem
+                            key={doc.id}
+                            className={`flex items-center gap-2 cursor-pointer ${!isCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            style={isSelected ? { backgroundColor: '#2d374860' } : {}}
+                            disabled={!isCompleted}
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              if (isCompleted) {
+                                toggleDocumentSelection(doc.id)
+                              }
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}}
+                              disabled={!isCompleted}
+                              className="w-3 h-3"
+                            />
+                            <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm text-gray-300 truncate max-w-[180px]">{doc.original_name}</span>
+                          </DropdownMenuItem>
+                        )
+                      })
+                    ) : (
+                      <div className="px-2 py-3 text-center text-sm text-gray-400">
+                        No documents uploaded
+                      </div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={open}
-                    className="w-8 h-8 p-0"
-                    title="Upload document"
+                    onClick={toggleListening}
+                    className="h-9 w-9 p-0 border"
+                    style={{ 
+                      backgroundColor: isListening ? '#8b5cf660' : '#2d374860', 
+                      borderColor: isListening ? '#8b5cf6' : '#4a5568' 
+                    }}
                   >
-                    <Upload className="w-4 h-4" />
+                    <Mic className={`w-4 h-4 ${isListening ? 'text-purple-400' : 'text-gray-300'}`} />
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isLoading || !input.trim()}
+                    className="h-9 w-9 p-0 text-white"
+                    style={{ backgroundColor: '#7c3aed' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6d28d9'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
+                  >
+                    <Send className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-              <Button type="submit" disabled={isLoading || !input.trim()}>
-                <Send className="w-4 h-4" />
-              </Button>
             </form>
             
             {/* Upload Progress */}
             {uploadingFiles.length > 0 && (
-              <div className="mt-2 space-y-1">
+              <div className="px-3 pb-3 space-y-1">
                 {uploadingFiles.map((filename, index) => (
-                  <div key={index} className="flex items-center gap-2 text-xs text-gray-500">
+                  <div key={index} className="flex items-center gap-2 text-xs text-gray-400">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     <span>Uploading {filename}...</span>
                   </div>
                 ))}
               </div>
             )}
-                    </div>
+          </div>
         </>
       )}
 
@@ -817,7 +932,15 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
             onClick={() => setIsMinimized(false)}
             className="w-12 h-12"
           >
-            <Bot className="w-6 h-6 text-blue-600" />
+            <svg
+              className="fill-purple-400"
+              xmlns="http://www.w3.org/2000/svg"
+              width={24}
+              height={24}
+              viewBox="0 0 32 32"
+            >
+              <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
+            </svg>
                   </Button>
                 </div>
       )}

@@ -171,8 +171,14 @@ export async function applyFilters(filters: any, userId: string) {
     if (actualFilters.country) urlParams.set('country', actualFilters.country)
     if (actualFilters.language) urlParams.set('language', actualFilters.language)
     if (actualFilters.trafficMin) urlParams.set('trafficMin', actualFilters.trafficMin.toString())
+    if (actualFilters.trafficMax) urlParams.set('trafficMax', actualFilters.trafficMax.toString())
+    if (actualFilters.semrushTrafficMin) urlParams.set('semrushTrafficMin', actualFilters.semrushTrafficMin.toString())
+    if (actualFilters.semrushTrafficMax) urlParams.set('semrushTrafficMax', actualFilters.semrushTrafficMax.toString())
+    if (actualFilters.trafficTrend) urlParams.set('trafficTrend', actualFilters.trafficTrend)
     if (actualFilters.backlinkNature) urlParams.set('backlinkNature', actualFilters.backlinkNature)
     if (actualFilters.availability !== undefined) urlParams.set('availability', actualFilters.availability.toString())
+    if (actualFilters.tatMin) urlParams.set('tatMin', actualFilters.tatMin.toString())
+    if (actualFilters.tatMax) urlParams.set('tatMax', actualFilters.tatMax.toString())
     
     const publisherUrl = `/publishers?${urlParams.toString()}`
     
