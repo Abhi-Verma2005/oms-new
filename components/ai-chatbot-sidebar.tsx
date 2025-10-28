@@ -8,10 +8,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
-  Send, Bot, User, Loader2, X, Minimize2, Maximize2, CheckCircle, ExternalLink, Upload, FileText, Loader2 as Spinner, CheckCircle as Check, XCircle, Clock, Trash2,
+  Send, ArrowUp, Bot, User, Loader2, X, Minimize2, Maximize2, CheckCircle, ExternalLink, Upload, FileText, Loader2 as Spinner, CheckCircle as Check, XCircle, Clock, Trash2,
   Scissors, Paperclip, BookOpen, Filter, Plus, Mic, Brain, Telescope, Monitor, Presentation, BookmarkCheck,
-  Search, Settings, Gift, Heart, HelpCircle, Mail, ChevronDown
+  Search, Settings, Gift, Heart, HelpCircle, Mail, ChevronDown, Check as CheckIcon
 } from 'lucide-react'
+import Tooltip from '@/components/tooltip'
 import { cn } from '@/lib/utils'
 import { useUserContextForAI } from '@/stores/user-context-store'
 import { useDropzone } from 'react-dropzone'
@@ -615,20 +616,19 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
 
       <div 
         className={cn(
-          "h-full border-l flex flex-col transition-all duration-300",
+          "h-full border-l flex flex-col transition-all duration-300 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700/60",
           isMinimized ? "w-16" : "w-full max-w-4xl mx-auto pt-16"
         )}
-        style={{ backgroundColor: '#1A202C', borderColor: '#2d3748' }}
       >
       {/* Header */}
-      <div className="flex items-center justify-end px-4 py-2 border-b" style={{ borderColor: '#2d3748' }}>
+      <div className="flex items-center justify-end px-4 py-2 border-b border-gray-200 dark:border-gray-700/60">
         <div className="flex gap-2">
           {!isMinimized && messages.length > 0 && (
             <Button
               variant="ghost"
               size="icon"
               onClick={clearChat}
-              className="w-6 h-6 text-gray-400 hover:text-red-400"
+              className="w-6 h-6 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400"
               title="Clear chat"
             >
               <Trash2 className="w-3 h-3" />
@@ -638,7 +638,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                      variant="ghost"
                      size="icon"
                      onClick={onToggle}
-            className="w-6 h-6 text-gray-400 hover:text-white"
+            className="w-6 h-6 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
             >
               <X className="w-3 h-3" />
             </Button>
@@ -662,8 +662,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                     <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                   </svg>
                   <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Hi,</h2>
-                    <p className="text-xl text-white/90">How can I assist you today?</p>
+                    <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Hi,</h2>
+                    <p className="text-xl text-gray-600 dark:text-white/90">How can I assist you today?</p>
                   </div>
                 </div>
               </div>
@@ -693,10 +693,9 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   <div
                     className={`max-w-[80%] ${
                       message.role === 'user'
-                        ? 'text-white rounded-2xl px-4 py-3'
-                        : 'text-gray-100 px-4'
+                        ? 'text-white rounded-2xl px-4 py-3 bg-violet-600'
+                        : 'text-gray-800 dark:text-gray-100 px-4'
                     }`}
-                    style={message.role === 'user' ? { backgroundColor: '#7c3aed' } : {}}
                   >
                     <div className="text-sm">
                       <Streamdown isAnimating={isLoading}>
@@ -706,8 +705,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                     </div>
 
                   {message.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2d374860' }}>
-                        <User className="w-4 h-4 text-gray-400" />
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-200 dark:bg-gray-700/60">
+                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   </div>
                 )}
             </div>
@@ -726,7 +725,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                         <path d="M31.956 14.8C31.372 6.92 25.08.628 17.2.044V5.76a9.04 9.04 0 0 0 9.04 9.04h5.716ZM14.8 26.24v5.716C6.92 31.372.63 25.08.044 17.2H5.76a9.04 9.04 0 0 1 9.04 9.04Zm11.44-9.04h5.716c-.584 7.88-6.876 14.172-14.756 14.756V26.24a9.04 9.04 0 0 1 9.04-9.04ZM.044 14.8C.63 6.92 6.92.628 14.8.044V5.76a9.04 9.04 0 0 1-9.04 9.04H.044Z" />
                       </svg>
                     </div>
-                    <div className="rounded-2xl px-4 py-3" style={{ backgroundColor: '#2d374880' }}>
+                    <div className="rounded-2xl px-4 py-3 bg-gray-200 dark:bg-gray-700/50">
                       <div className="flex items-center gap-1">
                         <div className="flex gap-1">
                           <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
@@ -743,8 +742,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                     <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
                       <X className="w-4 h-4 text-red-500" />
             </div>
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3">
-                      <div className="text-sm text-red-500">
+                    <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-2xl px-4 py-3">
+                      <div className="text-sm text-red-600 dark:text-red-500">
                       Error: {error.message}
         </div>
             </div>
@@ -755,153 +754,192 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
           </div>
                   
           {/* Input Area */}
-          <div className="border rounded-lg" style={{ borderColor: '#4a5568', margin: '16px', marginTop: 0 }}>
+          <div className="border rounded-lg border-gray-200 dark:border-gray-700/60 m-4 mt-0">
             <form onSubmit={handleSubmit}>
-              <div className="p-2">
-                {/* Add Context Button (shown when no files selected) */}
-                {selectedDocuments.length === 0 && (
-                  <div className="mb-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 px-3 py-1.5 border rounded-md text-xs text-gray-400 hover:text-white hover:border-purple-500 transition-colors"
-                          style={{ backgroundColor: '#2d374860', borderColor: '#4a5568' }}
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Add Context</span>
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="max-w-[280px] max-h-[300px] overflow-y-auto" style={{ backgroundColor: '#1A202C', borderColor: '#2d3748' }}>
-                        <div className="px-2 py-1.5">
-                          <DropdownMenuItem
-                            className="text-sm text-gray-400 hover:text-white"
-                            style={{ backgroundColor: 'transparent' }}
-                            onSelect={() => {
-                              const input = document.createElement('input')
-                              input.type = 'file'
-                              input.multiple = true
-                              input.accept = '.txt,.pdf,.docx,.doc,.csv,.json,.xlsx,.xls'
-                              input.onchange = (e: any) => {
-                                if (e.target.files) {
-                                  handleDocumentUpload(e.target.files)
-                                }
-                              }
-                              input.click()
-                            }}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            Upload New Document
-                          </DropdownMenuItem>
-                        </div>
-                        <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
-                        <div className="px-2 py-1.5">
-                          <Input
-                            type="text"
-                            placeholder="Search documents..."
-                            value={documentSearch}
-                            onChange={(e) => setDocumentSearch(e.target.value)}
-                            className="bg-gray-900 border-gray-700 text-white text-sm h-8"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                        <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
-                        {uploadedDocuments.filter(d => d.processing_status === 'completed').length > 0 && (
-                          <>
-                            <div className="px-2 py-1.5 flex gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  selectAllDocuments()
-                                }}
-                                className="flex-1 px-2 py-1 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 hover:border-purple-500 rounded transition-colors"
-                              >
-                                Select All
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  removeAllDocuments()
-                                }}
-                                className="flex-1 px-2 py-1 text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 rounded transition-colors"
-                              >
-                                Remove All
-                              </button>
-                            </div>
-                            <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
-                          </>
+              <div className="p-1">
+                {/* Add Context Button (always visible) and Selected Items inline */}
+                <div className="mb-1 flex items-start gap-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                  className={cn(
+                          "flex items-center border rounded-md text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:border-purple-500 bg-gray-100/70 dark:bg-gray-700/40 border-gray-200 dark:border-gray-700/60 transition-all duration-200 h-7 w-[112px] flex-none",
+                          selectedDocuments.length > 0 
+                            ? "justify-center p-0 gap-0"
+                            : "justify-start gap-2 px-2.5",
+                          isLoading ? "opacity-50 cursor-not-allowed" : ""
                         )}
-                        {uploadedDocuments.length > 0 ? (
-                          uploadedDocuments
-                            .filter(doc => !documentSearch || doc.original_name.toLowerCase().includes(documentSearch.toLowerCase()))
-                            .map(doc => {
-                            const status = documentStatuses.get(doc.id) || doc.processing_status
-                            const isCompleted = status === 'completed'
-                            const isSelected = selectedDocuments.includes(doc.id)
-                            
-                            return (
-                              <DropdownMenuItem
-                                key={doc.id}
-                                className={`flex items-center gap-2 cursor-pointer ${!isCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                style={isSelected ? { backgroundColor: '#2d374860' } : {}}
-                                disabled={!isCompleted}
-                                onSelect={(e) => {
-                                  e.preventDefault()
-                                  if (isCompleted) {
-                                    toggleDocumentSelection(doc.id)
-                                  }
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                  disabled={!isCompleted}
-                                  className="w-3 h-3"
-                                />
-                                <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <span className="text-sm text-gray-300 truncate max-w-[180px]">{doc.original_name}</span>
-                              </DropdownMenuItem>
-                            )
-                          })
-                        ) : (
-                          <div className="px-2 py-3 text-center text-sm text-gray-400">
-                            No documents uploaded
+                        disabled={isLoading}
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span
+                          className={cn(
+                            "overflow-hidden whitespace-nowrap transition-all duration-200",
+                            selectedDocuments.length > 0
+                              ? "max-w-0 opacity-0 ml-0"
+                              : "max-w-[100px] opacity-100 ml-1"
+                          )}
+                        >
+                          Add Context
+                        </span>
+                        <span className="sr-only">Add Context</span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    {/* Help tooltip area keeps fixed width to avoid layout shift */}
+                    <div className="self-center w-5 flex justify-center">
+                      {selectedDocuments.length === 0 ? (
+                        <Tooltip 
+                          className="ml-0" 
+                          size="sm" 
+                          bg="dark" 
+                          position="right"
+                          triggerClassName="ml-0"
+                          iconClassName="w-4 h-4"
+                        >
+                          <div className="text-xs leading-relaxed text-gray-200 max-w-[240px] whitespace-normal break-words">
+                            <div className="font-semibold mb-1">Using Add Context</div>
+                            <ul className="list-disc pl-4 space-y-1">
+                              <li>Upload PDFs, TXT, DOCX, CSV, or XLSX.</li>
+                              <li>Select completed items to include in your next question.</li>
+                              <li>Use Select All / Remove All to manage quickly.</li>
+                            </ul>
+                          </div>
+                        </Tooltip>
+                      ) : (
+                        <span className="inline-block w-4 h-4" aria-hidden="true"></span>
+                      )}
+                    </div>
+                    <DropdownMenuContent className="w-[300px] max-w-[92vw] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 rounded-md shadow-sm p-2">
+                      <div className="space-y-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const input = document.createElement('input')
+                            input.type = 'file'
+                            input.multiple = true
+                            input.accept = '.txt,.pdf,.docx,.doc,.csv,.json,.xlsx,.xls'
+                            input.onchange = (ev: any) => {
+                              if (ev.target.files) {
+                                handleDocumentUpload(ev.target.files)
+                              }
+                            }
+                            input.click()
+                          }}
+                          className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-gray-50 hover:bg-gray-100 text-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200"
+                          disabled={isLoading}
+                        >
+                          <Upload className="w-4 h-4" /> Upload
+                        </button>
+
+                        <Input
+                          type="text"
+                          placeholder="Search documents..."
+                          value={documentSearch}
+                          onChange={(e) => setDocumentSearch(e.target.value)}
+                          className="h-8 text-sm bg-white border-gray-200 text-gray-800 placeholder:text-gray-400 dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+
+                        {uploadedDocuments.filter(d => d.processing_status === 'completed').length > 0 && (
+                          <div className="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-400">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                selectAllDocuments()
+                              }}
+                              className="hover:text-purple-600 dark:hover:text-purple-400"
+                            >
+                              Select All
+                            </button>
+                            <span className="mx-1">·</span>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                removeAllDocuments()
+                              }}
+                              className="hover:text-gray-800 dark:hover:text-gray-200"
+                            >
+                              Remove All
+                            </button>
                           </div>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
 
-                {/* Selected Documents */}
-                {selectedDocuments.length > 0 && (
-                  <div className="flex gap-1 overflow-x-auto mb-2" style={{ maxWidth: 'calc(100% - 6rem)' }}>
-                    {selectedDocuments.map(docId => {
-                      const doc = uploadedDocuments.find(d => d.id === docId)
-                      if (!doc) return null
-                      return (
-                        <div 
-                          key={docId}
-                          className="flex items-center gap-1.5 px-2.5 py-1 border rounded-md text-xs flex-shrink-0"
-                          style={{ backgroundColor: '#2d374860', borderColor: '#4a5568' }}
-                        >
-                          <FileText className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                          <span className="text-gray-300 whitespace-nowrap">{doc.original_name}</span>
-                          <button
-                            type="button"
-                            onClick={() => toggleDocumentSelection(docId)}
-                            className="text-gray-500 hover:text-white transition-colors flex-shrink-0"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                        <div className="max-h-56 overflow-y-auto rounded-md">
+                          {uploadedDocuments.length > 0 ? (
+                            uploadedDocuments
+                              .filter(doc => !documentSearch || doc.original_name.toLowerCase().includes(documentSearch.toLowerCase()))
+                              .map(doc => {
+                              const status = documentStatuses.get(doc.id) || doc.processing_status
+                              const isCompleted = status === 'completed'
+                              const isSelected = selectedDocuments.includes(doc.id)
+                              
+                              return (
+                                <button
+                                  key={doc.id}
+                                  className={cn(
+                                    "w-full text-left flex items-center gap-2 px-2.5 py-2 text-sm bg-transparent",
+                                    isSelected && "bg-gray-50 dark:bg-gray-800/50",
+                                    !isCompleted && "opacity-60 cursor-not-allowed"
+                                  )}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    if (isCompleted) toggleDocumentSelection(doc.id)
+                                  }}
+                                  disabled={!isCompleted}
+                                >
+                                  <span className={cn(
+                                    "inline-flex items-center justify-center w-4 h-4 rounded-full border",
+                                    isSelected ? "bg-violet-600 border-violet-600" : "border-gray-300 dark:border-gray-600"
+                                  )}>
+                                    <CheckIcon className={cn("w-3 h-3 text-white", isSelected ? "opacity-100" : "opacity-0")} />
+                                  </span>
+                                  <FileText className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                                  <span className="truncate text-sm text-gray-700 dark:text-gray-300">{doc.original_name}</span>
+                                </button>
+                              )
+                            })
+                          ) : (
+                            <div className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                              No documents uploaded
+                            </div>
+                          )}
                         </div>
-                      )
-                    })}
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Selected Documents (inline to the right) */}
+                  <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
+                    <div className="flex gap-1">
+                      {selectedDocuments.map(docId => {
+                        const doc = uploadedDocuments.find(d => d.id === docId)
+                        if (!doc) return null
+                        return (
+                          <div 
+                            key={docId}
+                            className="flex items-center gap-1.5 px-2.5 py-1 border rounded-md text-xs flex-shrink-0 bg-gray-100/70 dark:bg-gray-700/40 border-gray-200 dark:border-gray-700/60"
+                          >
+                            <FileText className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-700 dark:text-gray-300 whitespace-nowrap">{doc.original_name}</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleDocumentSelection(docId)}
+                              className="text-gray-600 hover:text-gray-900 dark:text-gray-500 dark:hover:text-white transition-colors flex-shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                )}
+                </div>
+
+                
 
                 {/* Text input */}
                 <Textarea
@@ -909,9 +947,9 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Start a conversation..."
-                  className="text-white placeholder:text-gray-400 px-3 py-1.5 pr-12 focus:ring-0 resize-none"
-                  style={{ backgroundColor: 'transparent', border: 'none', minHeight: '36px', maxHeight: '120px', height: 'auto', boxShadow: 'none' }}
-                  disabled={isLoading}
+                  className="px-3 py-2 focus:ring-0 resize-none bg-white dark:bg-gray-900 border-none text-gray-800 placeholder:text-gray-400 dark:text-white"
+                  style={{ minHeight: '48px', maxHeight: '140px', height: 'auto', boxShadow: 'none' }}
+                  disabled={false}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
@@ -919,154 +957,39 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                     }
                   }}
                 />
-              </div>
 
-              {/* Buttons Row */}
-              <div className="flex items-center justify-between px-2 pb-2 pt-0 gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="max-w-[280px] max-h-[300px] overflow-y-auto" style={{ backgroundColor: '#1A202C', borderColor: '#2d3748' }}>
-                    <div className="px-2 py-1.5">
-                      <DropdownMenuItem
-                        className="text-sm text-gray-400 hover:text-white"
-                        style={{ backgroundColor: 'transparent' }}
-                        onSelect={() => {
-                          const input = document.createElement('input')
-                          input.type = 'file'
-                          input.multiple = true
-                          input.accept = '.txt,.pdf,.docx,.doc,.csv,.json,.xlsx,.xls'
-                          input.onchange = (e: any) => {
-                            if (e.target.files) {
-                              handleDocumentUpload(e.target.files)
-                            }
-                          }
-                          input.click()
-                        }}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload New Document
-                      </DropdownMenuItem>
-                    </div>
-                    <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
-                    <div className="px-2 py-1.5">
-                      <Input
-                        type="text"
-                        placeholder="Search documents..."
-                        value={documentSearch}
-                        onChange={(e) => setDocumentSearch(e.target.value)}
-                        className="bg-gray-900 border-gray-700 text-white text-sm h-8"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
-                    {uploadedDocuments.filter(d => d.processing_status === 'completed').length > 0 && (
-                      <>
-                        <div className="px-2 py-1.5 flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              selectAllDocuments()
-                            }}
-                            className="flex-1 px-2 py-1 text-xs text-purple-400 hover:text-purple-300 border border-purple-500/30 hover:border-purple-500 rounded transition-colors"
-                          >
-                            Select All
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              removeAllDocuments()
-                            }}
-                            className="flex-1 px-2 py-1 text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-600 rounded transition-colors"
-                          >
-                            Remove All
-                          </button>
-                        </div>
-                        <DropdownMenuSeparator style={{ backgroundColor: '#2d3748' }} />
-                      </>
-                    )}
-                    {uploadedDocuments.length > 0 ? (
-                      uploadedDocuments
-                        .filter(doc => !documentSearch || doc.original_name.toLowerCase().includes(documentSearch.toLowerCase()))
-                        .map(doc => {
-                        const status = documentStatuses.get(doc.id) || doc.processing_status
-                        const isCompleted = status === 'completed'
-                        const isSelected = selectedDocuments.includes(doc.id)
-                        
-                        return (
-                          <DropdownMenuItem
-                            key={doc.id}
-                            className={`flex items-center gap-2 cursor-pointer ${!isCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            style={isSelected ? { backgroundColor: '#2d374860' } : {}}
-                            disabled={!isCompleted}
-                            onSelect={(e) => {
-                              e.preventDefault()
-                              if (isCompleted) {
-                                toggleDocumentSelection(doc.id)
-                              }
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              disabled={!isCompleted}
-                              className="w-3 h-3"
-                            />
-                            <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span className="text-sm text-gray-300 truncate max-w-[180px]">{doc.original_name}</span>
-                          </DropdownMenuItem>
-                        )
-                      })
-                    ) : (
-                      <div className="px-2 py-3 text-center text-sm text-gray-400">
-                        No documents uploaded
-                      </div>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <div className="flex items-center gap-2">
+                {/* Actions below input */}
+                <div className="flex items-center justify-end gap-1 mt-1">
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={toggleListening}
-                    className="h-9 w-9 p-0 border"
-                    style={{ 
-                      backgroundColor: isListening ? '#8b5cf660' : '#2d374860', 
-                      borderColor: isListening ? '#8b5cf6' : '#4a5568' 
-                    }}
+                    className={cn(
+                      "h-7 w-7 p-0 bg-transparent border-0 hover:bg-transparent",
+                      isListening ? "text-purple-600 dark:text-purple-400" : "text-gray-600 dark:text-gray-300"
+                    )}
+                    disabled={isLoading}
                   >
-                    <Mic className={`w-4 h-4 ${isListening ? 'text-purple-400' : 'text-gray-300'}`} />
+                    <Mic className="w-3.5 h-3.5" />
                   </Button>
                   <Button 
                     type="submit" 
                     disabled={isLoading || !input.trim()}
-                    className="h-9 w-9 p-0 text-white"
-                    style={{ backgroundColor: '#7c3aed' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6d28d9'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#7c3aed'}
+                    className="h-7 w-7 p-0 text-white bg-violet-600 hover:bg-violet-700 rounded-full"
                   >
-                    <Send className="w-4 h-4" />
+                    <ArrowUp className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
+
             </form>
             
             {/* Upload Progress */}
             {uploadingFiles.length > 0 && (
               <div className="px-2 pb-2 space-y-1">
                 {uploadingFiles.map((filename, index) => (
-                  <div key={index} className="flex items-center gap-2 text-xs text-gray-400">
+                  <div key={index} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     <span>Uploading {filename}...</span>
                   </div>

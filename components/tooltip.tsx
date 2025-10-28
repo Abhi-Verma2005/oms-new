@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { Transition } from '@headlessui/react'
 
 interface TooltipProps {
@@ -9,6 +10,8 @@ interface TooltipProps {
   bg?: 'dark' | 'light' | null
   size?: 'sm' | 'md' | 'lg' | 'none'
   position?: 'top' | 'bottom' | 'left' | 'right'
+  triggerClassName?: string
+  iconClassName?: string
 }
 
 export default function Tooltip({
@@ -17,6 +20,8 @@ export default function Tooltip({
   bg = null,
   size = 'none',
   position = 'top',
+  triggerClassName = '',
+  iconClassName = '',
 }: TooltipProps) {
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false)
 
@@ -80,12 +85,12 @@ export default function Tooltip({
       onBlur={() => setTooltipOpen(false)}
     >
       <button
-        className="block"
+        className={cn("block rounded-full p-1 hover:bg-gray-100 dark:hover:bg-gray-800", triggerClassName)}
         aria-haspopup="true"
         aria-expanded={tooltipOpen}
         onClick={(e) => e.preventDefault()}
       >
-        <svg className="fill-current text-gray-400 dark:text-gray-500" width="16" height="16" viewBox="0 0 16 16">
+        <svg className={cn("fill-current text-gray-400 dark:text-gray-500", iconClassName)} width="16" height="16" viewBox="0 0 16 16">
           <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z" />
         </svg>
       </button>

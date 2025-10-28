@@ -486,6 +486,7 @@ ${currentFiltersContext}
 
 **Niche/Topic:**
 - Industry mentions → niche: "[niche]"
+- Custom/unknown phrases are allowed → niche: set to the user's phrase verbatim (e.g., "saas marketing", "ai tools", "crypto gaming"). Do not restrict to a fixed list.
 - "tech", "technology" → niche: "technology"
 - "health", "medical", "wellness" → niche: "health"
 - "finance", "financial" → niche: "finance"
