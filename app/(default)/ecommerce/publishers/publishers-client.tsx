@@ -41,7 +41,10 @@ import { useAIChatUtils } from '@/lib/ai-chat-utils'
 import { Flag } from "@/components/ui/flag"
 import { AhrefsIcon, SemrushIcon, MozIcon } from "@/components/ui/brand-icons"
 import dynamic from "next/dynamic"
-const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-help-carousel"), { ssr: false })
+const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-help-carousel"), { 
+  ssr: false,
+  loading: () => <div className="h-96 bg-gray-50 dark:bg-gray-900 animate-pulse rounded-lg" />
+})
 import { ProjectSelector } from '@/components/projects/project-selector'
 import { useActivityLogger } from '@/lib/user-activity-client'
 import { useProjectStore } from '@/stores/project-store'
@@ -943,7 +946,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
   const rowHeightButtonRef = useRef<HTMLButtonElement | null>(null)
-  useEffect(() => { onRowHeightButtonRef?.(rowHeightButtonRef.current) }, [onRowHeightButtonRef, rowHeightButtonRef.current])
+  useEffect(() => { onRowHeightButtonRef?.(rowHeightButtonRef.current) }, [onRowHeightButtonRef])
 
   // Limit number of rows shown based on row density setting so users see a visible change
   const maxRowsByLevel: Record<1 | 2 | 3 | 4, number> = useMemo(() => ({ 1: 30, 2: 20, 3: 12, 4: 8 }), [])
@@ -1952,6 +1955,68 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef 
   )
 }
 
+// Memoized wrapper to prevent unnecessary re-renders of PublishersHelpCarousel
+const MemoizedPublishersHelpCarousel = React.memo(({ 
+  sites,
+  searchQuery,
+  setSearchQuery,
+  loading,
+  hasCheckoutFab,
+  suggestions,
+  suggestionsLoading,
+  suggestionsOpen,
+  setSuggestionsOpen,
+  handleSetSuggestionsContainerRef,
+  handlePickSuggestion,
+}: { 
+  sites: Site[]
+  searchQuery: string
+  setSearchQuery: (val: string) => void
+  loading: boolean
+  hasCheckoutFab: boolean
+  suggestions: string[]
+  suggestionsLoading: boolean
+  suggestionsOpen: boolean
+  setSuggestionsOpen: (open: boolean) => void
+  handleSetSuggestionsContainerRef: (el: HTMLDivElement | null) => void
+  handlePickSuggestion: (val: string) => void
+}) => {
+  const total = sites.length
+  const prices = sites.map(x => x.publishing?.price ?? 0).filter(v => v > 0)
+  const traffics = sites.map(x => x.toolScores?.semrushOverallTraffic ?? 0).filter(v => v > 0)
+  const authorities = sites.map(x => x.toolScores?.semrushAuthority ?? 0).filter(v => v > 0)
+  const avgPrice = prices.length ? Math.round(prices.reduce((s, v) => s + v, 0) / prices.length) : 180
+  const avgTraffic = traffics.length ? Math.round(traffics.reduce((s, v) => s + v, 0) / traffics.length) : 1_200_000
+  const avgAuthority = authorities.length ? Math.round(authorities.reduce((s, v) => s + v, 0) / authorities.length) : 58
+  
+  return (
+    <PublishersHelpCarousel 
+      metrics={{ total, avgPrice, avgTraffic, avgAuthority }}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      loading={loading}
+      hasCheckoutFab={hasCheckoutFab}
+      suggestions={suggestions}
+      suggestionsLoading={suggestionsLoading}
+      suggestionsOpen={suggestionsOpen}
+      setSuggestionsOpen={setSuggestionsOpen}
+      setSuggestionsContainerRef={handleSetSuggestionsContainerRef}
+      onPickSuggestion={handlePickSuggestion}
+    />
+  )
+}, (prevProps, nextProps) => {
+  // Custom comparison function to prevent re-render when props haven't meaningfully changed
+  return (
+    prevProps.sites.length === nextProps.sites.length &&
+    prevProps.searchQuery === nextProps.searchQuery &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.hasCheckoutFab === nextProps.hasCheckoutFab &&
+    JSON.stringify(prevProps.suggestions) === JSON.stringify(nextProps.suggestions) &&
+    prevProps.suggestionsLoading === nextProps.suggestionsLoading &&
+    prevProps.suggestionsOpen === nextProps.suggestionsOpen
+  )
+})
+
 function WishlistInlineButton({ site }: { site: Site }) {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
   const inList = isInWishlist(site.id)
@@ -1992,11 +2057,20 @@ export default function PublishersClient() {
   const { sendMessage } = useAIChatUtils()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  
+  // Create a stable reference to relevant URL parameters (excluding sidebar)
+  // This prevents unnecessary re-renders when sidebar state changes
+  const relevantParams = useMemo(() => {
+    if (!searchParams) return ''
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('sidebar') // Remove sidebar parameter to prevent unnecessary refetches
+    return params.toString()
+  }, [searchParams?.toString()]) // Only depend on the stringified version
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
   const { selectedProjectId } = useProjectStore()
 
-  // Handle auto-send query when sidebar opens
+  // Handle auto-send query when sidebar opens - optimized to prevent function dependencies
   useEffect(() => {
     if (shouldAutoSendQuery() && autoSendQuery) {
       // Small delay to ensure sidebar is fully opened
@@ -2007,7 +2081,7 @@ export default function PublishersClient() {
       
       return () => clearTimeout(timer)
     }
-  }, [shouldAutoSendQuery, autoSendQuery, sendMessage, clearAutoSend])
+  }, [autoSendQuery])
   function HeaderCheckout() {
     const { getTotalItems } = useCart()
     const count = getTotalItems()
@@ -2099,6 +2173,15 @@ export default function PublishersClient() {
   const suggestionsAbortRef = useRef<AbortController | null>(null)
   const suggestionsRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  
+  // Memoize callback functions to prevent PublishersHelpCarousel from re-rendering
+  const handleSetSuggestionsContainerRef = useCallback((el: HTMLDivElement | null) => {
+    suggestionsRef.current = el
+  }, [])
+  
+  const handlePickSuggestion = useCallback((val: string) => {
+    setSearchQuery(val)
+  }, [])
 
   const fetchData = async (apiFilters: APIFilters = {}, skipLoading = false) => {
     if (loading && !skipLoading) return
@@ -2125,7 +2208,7 @@ export default function PublishersClient() {
     fetchTimeoutRef.current = setTimeout(() => { fetchData(apiFilters) }, delay)
   }, [])
 
-  // Handle page changes
+  // Handle page changes - optimized to prevent unnecessary dependencies
   const handlePageChange = useCallback((page: number) => {
     // Update URL parameters first
     const params = new URLSearchParams(searchParams?.toString() || "")
@@ -2134,19 +2217,19 @@ export default function PublishersClient() {
     // The URL change will trigger the useEffect above to update currentPage
   }, [router, pathname, searchParams])
 
-  // Initial data fetch and handle page changes
+  // Initial data fetch and handle page changes - optimized to prevent circular dependencies
   useEffect(() => { 
     const apiFilters = convertFiltersToAPI(filters, searchQuery, currentPage, itemsPerPage)
     fetchData(apiFilters) 
   }, [currentPage, filters, searchQuery])
 
-  // Listen for URL parameter changes and update currentPage
+  // Listen for URL parameter changes and update currentPage - ignore sidebar parameter changes
   useEffect(() => {
     const pageFromUrl = Number(searchParams?.get('page') || 1)
     if (pageFromUrl !== currentPage) {
       setCurrentPage(pageFromUrl)
     }
-  }, [searchParams])
+  }, [relevantParams, currentPage])
 
   // Load last-used filters for the selected project (server-persisted fallback to local)
   useEffect(() => {
@@ -2209,12 +2292,12 @@ export default function PublishersClient() {
     return () => clearTimeout(t)
   }, [filters, searchQuery, selectedProjectId])
 
-  // Monitor URL parameter changes and update filters accordingly
+  // Monitor URL parameter changes and update filters accordingly - ignore sidebar parameter changes
   useEffect(() => {
     const newFilters = parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || ""))
     const newSearchQuery = searchParams?.get('q') || ""
     
-    // Update filters if they've changed
+    // Update filters if they've changed - use deep comparison to prevent unnecessary updates
     setFilters(prevFilters => {
       const hasChanged = JSON.stringify(prevFilters) !== JSON.stringify(newFilters)
       return hasChanged ? newFilters : prevFilters
@@ -2224,7 +2307,7 @@ export default function PublishersClient() {
     setSearchQuery(prevQuery => {
       return prevQuery !== newSearchQuery ? newSearchQuery : prevQuery
     })
-  }, [searchParams, parseFiltersFromParams])
+  }, [relevantParams])
 
   async function revealWebsite(id: string) {
     try {
@@ -2249,9 +2332,9 @@ export default function PublishersClient() {
       params.set('page', '1')
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     }
-  }, [filters, searchQuery, isLoadingProjectFilters])
+  }, [filters, searchQuery, isLoadingProjectFilters, currentPage, pathname, router])
 
-  // Fetch search suggestions from external API (debounced)
+  // Fetch search suggestions from external API (debounced) - optimized to prevent unnecessary recreations
   const fetchSuggestions = useCallback(async (q: string) => {
     const query = q.trim()
     if (!query || query.length < 2) {
@@ -2335,12 +2418,12 @@ export default function PublishersClient() {
     }
   }, [sites])
 
-  // Debounce suggestions on input change
+  // Debounce suggestions on input change - optimized to prevent function dependency
   useEffect(() => {
     const q = searchQuery
     const tid = setTimeout(() => { fetchSuggestions(q) }, 300)
     return () => clearTimeout(tid)
-  }, [searchQuery, fetchSuggestions])
+  }, [searchQuery])
 
   // Close suggestions on outside click / escape
   useEffect(() => {
@@ -2355,8 +2438,11 @@ export default function PublishersClient() {
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
   }, [])
 
-  // Keep URL params in sync with filters and search query
+  // Keep URL params in sync with filters and search query - optimized to prevent circular updates
   useEffect(() => {
+    // Skip if we're currently loading project filters to prevent conflicts
+    if (isLoadingProjectFilters) return
+    
     // Start from current URL params to preserve unrelated ones (e.g., 'sidebar')
     const currentSearch = typeof window !== 'undefined' ? window.location.search : ''
     const sp = new URLSearchParams(currentSearch)
@@ -2392,7 +2478,7 @@ export default function PublishersClient() {
     }
 
     router.replace(nextUrl, { scroll: false })
-  }, [filters, searchQuery, pathname, router])
+  }, [filters, searchQuery, pathname, router, isLoadingProjectFilters])
 
   const results = useMemo(() => {
     // When there's a search query, rely on API filtering instead of frontend filtering
@@ -2418,7 +2504,7 @@ export default function PublishersClient() {
     return arr
   }, [results, sortBy])
 
-  // Save interest only if, after a short delay, results remain zero for a meaningful query
+  // Save interest only if, after a short delay, results remain zero for a meaningful query - optimized
   useEffect(() => {
     const q = searchQuery.trim()
     if (!q || q.length < 3) return
@@ -2447,7 +2533,7 @@ export default function PublishersClient() {
     return () => {
       clearTimeout(timeoutId)
     }
-  }, [searchQuery, results.length, loading, filters])
+  }, [searchQuery, results.length, loading, filters, currentPage, itemsPerPage])
 
   // ---------------------- Guided Tour (Publishers Onboarding) ----------------------
   type TourStep = 'filters' | 'rowHeight' | 'project'
@@ -2608,60 +2694,69 @@ export default function PublishersClient() {
 
   return (
     <>
-      <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent min-h-[calc(100vh-8rem)]">
         <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-3 sm:mb-4 gap-3 sm:gap-4">
           <h1 className="text-lg sm:text-xl md:text-2xl text-foreground font-bold">Publishers</h1>
         </div>
 
         {/* Project Context moved into sidebar (PublishersHelpCarousel) */}
 
-        <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[300px] sm:min-h-[400px]">
+        <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[400px] sm:min-h-[500px]">
           <div className="lg:col-span-7 xl:col-span-7 flex flex-col" ref={filtersContainerRef}>
             <div className="flex-1">
-              <FiltersUI 
-                filters={filters} 
-                setFilters={setFilters} 
-                loading={loading}
-                onRefresh={() => {
-                  if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
-                  fetchData(convertFiltersToAPI(filters, searchQuery, currentPage, itemsPerPage))
-                }}
-              />
+              {loading && sites.length === 0 ? (
+                <div className="space-y-4">
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                </div>
+              ) : (
+                <FiltersUI 
+                  filters={filters} 
+                  setFilters={setFilters} 
+                  loading={loading}
+                  onRefresh={() => {
+                    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
+                    fetchData(convertFiltersToAPI(filters, searchQuery, currentPage, itemsPerPage))
+                  }}
+                />
+              )}
             </div>
           </div>
           <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col" ref={projectPanelRef}>
             <div className="flex-1 sticky top-0">
-              {(() => {
-                const total = displayedSites.length
-                const prices = displayedSites.map(x => x.publishing?.price ?? 0).filter(v => v > 0)
-                const traffics = displayedSites.map(x => x.toolScores?.semrushOverallTraffic ?? 0).filter(v => v > 0)
-                const authorities = displayedSites.map(x => x.toolScores?.semrushAuthority ?? 0).filter(v => v > 0)
-                const avgPrice = prices.length ? Math.round(prices.reduce((s, v) => s + v, 0) / prices.length) : 180
-                const avgTraffic = traffics.length ? Math.round(traffics.reduce((s, v) => s + v, 0) / traffics.length) : 1_200_000
-                const avgAuthority = authorities.length ? Math.round(authorities.reduce((s, v) => s + v, 0) / authorities.length) : 58
-                return (
-                  <PublishersHelpCarousel 
-                    metrics={{ total, avgPrice, avgTraffic, avgAuthority }}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    loading={loading}
-                    hasCheckoutFab={hasCheckoutFab}
-                    suggestions={suggestions}
-                    suggestionsLoading={suggestionsLoading}
-                    suggestionsOpen={suggestionsOpen}
-                    setSuggestionsOpen={setSuggestionsOpen}
-                    setSuggestionsContainerRef={(el) => { suggestionsRef.current = el }}
-                    onPickSuggestion={(val) => { setSearchQuery(val) }}
-                  />
-                )
-              })()}
+              {loading && sites.length === 0 ? (
+                <div className="h-96 bg-gray-50 dark:bg-gray-900 animate-pulse rounded-lg" />
+              ) : (
+                <MemoizedPublishersHelpCarousel 
+                  sites={displayedSites}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  loading={loading}
+                  hasCheckoutFab={hasCheckoutFab}
+                  suggestions={suggestions}
+                  suggestionsLoading={suggestionsLoading}
+                  suggestionsOpen={suggestionsOpen}
+                  setSuggestionsOpen={setSuggestionsOpen}
+                  handleSetSuggestionsContainerRef={handleSetSuggestionsContainerRef}
+                  handlePickSuggestion={handlePickSuggestion}
+                />
+              )}
             </div>
           </div>
         </div>
 
         {error && <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300">{error}</div>}
 
-        <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} />
+        {loading && sites.length === 0 ? (
+          <div className="space-y-4">
+            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        ) : (
+          <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} />
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -2756,9 +2851,7 @@ function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site:
   const [loading, setLoading] = useState(false)
   const [revealed, setRevealed] = useState<string | null>(null)
 
-  useEffect(() => {
-    // noop
-  }, [])
+  // Removed empty useEffect that was causing unnecessary re-renders
 
   async function onReveal(e: React.MouseEvent) {
     e.stopPropagation()

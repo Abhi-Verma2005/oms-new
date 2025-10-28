@@ -48,7 +48,7 @@ export default function Header({
     if (!isClient) return
     if (mobileMenuOpen) setMobileMenuOpen(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, searchParams])
+  }, [pathname]) // Removed searchParams to prevent refetch on sidebar toggle
 
   useEffect(() => {
     let active = true

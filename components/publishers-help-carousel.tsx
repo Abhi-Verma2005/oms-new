@@ -71,9 +71,10 @@ export default function PublishersHelpCarousel({
   const [projects, setProjects] = useState<UserProject[]>([])
   const [projectsLoading, setProjectsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [carouselReady, setCarouselReady] = useState(false)
   const [emblaRef] = useEmblaCarousel(
-    { loop: true, align: "start", dragFree: true },
-    [Autoplay({ delay: 4500, stopOnInteraction: false })]
+    carouselReady ? { loop: true, align: "start", dragFree: true } : undefined,
+    carouselReady ? [Autoplay({ delay: 4500, stopOnInteraction: false })] : []
   )
 
   const fetchProjects = useCallback(() => {
@@ -101,14 +102,20 @@ export default function PublishersHelpCarousel({
         setProjectsLoading(false)
       })
     return () => { cancelled = true }
-  }, [selectedProjectId, clearProject])
+  }, []) // Removed dependencies to prevent unnecessary recreations
 
   useEffect(() => {
     const cancel = fetchProjects()
     const handler = () => { fetchProjects() }
     window.addEventListener('project:created', handler)
     return () => { cancel?.(); window.removeEventListener('project:created', handler) }
-  }, [fetchProjects])
+  }, []) // Run once on mount only
+
+  // Initialize carousel after component mounts to improve performance
+  useEffect(() => {
+    const timer = setTimeout(() => setCarouselReady(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   const onSelectProject = (p: UserProject) => {
     setSelectedProject(p as any)
@@ -312,5 +319,4 @@ export default function PublishersHelpCarousel({
     </div>
   )
 }
-
 

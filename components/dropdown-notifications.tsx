@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Menu, MenuButton, MenuItems, MenuItem, Transition } from '@headlessui/react'
 import { Bell, Loader2 } from 'lucide-react'
@@ -38,11 +38,7 @@ export default function DropdownNotifications({ align }: {
   const { notifications, unreadCount, markAsRead } = useNotificationStore();
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const response = await fetch('/api/notifications?limit=5');
       if (response.ok) {
@@ -54,7 +50,11 @@ export default function DropdownNotifications({ align }: {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

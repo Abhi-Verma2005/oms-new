@@ -30,10 +30,13 @@ export const useResizableLayout = () => {
     // Fallback: toggle and sync URL even when not inside ResizableLayout tree
     const newState = !isSidebarOpen
     updateSidebarState(newState)
-    const newParams = new URLSearchParams(searchParams?.toString() || '')
-    newParams.set('sidebar', newState ? 'open' : 'closed')
-    router.replace(`?${newParams.toString()}`, { scroll: false })
-  }, [resizableContext, isSidebarOpen, updateSidebarState, searchParams, router])
+    // Get fresh searchParams inside the callback to avoid dependency issues
+    const currentParams = typeof window !== 'undefined' 
+      ? new URLSearchParams(window.location.search) 
+      : new URLSearchParams(searchParams?.toString() || '')
+    currentParams.set('sidebar', newState ? 'open' : 'closed')
+    router.replace(`?${currentParams.toString()}`, { scroll: false })
+  }, [resizableContext, isSidebarOpen, updateSidebarState, router]) // Removed searchParams dependency
 
   return { toggleSidebar }
 }
@@ -57,15 +60,17 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
   }, []) // Only run on mount
 
   // Custom toggle function that updates both state and URL
-  const handleSidebarToggle = () => {
+  const handleSidebarToggle = useCallback(() => {
     const newState = !isSidebarOpen
     updateSidebarState(newState)
     
-    // Update URL immediately
-    const newParams = new URLSearchParams(searchParams?.toString() || '')
-    newParams.set('sidebar', newState ? 'open' : 'closed')
-    router.replace(`?${newParams.toString()}`, { scroll: false })
-  }
+    // Update URL immediately - get fresh searchParams to avoid dependency issues
+    const currentParams = typeof window !== 'undefined' 
+      ? new URLSearchParams(window.location.search) 
+      : new URLSearchParams(searchParams?.toString() || '')
+    currentParams.set('sidebar', newState ? 'open' : 'closed')
+    router.replace(`?${currentParams.toString()}`, { scroll: false })
+  }, [isSidebarOpen, updateSidebarState, router]) // Removed searchParams dependency
 
   // Handle resize functionality
   const handleResize = (e: MouseEvent) => {
