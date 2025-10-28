@@ -312,7 +312,7 @@ Be intelligent, helpful, use beautiful markdown formatting, and show that you un
         model: 'gpt-4o',
         messages: [stage1SystemMessage, ...messages],
               temperature: 0.7,
-        max_tokens: 500,
+        max_tokens: 800,
               stream: true
             })
           })
@@ -690,7 +690,7 @@ Be intelligent about understanding the user's intent and perform the correct fil
                 { role: 'user', content: `Analyze this request and determine tool execution.` }
               ],
               temperature: 0.1,
-              max_tokens: 500
+              max_tokens: 800
             })
           })
 

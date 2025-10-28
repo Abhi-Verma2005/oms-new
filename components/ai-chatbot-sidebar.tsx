@@ -764,10 +764,10 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                       <button
                         type="button"
                   className={cn(
-                          "flex items-center border rounded-md text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:border-purple-500 bg-gray-100/70 dark:bg-gray-700/40 border-gray-200 dark:border-gray-700/60 transition-all duration-200 h-7 w-[112px] flex-none",
+                          "flex items-center border rounded-md text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:border-purple-500 bg-gray-100/70 dark:bg-gray-700/40 border-gray-200 dark:border-gray-700/60 transition-all duration-200",
                           selectedDocuments.length > 0 
-                            ? "justify-center p-0 gap-0"
-                            : "justify-start gap-2 px-2.5",
+                            ? "justify-center w-7 h-7 p-0 gap-0"
+                            : "justify-start gap-2 h-7 px-2.5",
                           isLoading ? "opacity-50 cursor-not-allowed" : ""
                         )}
                         disabled={isLoading}
@@ -786,9 +786,9 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                         <span className="sr-only">Add Context</span>
                       </button>
                     </DropdownMenuTrigger>
-                    {/* Help tooltip area keeps fixed width to avoid layout shift */}
-                    <div className="self-center w-5 flex justify-center">
-                      {selectedDocuments.length === 0 ? (
+                    {/* Help tooltip to the right of Add Context (hidden when compact + icon) */}
+                    {selectedDocuments.length === 0 && (
+                      <div className="self-center">
                         <Tooltip 
                           className="ml-0" 
                           size="sm" 
@@ -806,10 +806,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                             </ul>
                           </div>
                         </Tooltip>
-                      ) : (
-                        <span className="inline-block w-4 h-4" aria-hidden="true"></span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <DropdownMenuContent className="w-[300px] max-w-[92vw] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 rounded-md shadow-sm p-2">
                       <div className="space-y-2">
                         <button
