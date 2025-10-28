@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo } from 'react'
 
 interface PaginationProps {
   currentPage: number
   totalPages: number
   totalItems: number
   itemsPerPage: number
+  actualDisplayedCount?: number // New prop for actual displayed items count
   onPageChange: (page: number) => void
   className?: string
 }
@@ -16,30 +17,15 @@ export default function PaginationPublishers({
   totalPages,
   totalItems,
   itemsPerPage,
+  actualDisplayedCount,
   onPageChange,
   className = ''
 }: PaginationProps) {
-  const [showPageInput, setShowPageInput] = useState(false)
-  const [inputPage, setInputPage] = useState('')
 
-  const handlePageInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const page = parseInt(inputPage)
-      if (page >= 1 && page <= totalPages) {
-        onPageChange(page)
-        setShowPageInput(false)
-        setInputPage('')
-      }
-    } else if (e.key === 'Escape') {
-      setShowPageInput(false)
-      setInputPage('')
-    }
-  }
-
-  const getVisiblePages = () => {
+  const getVisiblePages = useMemo(() => {
     const delta = 2
-    const range = []
-    const rangeWithDots = []
+    const range: number[] = []
+    const rangeWithDots: (number | string)[] = []
 
     for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
       range.push(i)
@@ -60,7 +46,7 @@ export default function PaginationPublishers({
     }
 
     return rangeWithDots.filter((page, index, array) => array.indexOf(page) === index)
-  }
+  }, [currentPage, totalPages])
 
   const startItem = (currentPage - 1) * itemsPerPage + 1
   const endItem = Math.min(currentPage * itemsPerPage, totalItems)
@@ -100,7 +86,7 @@ export default function PaginationPublishers({
 
         {/* Page numbers */}
         <div className="flex items-center -space-x-px">
-          {getVisiblePages().map((page, index) => {
+          {getVisiblePages.map((page, index) => {
             if (page === '...') {
               return (
                 <span
@@ -149,36 +135,6 @@ export default function PaginationPublishers({
           </svg>
         </button>
 
-        {/* Jump to page */}
-        <div className="ml-2 flex items-center">
-          {showPageInput ? (
-            <input
-              type="number"
-              min="1"
-              max={totalPages}
-              value={inputPage}
-              onChange={(e) => setInputPage(e.target.value)}
-              onKeyDown={handlePageInput}
-              onBlur={() => {
-                setShowPageInput(false)
-                setInputPage('')
-              }}
-              className="w-16 px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-              placeholder="Page"
-              autoFocus
-            />
-          ) : (
-            <button
-              onClick={() => setShowPageInput(true)}
-              className="inline-flex items-center justify-center px-2.5 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-violet-600 dark:hover:text-violet-400 rounded-lg transition-colors"
-              aria-label="Jump to page"
-            >
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-              </svg>
-            </button>
-          )}
-        </div>
       </nav>
     </div>
   )

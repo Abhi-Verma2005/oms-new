@@ -254,6 +254,7 @@ export interface CategoryRecommendation {
 }
 
 function getFallbackSampleData(filters: APIFilters = {}): PaginatedResult {
+  console.log('Using fallback data with filters:', filters);
   const sampleData: APISite[] = [
     {
       id: 1,
@@ -478,7 +479,7 @@ function getFallbackSampleData(filters: APIFilters = {}): PaginatedResult {
     },
   ]
 
-  // minimal filtering support
+  // Apply all filters including price range
   let filtered = sampleData
   if (filters.niche) {
     const q = String(filters.niche).toLowerCase()
@@ -489,12 +490,61 @@ function getFallbackSampleData(filters: APIFilters = {}): PaginatedResult {
     filtered = filtered.filter(s => s.website.toLowerCase().includes(q))
   }
   
+  // Apply price range filtering
+  if (filters.sellingPrice?.min !== undefined) {
+    filtered = filtered.filter(s => s.sellingPrice >= filters.sellingPrice!.min!)
+  }
+  if (filters.sellingPrice?.max !== undefined) {
+    filtered = filtered.filter(s => s.sellingPrice <= filters.sellingPrice!.max!)
+  }
+  
+  // Apply other filters
+  if (filters.domainAuthority?.min !== undefined) {
+    filtered = filtered.filter(s => s.domainAuthority >= filters.domainAuthority!.min!)
+  }
+  if (filters.domainAuthority?.max !== undefined) {
+    filtered = filtered.filter(s => s.domainAuthority <= filters.domainAuthority!.max!)
+  }
+  if (filters.pageAuthority?.min !== undefined) {
+    filtered = filtered.filter(s => s.pageAuthority >= filters.pageAuthority!.min!)
+  }
+  if (filters.pageAuthority?.max !== undefined) {
+    filtered = filtered.filter(s => s.pageAuthority <= filters.pageAuthority!.max!)
+  }
+  if (filters.domainRating?.min !== undefined) {
+    filtered = filtered.filter(s => s.domainRating >= filters.domainRating!.min!)
+  }
+  if (filters.domainRating?.max !== undefined) {
+    filtered = filtered.filter(s => s.domainRating <= filters.domainRating!.max!)
+  }
+  if (filters.spamScore?.min !== undefined) {
+    filtered = filtered.filter(s => s.spamScore >= filters.spamScore!.min!)
+  }
+  if (filters.spamScore?.max !== undefined) {
+    filtered = filtered.filter(s => s.spamScore <= filters.spamScore!.max!)
+  }
+  if (filters.language) {
+    filtered = filtered.filter(s => s.language.toLowerCase().includes(filters.language!.toLowerCase()))
+  }
+  if (filters.webCountry) {
+    filtered = filtered.filter(s => s.webCountry.toLowerCase().includes(filters.webCountry!.toLowerCase()))
+  }
+  if (filters.linkAttribute) {
+    filtered = filtered.filter(s => s.linkAttribute.toLowerCase() === filters.linkAttribute!.toLowerCase())
+  }
+  if (typeof filters.availability === 'boolean') {
+    filtered = filtered.filter(s => s.availability === filters.availability)
+  }
+  
   // Apply pagination
   const total = filtered.length
   const offset = filters.offset || 0
   const limit = filters.limit || 8
   
   const paginatedSites = filtered.slice(offset, offset + limit)
+  
+  console.log(`Fallback filtering: ${sampleData.length} total sites, ${filtered.length} after filtering, ${paginatedSites.length} paginated`);
+  console.log('Filtered sites prices:', paginatedSites.map(s => ({ website: s.website, sellingPrice: s.sellingPrice })));
   
   return {
     sites: paginatedSites,
@@ -506,6 +556,7 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<P
   try {
     // Build filter query string
     const filterQuery = buildFilterQuery(filters);
+    console.log('Price filters:', { sellingPrice: filters.sellingPrice, filterQuery });
     
     // For the first request (no filters), don't send any body
     // Only send body when filters are applied
@@ -529,6 +580,7 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<P
       }
       
       requestBody = JSON.stringify(requestPayload);
+      console.log('API request payload:', requestPayload);
     }
 
     const response = await fetch(API_BASE_URL, {

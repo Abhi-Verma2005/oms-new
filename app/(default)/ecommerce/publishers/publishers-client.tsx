@@ -932,7 +932,7 @@ function summarizeFilters(f: Filters) {
   return out
 }
 
-function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void; onRowHeightButtonRef?: (el: HTMLButtonElement | null) => void }) {
+function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef, onLimitedSitesChange, onRowLevelChange, currentPage, itemsPerPage }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void; onRowHeightButtonRef?: (el: HTMLButtonElement | null) => void; onLimitedSitesChange?: (limitedSites: Site[]) => void; onRowLevelChange?: (rowLevel: 1 | 2 | 3 | 4) => void; currentPage: number; itemsPerPage: number }) {
   const { addItem, removeItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
   // Track the currently hovered site for the trend preview panel
@@ -951,9 +951,28 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef 
   // Limit number of rows shown based on row density setting so users see a visible change
   const maxRowsByLevel: Record<1 | 2 | 3 | 4, number> = useMemo(() => ({ 1: 30, 2: 20, 3: 12, 4: 8 }), [])
   const limitedSites = useMemo(() => {
+    if (!Array.isArray(sites)) return sites
+    
+    // Calculate pagination slice
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    
+    // First slice by pagination, then limit by row height
+    const paginatedSites = sites.slice(startIndex, endIndex)
     const limit = maxRowsByLevel[rowLevel]
-    return Array.isArray(sites) ? sites.slice(0, limit) : sites
-  }, [sites, rowLevel, maxRowsByLevel])
+    
+    return paginatedSites.slice(0, limit)
+  }, [sites, rowLevel, maxRowsByLevel, currentPage, itemsPerPage])
+
+  // Notify parent component of limited sites changes
+  useEffect(() => {
+    onLimitedSitesChange?.(limitedSites)
+  }, [limitedSites, onLimitedSitesChange])
+
+  // Notify parent component of row level changes
+  useEffect(() => {
+    onRowLevelChange?.(rowLevel)
+  }, [rowLevel, onRowLevelChange])
 
   // Column visibility controller (modeled after OMS filter-page)
   type ColumnKey =
@@ -2151,10 +2170,15 @@ export default function PublishersClient() {
   const [filters, setFilters] = useState<Filters>(() => parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || "")))
   const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || "")
   const [sites, setSites] = useState<Site[]>([])
+  const [limitedSites, setLimitedSites] = useState<Site[]>([])
+  const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
   const [revealed, setRevealed] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
+  
+  // Row height configuration
+  const maxRowsByLevel: Record<1 | 2 | 3 | 4, number> = { 1: 30, 2: 20, 3: 12, 4: 8 }
   
   // AI filter updates are now handled via URL changes (simplified)
   
@@ -2208,20 +2232,23 @@ export default function PublishersClient() {
     fetchTimeoutRef.current = setTimeout(() => { fetchData(apiFilters) }, delay)
   }, [])
 
-  // Handle page changes - optimized to prevent unnecessary dependencies
+  // Handle page changes - simplified to prevent circular dependencies
   const handlePageChange = useCallback((page: number) => {
-    // Update URL parameters first
+    // Update state immediately to prevent circular dependencies
+    setCurrentPage(page)
+    // Update URL parameters
     const params = new URLSearchParams(searchParams?.toString() || "")
     params.set('page', page.toString())
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-    // The URL change will trigger the useEffect above to update currentPage
   }, [router, pathname, searchParams])
 
   // Initial data fetch and handle page changes - optimized to prevent circular dependencies
   useEffect(() => { 
-    const apiFilters = convertFiltersToAPI(filters, searchQuery, currentPage, itemsPerPage)
+    // For client-side row limiting, fetch all data at once (no server-side pagination)
+    const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000) // Fetch up to 1000 items
+    console.log('Component filters:', { filters, apiFilters, priceMin: filters.priceMin, priceMax: filters.priceMax });
     fetchData(apiFilters) 
-  }, [currentPage, filters, searchQuery])
+  }, [filters, searchQuery]) // Removed currentPage dependency
 
   // Listen for URL parameter changes and update currentPage - ignore sidebar parameter changes
   useEffect(() => {
@@ -2229,7 +2256,7 @@ export default function PublishersClient() {
     if (pageFromUrl !== currentPage) {
       setCurrentPage(pageFromUrl)
     }
-  }, [relevantParams, currentPage])
+  }, [relevantParams]) // Remove currentPage from dependencies to prevent circular updates
 
   // Load last-used filters for the selected project (server-persisted fallback to local)
   useEffect(() => {
@@ -2332,7 +2359,7 @@ export default function PublishersClient() {
       params.set('page', '1')
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     }
-  }, [filters, searchQuery, isLoadingProjectFilters, currentPage, pathname, router])
+  }, [filters, searchQuery, isLoadingProjectFilters]) // Remove currentPage, pathname, router from dependencies
 
   // Fetch search suggestions from external API (debounced) - optimized to prevent unnecessary recreations
   const fetchSuggestions = useCallback(async (q: string) => {
@@ -2701,7 +2728,7 @@ export default function PublishersClient() {
 
         {/* Project Context moved into sidebar (PublishersHelpCarousel) */}
 
-        <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[400px] sm:min-h-[500px]">
+        <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch">
           <div className="lg:col-span-7 xl:col-span-7 flex flex-col" ref={filtersContainerRef}>
             <div className="flex-1">
               {loading && sites.length === 0 ? (
@@ -2755,21 +2782,27 @@ export default function PublishersClient() {
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
           </div>
         ) : (
-          <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} />
+          <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} onLimitedSitesChange={setLimitedSites} onRowLevelChange={setRowLevel} currentPage={currentPage} itemsPerPage={maxRowsByLevel[rowLevel]} />
         )}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-6">
-            <PaginationPublishers
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              itemsPerPage={itemsPerPage}
-              onPageChange={handlePageChange}
-            />
-          </div>
-        )}
+        {(() => {
+          // Calculate client-side pagination based on row height
+          const clientSideItemsPerPage = maxRowsByLevel[rowLevel]
+          const clientSideTotalPages = Math.ceil(totalItems / clientSideItemsPerPage)
+          
+          return clientSideTotalPages > 1 && (
+            <div className="mt-6">
+              <PaginationPublishers
+                currentPage={currentPage}
+                totalPages={clientSideTotalPages}
+                totalItems={totalItems}
+                itemsPerPage={clientSideItemsPerPage}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )
+        })()}
 
       </div>
       {/* Guided Tour Overlay */}
