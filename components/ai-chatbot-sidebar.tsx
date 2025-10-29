@@ -15,6 +15,8 @@ import {
 import Tooltip from '@/components/tooltip'
 import { cn } from '@/lib/utils'
 import { useUserContextForAI } from '@/stores/user-context-store'
+import { useProjectStore } from '@/stores/project-store'
+import { useFilterStore } from '@/stores/filter-store'
 import { useDropzone } from 'react-dropzone'
 import { Streamdown } from 'streamdown'
 import {
@@ -40,6 +42,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   const [isMinimized, setIsMinimized] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const { getUserContextForAI } = useUserContextForAI()
+  const { selectedProjectId } = useProjectStore()
+  const { getCurrentState, updateFromAI } = useFilterStore()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -290,24 +294,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     setError(null)
 
     try {
-      // Get current filter state from URL
-      const currentFilters: any = {}
-      if (searchParams.get('daMin')) currentFilters.daMin = parseInt(searchParams.get('daMin')!)
-      if (searchParams.get('daMax')) currentFilters.daMax = parseInt(searchParams.get('daMax')!)
-      if (searchParams.get('drMin')) currentFilters.drMin = parseInt(searchParams.get('drMin')!)
-      if (searchParams.get('drMax')) currentFilters.drMax = parseInt(searchParams.get('drMax')!)
-      if (searchParams.get('spamMin')) currentFilters.spamMin = parseInt(searchParams.get('spamMin')!)
-      if (searchParams.get('spamMax')) currentFilters.spamMax = parseInt(searchParams.get('spamMax')!)
-      if (searchParams.get('priceMin')) currentFilters.priceMin = parseInt(searchParams.get('priceMin')!)
-      if (searchParams.get('priceMax')) currentFilters.priceMax = parseInt(searchParams.get('priceMax')!)
-      if (searchParams.get('paMin')) currentFilters.paMin = parseInt(searchParams.get('paMin')!)
-      if (searchParams.get('paMax')) currentFilters.paMax = parseInt(searchParams.get('paMax')!)
-      if (searchParams.get('niche')) currentFilters.niche = searchParams.get('niche')
-      if (searchParams.get('country')) currentFilters.country = searchParams.get('country')
-      if (searchParams.get('language')) currentFilters.language = searchParams.get('language')
-      if (searchParams.get('trafficMin')) currentFilters.trafficMin = parseInt(searchParams.get('trafficMin')!)
-      if (searchParams.get('backlinkNature')) currentFilters.backlinkNature = searchParams.get('backlinkNature')
-      if (searchParams.get('availability') !== null) currentFilters.availability = searchParams.get('availability') === 'true'
+      // Get current filter state from filter store
+      const { filters: currentFilters, searchQuery } = getCurrentState()
 
       // Create streaming response
       const response = await fetch('/api/chat-streaming', {
@@ -317,6 +305,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
           messages: [...messages, userMessage],
           userId,
           currentFilters,
+          searchQuery,
           selectedDocuments // Include selected documents
         })
       })
@@ -368,6 +357,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
 
                 // Handle tool results
                 if (parsed.toolResults) {
+                  console.log('🎯 AI SIDEBAR: Received toolResults:', parsed.toolResults)
                   toolResults = parsed.toolResults
                   setToolActions(parsed.toolResults)
                   setShowToolFeedback(true)
@@ -376,18 +366,26 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   for (const toolResult of parsed.toolResults) {
                     switch (toolResult.action) {
                       case 'filter_applied':
-                        if (toolResult.url) {
-                          console.log('🔍 Applying filters to URL:', toolResult.url)
+                        if (toolResult.filters) {
+                          console.log('🔍 AI SIDEBAR: Applying filters directly to state:', toolResult.filters)
                           
-                          // Preserve sidebar state in URL
-                          const urlWithSidebar = `${toolResult.url}&sidebar=open`
+                          // Set flag to indicate this is an AI change (for immediate fetch)
+                          if (typeof (window as any).setAIFilterFlag === 'function') {
+                            console.log('🚩 AI SIDEBAR: Setting AI filter flag')
+                            ;(window as any).setAIFilterFlag()
+                          } else {
+                            console.warn('⚠️ AI SIDEBAR: setAIFilterFlag function not available')
+                          }
                           
-                          console.log('✅ Navigating to:', urlWithSidebar)
+                          // Use the Zustand store to update filters directly
+                          console.log('🔄 AI SIDEBAR: Calling updateFromAI with:', toolResult.filters)
+                          updateFromAI(toolResult.filters)
+                          console.log('✅ AI SIDEBAR: Filters applied directly to state via Zustand store')
                           
-                          // Use window.location to force a full page reload and ensure filters are applied
-                          window.location.href = urlWithSidebar
-                          
-                          setTimeout(() => setShowToolFeedback(false), 2000)
+                          // Show success feedback for longer to indicate data is being fetched
+                          setTimeout(() => setShowToolFeedback(false), 3000)
+                        } else {
+                          console.warn('⚠️ AI SIDEBAR: No filters in toolResult:', toolResult)
                         }
                         break
                       case 'navigate':

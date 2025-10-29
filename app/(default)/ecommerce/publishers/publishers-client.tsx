@@ -48,6 +48,7 @@ const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-hel
 import { ProjectSelector } from '@/components/projects/project-selector'
 import { useActivityLogger } from '@/lib/user-activity-client'
 import { useProjectStore } from '@/stores/project-store'
+import { useFilterStore, type Filters as StoreFilters } from '@/stores/filter-store'
 import ModalBasic from '@/components/modal-basic'
 import { useResizableLayout } from '@/components/resizable-layout'
 import { useLayout } from '@/contexts/LayoutContext'
@@ -57,10 +58,10 @@ type BacklinkNature = "do-follow" | "no-follow" | "sponsored"
 type LinkPlacement = "in-content" | "author-bio" | "footer"
 
 type Filters = {
-  niche: string
-  language: string
-  country: string
-  tool?: "Semrush" | "Ahrefs"
+  niche?: string
+  language?: string
+  country?: string
+  tool?: string
   daMin?: number
   daMax?: number
   paMin?: number
@@ -75,10 +76,10 @@ type Filters = {
   priceMax?: number
   tatDaysMax?: number
   tatDaysMin?: number
-  backlinkNature?: BacklinkNature
+  backlinkNature?: string
   backlinksAllowedMin?: number
-  linkPlacement?: LinkPlacement
-  permanence?: "lifetime" | "12-months"
+  linkPlacement?: string
+  permanence?: string
   sampleUrl?: string
   remarkIncludes?: string
   lastPublishedAfter?: string
@@ -86,10 +87,41 @@ type Filters = {
   guidelinesUrlIncludes?: string
   disclaimerIncludes?: string
   availability?: boolean
-  trend?: Trend
+  trend?: string
 }
 
-const defaultFilters: Filters = { niche: "", language: "", country: "" }
+const defaultFilters: Filters = {
+  niche: "",
+  language: "",
+  country: "",
+  tool: undefined,
+  daMin: undefined,
+  daMax: undefined,
+  paMin: undefined,
+  paMax: undefined,
+  drMin: undefined,
+  drMax: undefined,
+  spamMin: undefined,
+  spamMax: undefined,
+  semrushOverallTrafficMin: undefined,
+  semrushOrganicTrafficMin: undefined,
+  priceMin: undefined,
+  priceMax: undefined,
+  tatDaysMax: undefined,
+  tatDaysMin: undefined,
+  backlinkNature: undefined,
+  backlinksAllowedMin: undefined,
+  linkPlacement: undefined,
+  permanence: undefined,
+  sampleUrl: undefined,
+  remarkIncludes: undefined,
+  lastPublishedAfter: undefined,
+  outboundLinkLimitMax: undefined,
+  guidelinesUrlIncludes: undefined,
+  disclaimerIncludes: undefined,
+  availability: undefined,
+  trend: undefined
+}
 
 function convertFiltersToAPI(f: Filters, searchQuery: string, page: number = 1, limit: number = 8): APIFilters {
   const api: APIFilters = {}
@@ -252,14 +284,12 @@ function FiltersUI({
   const open = (k: keyof Filters) => { if (!loading) { setActiveKey(k); setModalOpen(true) } }
 
   const clearKey = (k: keyof Filters) => {
-    setFilters(f => {
-      const val = f[k] as any
-      let reset: any = ""
-      if (typeof val === 'boolean') reset = undefined
-      else if (typeof val === 'number') reset = undefined
-      else reset = ""
-      return { ...f, [k]: reset }
-    })
+    const val = filters[k] as any
+    let reset: any = ""
+    if (typeof val === 'boolean') reset = undefined
+    else if (typeof val === 'number') reset = undefined
+    else reset = ""
+    setFilters({ ...filters, [k]: reset })
   }
 
   // Dual-range slider control and helpers for min/max filters
@@ -288,12 +318,12 @@ function FiltersUI({
 
     const setMin = (val: number) => {
       const clamped = Math.min(Math.max(val, min), high - step)
-      setFilters(f => ({ ...f, [minKey]: isNaN(clamped) ? min : clamped }))
+      setFilters({ ...filters, [minKey]: isNaN(clamped) ? min : clamped })
     }
     
     const setMax = (val: number) => {
       const clamped = Math.max(Math.min(val, max), low + step)
-      setFilters(f => ({ ...f, [maxKey]: isNaN(clamped) ? max : clamped }))
+      setFilters({ ...filters, [maxKey]: isNaN(clamped) ? max : clamped })
     }
 
     const pct = (v: number) => ((v - min) / (max - min)) * 100
@@ -545,7 +575,7 @@ function FiltersUI({
       case 'country':
         return (
           <div className="p-4 space-y-2">
-            <Select value={filters.country || undefined} onValueChange={(v) => setFilters(f => ({ ...f, country: v === '__all__' ? '' : v }))}>
+            <Select value={filters.country || undefined} onValueChange={(v) => setFilters({ ...filters, country: v === '__all__' ? '' : v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select country" />
               </SelectTrigger>
@@ -576,7 +606,7 @@ function FiltersUI({
   return (
           <div className="p-4 space-y-2">
             <Input placeholder="Filter languages" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} />
-            <Select value={filters.language || undefined} onValueChange={(v) => setFilters(f => ({ ...f, language: v === '__all__' ? '' : v }))}>
+            <Select value={filters.language || undefined} onValueChange={(v) => setFilters({ ...filters, language: v === '__all__' ? '' : v })}>
               <SelectTrigger>
                 <SelectValue placeholder="All languages" />
               </SelectTrigger>
@@ -595,10 +625,10 @@ function FiltersUI({
       case 'niche':
         return (
           <div className="p-4 space-y-2">
-            <Input placeholder="Enter niche" value={filters.niche} onChange={(e) => { setFilters(f => ({ ...f, niche: e.target.value })); setNicheSearch(e.target.value) }} />
+            <Input placeholder="Enter niche" value={filters.niche || ''} onChange={(e) => { setFilters({ ...filters, niche: e.target.value }); setNicheSearch(e.target.value) }} />
             <div className="max-h-48 overflow-auto no-scrollbar border border-gray-200 dark:border-gray-700/60 rounded p-2">
               {loadingCats ? <div className="text-sm">Loading…</div> : catError ? <div className="text-sm text-red-500">{catError}</div> : recommendations.length ? recommendations.map(r => (
-                <button key={r.category} className="block w-full text-left text-sm px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => { setFilters(f => ({ ...f, niche: r.category })); setModalOpen(false) }}>{r.category}</button>
+                <button key={r.category} className="block w-full text-left text-sm px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => { setFilters({ ...filters, niche: r.category }); setModalOpen(false) }}>{r.category}</button>
               )) : <div className="text-sm text-gray-500">Type at least 2 characters</div>}
             </div>
           </div>
@@ -639,7 +669,7 @@ function FiltersUI({
                 if (loading) return
                 const minV = vals[0] as number
                 const maxV = vals[1] as number
-                setFilters(f => ({ ...f, [cfg.minKey]: minV, [cfg.maxKey]: maxV }))
+                setFilters({ ...filters, [cfg.minKey]: minV, [cfg.maxKey]: maxV })
               }}
             />
           </div>
@@ -659,7 +689,7 @@ function FiltersUI({
               value={[lo]}
               onValueChange={(vals: number[]) => {
                 if (loading) return
-                setFilters(f => ({ ...f, semrushOverallTrafficMin: vals[0] as number }))
+                setFilters({ ...filters, semrushOverallTrafficMin: vals[0] as number })
               }}
             />
           </div>
@@ -679,7 +709,7 @@ function FiltersUI({
               value={[lo]}
               onValueChange={(vals: number[]) => {
                 if (loading) return
-                setFilters(f => ({ ...f, semrushOrganicTrafficMin: vals[0] as number }))
+                setFilters({ ...filters, semrushOrganicTrafficMin: vals[0] as number })
               }}
             />
           </div>
@@ -689,20 +719,20 @@ function FiltersUI({
       case 'outboundLinkLimitMax':
         return (
           <div className="p-4">
-            <Input type="number" placeholder="Enter value" value={String((filters as any)[activeKey] ?? "")} onChange={(e) => setFilters(f => ({ ...f, [activeKey]: e.target.value === '' ? undefined : Number(e.target.value) }))} />
+            <Input type="number" placeholder="Enter value" value={String((filters as any)[activeKey] ?? "")} onChange={(e) => setFilters({ ...filters, [activeKey]: e.target.value === '' ? undefined : Number(e.target.value) })} />
           </div>
         )
       case 'availability':
         return (
           <div className="p-4 flex items-center justify-between">
             <div className="text-sm">Show only available</div>
-            <Checkbox checked={filters.availability ?? false} onCheckedChange={(checked) => setFilters(f => ({ ...f, availability: Boolean(checked) }))} />
+            <Checkbox checked={filters.availability ?? false} onCheckedChange={(checked) => setFilters({ ...filters, availability: Boolean(checked) })} />
           </div>
         )
       case 'trend':
         return (
           <div className="p-4">
-            <Select value={filters.trend || undefined} onValueChange={(v) => setFilters(f => ({ ...f, trend: v === 'none' ? undefined : (v as Trend) }))}>
+            <Select value={filters.trend || undefined} onValueChange={(v) => setFilters({ ...filters, trend: v === 'none' ? undefined : v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select trend" />
               </SelectTrigger>
@@ -718,7 +748,7 @@ function FiltersUI({
       case 'backlinkNature':
         return (
           <div className="p-4">
-            <Select value={filters.backlinkNature || undefined} onValueChange={(v) => setFilters(f => ({ ...f, backlinkNature: v === 'none' ? undefined : (v as BacklinkNature) }))}>
+            <Select value={filters.backlinkNature || undefined} onValueChange={(v) => setFilters({ ...filters, backlinkNature: v === 'none' ? undefined : (v as BacklinkNature) })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select backlink nature" />
               </SelectTrigger>
@@ -734,7 +764,7 @@ function FiltersUI({
       case 'linkPlacement':
         return (
           <div className="p-4">
-            <Select value={filters.linkPlacement || undefined} onValueChange={(v) => setFilters(f => ({ ...f, linkPlacement: v === 'none' ? undefined : (v as LinkPlacement) }))}>
+            <Select value={filters.linkPlacement || undefined} onValueChange={(v) => setFilters({ ...filters, linkPlacement: v === 'none' ? undefined : (v as LinkPlacement) })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select link placement" />
               </SelectTrigger>
@@ -750,7 +780,7 @@ function FiltersUI({
       case 'permanence':
         return (
           <div className="p-4">
-            <Select value={filters.permanence || undefined} onValueChange={(v) => setFilters(f => ({ ...f, permanence: v === 'none' ? undefined : (v as any) }))}>
+            <Select value={filters.permanence || undefined} onValueChange={(v) => setFilters({ ...filters, permanence: v === 'none' ? undefined : (v as any) })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select permanence" />
               </SelectTrigger>
@@ -765,7 +795,7 @@ function FiltersUI({
       case 'tool':
         return (
           <div className="p-4">
-            <Select value={filters.tool || undefined} onValueChange={(v) => setFilters(f => ({ ...f, tool: v === 'none' ? undefined : (v as any) }))}>
+            <Select value={filters.tool || undefined} onValueChange={(v) => setFilters({ ...filters, tool: v === 'none' ? undefined : (v as any) })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select SEO tool" />
               </SelectTrigger>
@@ -793,6 +823,7 @@ function FiltersUI({
   }
 
   const activeChips = useMemo(() => {
+    console.log('🎯 FILTERS UI: Computing activeChips with filters:', filters)
     const chips: { key: keyof Filters; label: string }[] = []
     const add = (key: keyof Filters, label?: string, value?: unknown) => {
       if (value !== undefined && value !== '' && value !== null) chips.push({ key, label: label || String(value) })
@@ -822,6 +853,7 @@ function FiltersUI({
     add('linkPlacement', `Placement: ${filters.linkPlacement}`, filters.linkPlacement)
     add('permanence', `Permanence: ${filters.permanence}`, filters.permanence)
     add('availability', `Available only`, filters.availability)
+    console.log('🎯 FILTERS UI: Generated chips:', chips, 'Length:', chips.length)
     return chips
   }, [filters])
 
@@ -872,11 +904,27 @@ function FiltersUI({
               <CheckCircle className="w-3 h-3" />
               Save
             </Button>
-            <Button variant="outline" className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" onClick={onRefresh} disabled={loading}>
+            <Button 
+              variant="outline" 
+              className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" 
+              onClick={onRefresh} 
+              disabled={loading}
+            >
               <RefreshCw className="w-3 h-3" />
-              Refresh
+              Apply Filters
             </Button>
-            <Button className="h-8 text-xs px-2 sm:px-3 flex-1 sm:flex-none bg-[#755FF8] text-white hover:bg-[#755FF8]/80" variant="secondary" onClick={() => setFilters(defaultFilters)} disabled={loading}>Reset All</Button>
+            <Button 
+              className="h-8 text-xs px-2 sm:px-3 flex-1 sm:flex-none bg-[#755FF8] text-white hover:bg-[#755FF8]/80" 
+              variant="secondary" 
+              onClick={() => {
+                setFilters(defaultFilters)
+                // Reset search query via custom event
+                window.dispatchEvent(new CustomEvent('resetSearchQuery'))
+              }} 
+              disabled={loading}
+            >
+              Reset All
+            </Button>
             </div>
           </div>
         </div>
@@ -900,6 +948,7 @@ function FiltersUI({
 
       {activeChips.length > 0 && (
         <div className="mt-2 sm:mt-3 flex flex-wrap gap-1.5 sm:gap-2 flex-shrink-0">
+          {console.log('🎯 FILTERS UI: Rendering chips:', activeChips.length, 'chips')}
           {activeChips.map(chip => (
             <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-1.5 rounded-full px-2 sm:px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600 hover:bg-violet-700 transition-all duration-200 hover:scale-105">
               <span>{chip.label}</span>
@@ -915,7 +964,18 @@ function FiltersUI({
         {renderModalBody()}
         <div className="px-4 sm:px-5 py-3 border-t border-gray-200 dark:border-gray-700/60 flex flex-col sm:flex-row justify-end gap-2">
           <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={loading} className="w-full sm:w-auto">Cancel</Button>
-          <Button className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" onClick={() => setModalOpen(false)} disabled={loading}>Apply</Button>
+          <Button 
+            className="bg-violet-600 text-white hover:bg-violet-500 w-full sm:w-auto" 
+            onClick={() => {
+              // Apply filters and close modal
+              setModalOpen(false)
+              // Trigger filter application via the main component
+              window.dispatchEvent(new CustomEvent('applyFilters'))
+            }} 
+            disabled={loading}
+          >
+            Apply
+          </Button>
         </div>
       </ModalBasic>
     </>
@@ -2085,6 +2145,29 @@ export default function PublishersClient() {
     params.delete('sidebar') // Remove sidebar parameter to prevent unnecessary refetches
     return params.toString()
   }, [searchParams?.toString()]) // Only depend on the stringified version
+  // Use filter store for state management
+  const {
+    filters,
+    searchQuery,
+    setFilters,
+    setSearchQuery,
+    clearFilter,
+    validateFilters,
+    updateFromAI,
+    syncWithURL,
+    loadFromURL,
+    getCurrentState
+  } = useFilterStore()
+
+  // Wrapper for FiltersUI component compatibility - memoized to prevent re-renders
+  const setFiltersForUI = React.useCallback((updater: React.SetStateAction<Filters>) => {
+    if (typeof updater === 'function') {
+      setFilters(updater(filters))
+    } else {
+      setFilters(updater)
+    }
+  }, [setFilters, filters])
+
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
   const { selectedProjectId } = useProjectStore()
@@ -2167,14 +2250,28 @@ export default function PublishersClient() {
     return { ...defaultFilters, ...parsed }
   }, [])
 
-  const [filters, setFilters] = useState<Filters>(() => parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || "")))
-  const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || "")
+  // Filters and search query are now managed by the filter store
   const [sites, setSites] = useState<Site[]>([])
   const [limitedSites, setLimitedSites] = useState<Site[]>([])
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
   const [revealed, setRevealed] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
+  const [tableLoading, setTableLoading] = useState(false) // Separate loading state for table
   const [error, setError] = useState<string | null>(null)
+
+  // Initialize filters from URL on first load
+  useEffect(() => {
+    if (searchParams) {
+      loadFromURL(searchParams)
+    }
+  }, [loadFromURL, searchParams]) // Only run once on mount
+
+  // Listen for apply filters event from modal - moved after fetchData definition
+
+  // Sync URL when filters change (background sync) - DISABLED to prevent page reloads
+  // useEffect(() => {
+  //   syncWithURL()
+  // }, [filters, searchQuery, syncWithURL])
   const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
   
   // Row height configuration
@@ -2187,7 +2284,7 @@ export default function PublishersClient() {
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const itemsPerPage = 8
-  const [isLoadingProjectFilters, setIsLoadingProjectFilters] = useState(false)
+  // Project filter loading is now handled by the filter store
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastPostedQueryRef = useRef<string>("")
   // Suggestions state for website/url recommendations
@@ -2207,9 +2304,20 @@ export default function PublishersClient() {
     setSearchQuery(val)
   }, [])
 
-  const fetchData = async (apiFilters: APIFilters = {}, skipLoading = false) => {
+  const fetchData = useCallback(async (apiFilters: APIFilters = {}, skipLoading = false) => {
     if (loading && !skipLoading) return
-    if (!skipLoading) setLoading(true)
+    
+    // Determine if this is initial load or filter change
+    const isInitialLoad = sites.length === 0
+    
+    if (!skipLoading) {
+      if (isInitialLoad) {
+        setLoading(true) // Show full skeleton for initial load
+      } else {
+        setTableLoading(true) // Show only table loading for filter changes
+      }
+    }
+    
     setError(null)
     try {
       const result = await fetchSitesWithFilters(apiFilters)
@@ -2223,32 +2331,85 @@ export default function PublishersClient() {
       setTotalItems(0)
       setTotalPages(0)
     } finally {
-      if (!skipLoading) setLoading(false)
+      if (!skipLoading) {
+        if (isInitialLoad) {
+          setLoading(false)
+        } else {
+          setTableLoading(false)
+        }
+      }
     }
-  }
+  }, [loading, sites.length, itemsPerPage])
+
+  // Listen for apply filters event from modal
+  useEffect(() => {
+    const handleApplyFilters = () => {
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+      console.log('Applying filters from modal:', { filters, apiFilters })
+      fetchData(apiFilters)
+    }
+
+    const handleResetSearchQuery = () => {
+      setSearchQuery("")
+    }
+
+    window.addEventListener('applyFilters', handleApplyFilters)
+    window.addEventListener('resetSearchQuery', handleResetSearchQuery)
+    return () => {
+      window.removeEventListener('applyFilters', handleApplyFilters)
+      window.removeEventListener('resetSearchQuery', handleResetSearchQuery)
+    }
+  }, [filters, searchQuery, fetchData, setSearchQuery])
 
   const debouncedFetch = useCallback((apiFilters: APIFilters, delay = 400) => {
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
     fetchTimeoutRef.current = setTimeout(() => { fetchData(apiFilters) }, delay)
-  }, [])
+  }, [fetchData])
 
   // Handle page changes - simplified to prevent circular dependencies
   const handlePageChange = useCallback((page: number) => {
     // Update state immediately to prevent circular dependencies
     setCurrentPage(page)
-    // Update URL parameters
-    const params = new URLSearchParams(searchParams?.toString() || "")
-    params.set('page', page.toString())
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [router, pathname, searchParams])
+    // URL sync is handled by the filter store
+  }, [])
 
-  // Initial data fetch and handle page changes - optimized to prevent circular dependencies
+  // Initial data fetch only - no auto-fetching on filter changes
   useEffect(() => { 
-    // For client-side row limiting, fetch all data at once (no server-side pagination)
-    const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000) // Fetch up to 1000 items
-    console.log('Component filters:', { filters, apiFilters, priceMin: filters.priceMin, priceMax: filters.priceMax });
-    fetchData(apiFilters) 
-  }, [filters, searchQuery]) // Removed currentPage dependency
+    // Only fetch on initial load when there are no sites
+    if (sites.length === 0) {
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000) // Fetch up to 1000 items
+      console.log('Initial load filters:', { filters, apiFilters, priceMin: filters.priceMin, priceMax: filters.priceMax });
+      fetchData(apiFilters)
+    }
+  }, []) // Only run once on mount
+
+  // Auto-fetch data when filters change (for AI and manual changes)
+  useEffect(() => {
+    console.log('🔄 PUBLISHERS: useEffect triggered with filters:', filters, 'sites.length:', sites.length)
+    
+    // Always fetch for AI changes, or if we have sites for manual changes
+    if (aiFilterChangeRef.current || sites.length > 0) {
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+      console.log('📡 PUBLISHERS: Auto-fetching due to filter changes:', { filters, apiFilters, fromAI: aiFilterChangeRef.current })
+      
+      if (aiFilterChangeRef.current) {
+        // AI changes: immediate fetch
+        console.log('⚡ PUBLISHERS: AI change detected - immediate fetch')
+        fetchData(apiFilters)
+        aiFilterChangeRef.current = false // Reset flag
+      } else {
+        // Manual changes: debounced fetch
+        console.log('⏱️ PUBLISHERS: Manual change detected - debounced fetch')
+        const timeoutId = setTimeout(() => {
+          fetchData(apiFilters)
+        }, 300) // 300ms debounce for manual changes
+        
+        return () => clearTimeout(timeoutId)
+      }
+    } else {
+      console.log('⚠️ PUBLISHERS: useEffect triggered but sites.length is 0 and not AI change, skipping fetch')
+    }
+  }, [filters, searchQuery, fetchData]) // Watch for filter changes
 
   // Listen for URL parameter changes and update currentPage - ignore sidebar parameter changes
   useEffect(() => {
@@ -2258,51 +2419,7 @@ export default function PublishersClient() {
     }
   }, [relevantParams]) // Remove currentPage from dependencies to prevent circular updates
 
-  // Load last-used filters for the selected project (server-persisted fallback to local)
-  useEffect(() => {
-    if (!selectedProjectId) return
-    setIsLoadingProjectFilters(true)
-    ;(async () => {
-      try {
-        const res = await fetch(`/api/projects/${encodeURIComponent(selectedProjectId)}/filters?page=publishers`, { cache: 'no-store' })
-        if (res.ok) {
-          const data = await res.json()
-          const pref = data?.preference as any
-          if (pref && typeof pref === 'object') {
-          if (pref.filters && Object.keys(pref.filters).length > 0) {
-            setFilters({ ...defaultFilters, ...pref.filters })
-          }
-          if (typeof pref.q === 'string') {
-            setSearchQuery(pref.q)
-          }
-            setIsLoadingProjectFilters(false)
-            return
-          }
-        }
-      } catch {}
-      // Fallback to local storage
-      try {
-        const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
-        if (!raw) {
-          setFilters(defaultFilters)
-          setSearchQuery("")
-          // Don't clear URL parameters - preserve page and other params
-          setIsLoadingProjectFilters(false)
-          return
-        }
-        const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
-        if (saved && typeof saved === 'object') {
-          if (saved.filters && Object.keys(saved.filters).length > 0) {
-            setFilters({ ...defaultFilters, ...saved.filters })
-          }
-          if (typeof saved.q === 'string') {
-            setSearchQuery(saved.q)
-          }
-        }
-        setIsLoadingProjectFilters(false)
-      } catch {}
-    })()
-  }, [selectedProjectId])
+  // Project filter loading is now handled by the filter store
 
   // Persist last-used filters per project whenever filters/query change (server + local, debounced)
   useEffect(() => {
@@ -2319,22 +2436,8 @@ export default function PublishersClient() {
     return () => clearTimeout(t)
   }, [filters, searchQuery, selectedProjectId])
 
-  // Monitor URL parameter changes and update filters accordingly - ignore sidebar parameter changes
-  useEffect(() => {
-    const newFilters = parseFiltersFromParams(new URLSearchParams(searchParams?.toString() || ""))
-    const newSearchQuery = searchParams?.get('q') || ""
-    
-    // Update filters if they've changed - use deep comparison to prevent unnecessary updates
-    setFilters(prevFilters => {
-      const hasChanged = JSON.stringify(prevFilters) !== JSON.stringify(newFilters)
-      return hasChanged ? newFilters : prevFilters
-    })
-    
-    // Update search query if it's changed
-    setSearchQuery(prevQuery => {
-      return prevQuery !== newSearchQuery ? newSearchQuery : prevQuery
-    })
-  }, [relevantParams])
+  // URL monitoring disabled to prevent infinite loops with filter store
+  // The filter store handles all state management internally
 
   async function revealWebsite(id: string) {
     try {
@@ -2350,16 +2453,12 @@ export default function PublishersClient() {
   }
 
   useEffect(() => {
-    // Reset to page 1 when filters or search query change, but not when loading project filters
-    if (isLoadingProjectFilters) return
-    
+    // Reset to page 1 when filters or search query change
     if (currentPage !== 1) {
       setCurrentPage(1)
-      const params = new URLSearchParams(searchParams?.toString() || "")
-      params.set('page', '1')
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+      // URL sync is handled by the filter store
     }
-  }, [filters, searchQuery, isLoadingProjectFilters]) // Remove currentPage, pathname, router from dependencies
+  }, [filters, searchQuery]) // Remove currentPage, pathname, router from dependencies
 
   // Fetch search suggestions from external API (debounced) - optimized to prevent unnecessary recreations
   const fetchSuggestions = useCallback(async (q: string) => {
@@ -2465,47 +2564,7 @@ export default function PublishersClient() {
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
   }, [])
 
-  // Keep URL params in sync with filters and search query - optimized to prevent circular updates
-  useEffect(() => {
-    // Skip if we're currently loading project filters to prevent conflicts
-    if (isLoadingProjectFilters) return
-    
-    // Start from current URL params to preserve unrelated ones (e.g., 'sidebar')
-    const currentSearch = typeof window !== 'undefined' ? window.location.search : ''
-    const sp = new URLSearchParams(currentSearch)
-
-    // Helper to decide empty values
-    const isEmpty = (v: unknown) => (
-      v === undefined || v === null || (typeof v === 'string' && v.trim() === '')
-    )
-
-    // Sync search query
-    if (isEmpty(searchQuery)) sp.delete('q')
-    else sp.set('q', String(searchQuery))
-
-    // Sync all filter keys (set or delete)
-    Object.entries(filters).forEach(([k, v]) => {
-      if (typeof v === 'boolean') {
-        if (v) sp.set(k, '1')
-        else sp.delete(k)
-        return
-      }
-      if (isEmpty(v)) sp.delete(k)
-      else sp.set(k, String(v))
-    })
-
-    const nextQs = sp.toString()
-    const safePathname = pathname || '/publishers'
-    const nextUrl: string = nextQs ? `${safePathname}?${nextQs}` : safePathname
-
-    // Avoid no-op navigations that can cause rerenders
-    if (typeof window !== 'undefined') {
-      const currentUrl = window.location.pathname + (window.location.search || '')
-      if (currentUrl === nextUrl) return
-    }
-
-    router.replace(nextUrl, { scroll: false })
-  }, [filters, searchQuery, pathname, router, isLoadingProjectFilters])
+  // URL sync is now handled by the filter store
 
   const results = useMemo(() => {
     // When there's a search query, rely on API filtering instead of frontend filtering
@@ -2530,6 +2589,36 @@ export default function PublishersClient() {
     }
     return arr
   }, [results, sortBy])
+
+  // Memoize FiltersUI to prevent unnecessary re-renders
+  const memoizedFiltersUI = React.useMemo(() => (
+    <FiltersUI 
+      filters={filters} 
+      setFilters={setFiltersForUI} 
+      loading={loading}
+      onRefresh={() => {
+        // Apply current filters
+        const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+        console.log('Applying filters from button:', { filters, apiFilters })
+        fetchData(apiFilters)
+      }}
+    />
+  ), [filters, setFiltersForUI, loading, searchQuery, fetchData])
+
+  // Memoize ResultsTable to prevent unnecessary re-renders
+  const memoizedResultsTable = React.useMemo(() => (
+    <ResultsTable 
+      sites={displayedSites} 
+      loading={tableLoading} 
+      sortBy={sortBy} 
+      setSortBy={(v) => setSortBy(v)} 
+      onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} 
+      onLimitedSitesChange={setLimitedSites} 
+      onRowLevelChange={setRowLevel} 
+      currentPage={currentPage} 
+      itemsPerPage={maxRowsByLevel[rowLevel]} 
+    />
+  ), [displayedSites, tableLoading, sortBy, currentPage, maxRowsByLevel, rowLevel])
 
   // Save interest only if, after a short delay, results remain zero for a meaningful query - optimized
   useEffect(() => {
@@ -2582,6 +2671,19 @@ export default function PublishersClient() {
   const [isClient, setIsClient] = useState(false)
   useEffect(() => { setIsClient(true) }, [])
   const [aiOverlayPos, setAiOverlayPos] = useState<{ top: number; left: number; width: number } | null>(null)
+  
+  // Track if filter change came from AI to avoid debouncing
+  const aiFilterChangeRef = useRef(false)
+  
+  // Expose AI filter flag function globally for AI sidebar
+  useEffect(() => {
+    (window as any).setAIFilterFlag = () => {
+      aiFilterChangeRef.current = true
+    }
+    return () => {
+      delete (window as any).setAIFilterFlag
+    }
+  }, [])
   useEffect(() => {
     if (!aiOverlayVisible) return
     const calc = () => {
@@ -2617,8 +2719,8 @@ export default function PublishersClient() {
     })
   }
 
-  // Show skeleton while loading project filters or initial data
-  if (isLoadingProjectFilters || (loading && sites.length === 0)) {
+  // Show skeleton while loading initial data
+  if (loading && sites.length === 0) {
     return (
       <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w-full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
         {/* Header skeleton */}
@@ -2738,15 +2840,7 @@ export default function PublishersClient() {
                   <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
               ) : (
-                <FiltersUI 
-                  filters={filters} 
-                  setFilters={setFilters} 
-                  loading={loading}
-                  onRefresh={() => {
-                    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
-                    fetchData(convertFiltersToAPI(filters, searchQuery, currentPage, itemsPerPage))
-                  }}
-                />
+                memoizedFiltersUI
               )}
             </div>
           </div>
@@ -2782,7 +2876,7 @@ export default function PublishersClient() {
             <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
           </div>
         ) : (
-          <ResultsTable sites={displayedSites} loading={loading} sortBy={sortBy} setSortBy={(v) => setSortBy(v)} onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} onLimitedSitesChange={setLimitedSites} onRowLevelChange={setRowLevel} currentPage={currentPage} itemsPerPage={maxRowsByLevel[rowLevel]} />
+          memoizedResultsTable
         )}
 
         {/* Pagination */}
