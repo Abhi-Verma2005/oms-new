@@ -302,7 +302,10 @@ function FiltersUI({
     if (typeof val === 'boolean') reset = undefined
     else if (typeof val === 'number') reset = undefined
     else reset = ""
-    setFilters({ ...filters, [k]: reset })
+    const updatedFilters = { ...filters, [k]: reset }
+    setFilters(updatedFilters)
+    // Trigger refetch with the new filters immediately
+    onApplyDraft(updatedFilters)
   }
 
   // Dual-range slider control and helpers for min/max filters
@@ -836,7 +839,6 @@ function FiltersUI({
   }
 
   const activeChips = useMemo(() => {
-    console.log('🎯 FILTERS UI: Computing activeChips with filters:', filters)
     const chips: { key: keyof Filters; label: string }[] = []
     const add = (key: keyof Filters, label?: string, value?: unknown) => {
       if (value !== undefined && value !== '' && value !== null) chips.push({ key, label: label || String(value) })
@@ -866,7 +868,6 @@ function FiltersUI({
     add('linkPlacement', `Placement: ${filters.linkPlacement}`, filters.linkPlacement)
     add('permanence', `Permanence: ${filters.permanence}`, filters.permanence)
     add('availability', `Available only`, filters.availability)
-    console.log('🎯 FILTERS UI: Generated chips:', chips, 'Length:', chips.length)
     return chips
   }, [filters])
 
@@ -961,7 +962,6 @@ function FiltersUI({
 
       {activeChips.length > 0 && (
         <div className="mt-2 sm:mt-3 flex flex-wrap gap-1.5 sm:gap-2 flex-shrink-0">
-          {console.log('🎯 FILTERS UI: Rendering chips:', activeChips.length, 'chips')}
           {activeChips.map(chip => (
             <button key={chip.key as string} onClick={() => open(chip.key)} className="inline-flex items-center gap-1.5 rounded-full px-2 sm:px-2.5 py-1 text-xs bg-violet-600 text-white border border-violet-600 hover:bg-violet-700 transition-all duration-200 hover:scale-105">
               <span>{chip.label}</span>
@@ -2169,7 +2169,6 @@ export default function PublishersClient() {
     clearFilter,
     validateFilters,
     updateFromAI,
-    syncWithURL,
     loadFromURL,
     getCurrentState
   } = useFilterStore()
