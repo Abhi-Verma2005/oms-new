@@ -73,8 +73,7 @@ interface FilterState {
   updateFromAI: (filters: Partial<Filters>, searchQuery?: string) => void
   getCurrentState: () => { filters: Filters; searchQuery: string }
   
-  // URL Sync
-  syncWithURL: () => void
+  // URL Sync (removed - store-only approach)
   loadFromURL: (searchParams: URLSearchParams) => void
 }
 
@@ -176,36 +175,7 @@ export const useFilterStore = create<FilterState>()(
         return { filters, searchQuery }
       },
       
-      syncWithURL: () => {
-        const { filters, searchQuery } = get()
-        const urlParams = new URLSearchParams()
-        
-        // Build URL parameters from current state
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
-            if (typeof value === 'boolean') {
-              urlParams.set(key, value.toString())
-            } else if (typeof value === 'number') {
-              urlParams.set(key, value.toString())
-            } else if (typeof value === 'string' && value.trim() !== '') {
-              urlParams.set(key, value)
-            }
-          }
-        })
-        
-        if (searchQuery.trim() !== '') {
-          urlParams.set('q', searchQuery)
-        }
-        
-        // Update URL in background without triggering reloads
-        const newUrl = `/publishers?${urlParams.toString()}`
-        if (typeof window !== 'undefined') {
-          const currentUrl = `${window.location.pathname}${window.location.search}`
-          if (newUrl !== currentUrl) {
-            window.history.replaceState({}, '', newUrl)
-          }
-        }
-      },
+      // URL sync removed - store handles state management without URL conflicts
       
       loadFromURL: (searchParams) => {
         const filters: Filters = {}
