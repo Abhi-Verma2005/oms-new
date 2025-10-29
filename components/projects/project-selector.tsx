@@ -29,9 +29,6 @@ export function ProjectSelector({ className }: { className?: string }) {
       .then((list) => {
         if (cancelled) return
         setProjects(list)
-        if (selectedProjectId && !list.find((p: any) => p.id === selectedProjectId)) {
-          clearProject()
-        }
       })
       .catch((e) => {
         if (cancelled) return
@@ -44,16 +41,23 @@ export function ProjectSelector({ className }: { className?: string }) {
     return () => {
       cancelled = true
     }
-  }, [selectedProjectId, clearProject])
+  }, []) // No dependencies - stable function
 
+  // Fetch projects only on initial mount
   useEffect(() => {
     const cancel = fetchProjects()
+    return () => {
+      cancel?.()
+    }
+  }, [fetchProjects])
+
+  // Listen for new project creation
+  useEffect(() => {
     const handler = () => {
       fetchProjects()
     }
     window.addEventListener('project:created', handler)
     return () => {
-      cancel?.()
       window.removeEventListener('project:created', handler)
     }
   }, [fetchProjects])

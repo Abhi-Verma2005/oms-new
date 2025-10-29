@@ -46,6 +46,7 @@ const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-hel
   loading: () => <div className="h-96 bg-gray-50 dark:bg-gray-900 animate-pulse rounded-lg" />
 })
 import { ProjectSelector } from '@/components/projects/project-selector'
+import ProjectToggleCompact from '@/components/projects/project-toggle-compact'
 import { useActivityLogger } from '@/lib/user-activity-client'
 import { useProjectStore } from '@/stores/project-store'
 import { useFilterStore, type Filters as StoreFilters } from '@/stores/filter-store'
@@ -1883,7 +1884,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
                 ) : null
               ))}
               {/* Cart column always visible with distinct background color */}
-              <TableHead className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 whitespace-nowrap text-center min-w-[180px] sm:min-w-[200px] sticky right-0 z-30 bg-gray-800 dark:bg-gray-950 text-white border-l border-gray-700 dark:border-gray-800 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.15)]">
+              <TableHead className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 whitespace-nowrap text-center min-w-[180px] sm:min-w-[200px] sticky right-0 z-30 bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white border-l border-gray-300 dark:border-gray-800 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] dark:shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.15)]">
                 <div className="inline-flex items-center gap-1 sm:gap-2">
                   <span className="text-[10px] sm:text-xs">Cart</span>
                 </div>
@@ -1905,7 +1906,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
                   ) : null
                 ))}
                 {/* Cart column always visible with distinct background color */}
-                <TableCell className={`px-2 sm:px-3 md:px-4 lg:px-6 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[180px] sm:min-w-[200px] sticky right-0 z-20 bg-gray-800 dark:bg-gray-950 border-l border-gray-700 dark:border-gray-800 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.15)]`}>
+                <TableCell className={`px-2 sm:px-3 md:px-4 lg:px-6 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[180px] sm:min-w-[200px] sticky right-0 z-20 bg-gray-100 dark:bg-gray-950 border-l border-gray-300 dark:border-gray-800 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.1)] dark:shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.15)]`}>
                   {renderCell('cart', s)}
                 </TableCell>
                     </TableRow>
@@ -2322,40 +2323,56 @@ export default function PublishersClient() {
 
   // URL loading removed - store handles all state management
 
+  // Track previous project ID to detect actual changes and trigger refetch
+  const prevProjectIdRef = useRef<string | null>(null)
+  const [projectChangeCount, setProjectChangeCount] = useState(0)
+
   // Minimal per-project hydration from localStorage on project change/reload
   useEffect(() => {
+    const projectChanged = prevProjectIdRef.current !== selectedProjectId
+    
+    if (!projectChanged && prevProjectIdRef.current !== null) {
+      // Not a real project change, just a re-render
+      return
+    }
+    
+    // Update tracking ref
+    prevProjectIdRef.current = selectedProjectId
+    
     if (!selectedProjectId) {
       // No project selected -> use defaults
       setFilters(defaultFilters)
       setSearchQuery("")
+      // Increment to trigger fetch with defaults
+      setProjectChangeCount(prev => prev + 1)
       return
     }
+    
     try {
       const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
       if (!raw) {
+        console.log('No saved filters for project, using defaults:', selectedProjectId)
         setFilters(defaultFilters)
         setSearchQuery("")
+        // Increment to trigger fetch with defaults
+        setProjectChangeCount(prev => prev + 1)
         return
       }
       const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
       const nextFilters = { ...defaultFilters, ...(saved?.filters || {}) }
+      console.log('Loaded saved filters for project:', { projectId: selectedProjectId, filters: nextFilters })
       setFilters(nextFilters)
       setSearchQuery(typeof saved?.q === 'string' ? saved!.q! : "")
+      // Increment to trigger fetch with loaded filters
+      setProjectChangeCount(prev => prev + 1)
     } catch {
+      console.log('Error loading filters for project, using defaults:', selectedProjectId)
       setFilters(defaultFilters)
       setSearchQuery("")
+      // Increment to trigger fetch with defaults
+      setProjectChangeCount(prev => prev + 1)
     }
   }, [selectedProjectId, setFilters, setSearchQuery])
-
-  // Fetch data when project changes (after hydration)
-  useEffect(() => {
-    if (selectedProjectId && sites.length > 0) {
-      // Project changed - fetch with current filters from store
-      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
-      console.log('Project changed, fetching with store filters:', { filters, apiFilters })
-      fetchData(apiFilters)
-    }
-  }, [selectedProjectId]) // Only trigger on project change
 
   // Listen for apply filters event from modal - moved after fetchData definition
 
@@ -2458,6 +2475,35 @@ export default function PublishersClient() {
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current)
     fetchTimeoutRef.current = setTimeout(() => { fetchData(apiFilters) }, delay)
   }, [fetchData])
+
+  // Track the last processed project change count to avoid duplicate fetches
+  const lastFetchedCountRef = useRef(0)
+  
+  // Fetch data when project changes (after filters are loaded and state is updated)
+  useEffect(() => {
+    // Only fetch if projectChangeCount changed (meaning a new project change happened)
+    if (projectChangeCount === 0 || projectChangeCount === lastFetchedCountRef.current) {
+      return
+    }
+    
+    // Update the last fetched count
+    lastFetchedCountRef.current = projectChangeCount
+    
+    // Small delay to ensure state has updated from the previous useEffect
+    const timer = setTimeout(() => {
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+      console.log('🔄 Project changed - fetching with updated filters:', { 
+        projectId: selectedProjectId, 
+        filters, 
+        searchQuery,
+        apiFilters,
+        changeCount: projectChangeCount
+      })
+      fetchData(apiFilters)
+    }, 100) // Increased delay to ensure filters state has fully updated
+    
+    return () => clearTimeout(timer)
+  }, [projectChangeCount, filters, searchQuery, selectedProjectId, fetchData]) // Trigger when count changes or filters update
 
   // Handle page changes - simplified to prevent circular dependencies
   const handlePageChange = useCallback((page: number) => {
@@ -2921,8 +2967,8 @@ export default function PublishersClient() {
         {/* Project Context moved into sidebar (PublishersHelpCarousel) */}
 
         <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch">
-          <div className="lg:col-span-7 xl:col-span-7 flex flex-col" ref={filtersContainerRef}>
-            <div className="flex-1">
+          <div className="lg:col-span-7 xl:col-span-7 flex flex-col relative" ref={filtersContainerRef}>
+            <div className="flex-1 flex flex-col">
               {loading && sites.length === 0 ? (
                 <div className="space-y-4">
                   <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
@@ -2930,7 +2976,13 @@ export default function PublishersClient() {
                   <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                 </div>
               ) : (
-                memoizedFiltersUI
+                <>
+                  {memoizedFiltersUI}
+                  {/* Mobile/Tablet compact project toggle just below filters */}
+                  <div className="relative z-40 mt-3">
+                    <ProjectToggleCompact />
+                  </div>
+                </>
               )}
             </div>
           </div>
