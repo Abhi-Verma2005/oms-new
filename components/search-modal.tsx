@@ -28,6 +28,7 @@ import {
   X
 } from 'lucide-react'
 import { searchItems, searchCategories, type SearchItem } from '@/lib/search-data'
+import { useAIChatbot } from '@/components/ai-chatbot-provider'
 
 interface SearchModalProps {
   isOpen: boolean
@@ -65,6 +66,7 @@ export default function SearchModal({
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const { data: session } = useSession()
+  const { openChatbot } = useAIChatbot()
   
   // Get user roles and admin status (stabilize references)
   const rolesFromSession = (session?.user as any)?.roles as string[] | undefined
@@ -130,12 +132,24 @@ export default function SearchModal({
     setRecentPages(newRecentPages)
     localStorage.setItem('recent-pages', JSON.stringify(newRecentPages))
 
-    // Navigate
-    if (item.href !== '#') {
-      router.push(item.href)
-    }
+    // Close modal first, then navigate
     setIsOpen(false)
     setQuery('')
+    
+    // Special handling for AI chatbot - open the chatbot instead of navigating
+    if (item.id === 'ai-chatbot') {
+      setTimeout(() => {
+        openChatbot()
+      }, 100)
+      return
+    }
+    
+    // Navigate after a short delay to ensure modal closes
+    if (item.href !== '#') {
+      setTimeout(() => {
+        router.push(item.href)
+      }, 100)
+    }
   }
 
   const handleRecentSearchClick = (searchQuery: string) => {
@@ -240,7 +254,12 @@ export default function SearchModal({
                                 return (
                                   <li key={item.id}>
                                     <button
-                                      onClick={() => handleItemClick(item)}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        handleItemClick(item)
+                                      }}
                                       className={`w-full flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
                                         isSelected 
                                           ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' 
@@ -287,7 +306,12 @@ export default function SearchModal({
                           </span>
                         </div>
                         <button
-                          onClick={clearRecentSearches}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            clearRecentSearches()
+                          }}
                           className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                         >
                           Clear
@@ -297,7 +321,12 @@ export default function SearchModal({
                         {recentSearches.map((search, index) => (
                           <li key={index}>
                             <button
-                              onClick={() => handleRecentSearchClick(search)}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleRecentSearchClick(search)
+                              }}
                               className="w-full flex items-center gap-3 p-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/20 rounded-lg text-left"
                             >
                               <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
@@ -324,7 +353,12 @@ export default function SearchModal({
                           return (
                             <li key={page.id}>
                               <button
-                                onClick={() => handleItemClick(page)}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleItemClick(page)
+                                }}
                                 className="w-full flex items-center gap-3 p-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/20 rounded-lg text-left"
                               >
                                 <PageIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
@@ -362,9 +396,14 @@ export default function SearchModal({
                       ].map((item) => (
                         <button
                           key={item.title}
-                          onClick={() => {
-                            router.push(item.href)
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
                             setIsOpen(false)
+                            setTimeout(() => {
+                              router.push(item.href)
+                            }, 100)
                           }}
                           className="flex items-center gap-2 p-2 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/20 rounded-lg text-left"
                         >

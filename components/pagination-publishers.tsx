@@ -56,9 +56,9 @@ export default function PaginationPublishers({
   }
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      {/* Items info */}
-      <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
+    <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 ${className}`}>
+      {/* Items info - hide on mobile, show on desktop */}
+      <div className="hidden sm:flex items-center text-sm text-gray-700 dark:text-gray-300">
         <span>
           Showing <span className="font-medium">{startItem}</span> to{' '}
           <span className="font-medium">{endItem}</span> of{' '}
@@ -66,13 +66,18 @@ export default function PaginationPublishers({
         </span>
       </div>
 
-      {/* Pagination controls */}
+      {/* Mobile: Compact page indicator */}
+      <div className="sm:hidden text-xs text-gray-600 dark:text-gray-400 font-medium">
+        Page {currentPage} of {totalPages}
+      </div>
+
+      {/* Pagination controls with larger touch targets on mobile */}
       <nav className="flex items-center space-x-1" role="navigation" aria-label="Pagination">
         {/* Previous button */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`inline-flex items-center justify-center rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+          className={`inline-flex items-center justify-center rounded-lg px-2.5 py-2 text-sm font-medium transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 ${
             currentPage === 1
               ? 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
               : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400'
@@ -105,7 +110,7 @@ export default function PaginationPublishers({
               <button
                 key={pageNumber}
                 onClick={() => onPageChange(pageNumber)}
-                className={`inline-flex items-center justify-center px-3.5 py-2 text-sm font-medium transition-colors ${
+                className={`inline-flex items-center justify-center px-3.5 py-2 text-sm font-medium transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 ${
                   isCurrentPage
                     ? 'bg-violet-600 text-white'
                     : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 hover:text-violet-600 dark:hover:text-violet-400'
@@ -123,7 +128,7 @@ export default function PaginationPublishers({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className={`inline-flex items-center justify-center rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+          className={`inline-flex items-center justify-center rounded-lg px-2.5 py-2 text-sm font-medium transition-colors min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 ${
             currentPage === totalPages
               ? 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
               : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400'

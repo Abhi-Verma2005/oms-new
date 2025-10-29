@@ -934,6 +934,10 @@ function FiltersUI({
                 setFilters(defaultFilters)
                 // Reset search query via custom event
                 window.dispatchEvent(new CustomEvent('resetSearchQuery'))
+                // Trigger refetch with empty filters after a short delay
+                setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('applyFilters'))
+                }, 100)
               }} 
               disabled={loading}
             >
@@ -1022,6 +1026,10 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
   const rowHeightButtonRef = useRef<HTMLButtonElement | null>(null)
   useEffect(() => { onRowHeightButtonRef?.(rowHeightButtonRef.current) }, [onRowHeightButtonRef])
+
+  // Scroll state management for shadow indicators
+  const [scrollState, setScrollState] = useState({ left: false, right: true })
+  const tableScrollRef = useRef<HTMLDivElement | null>(null)
 
   // Limit number of rows shown based on row density setting so users see a visible change
   const maxRowsByLevel: Record<1 | 2 | 3 | 4, number> = useMemo(() => ({ 1: 30, 2: 20, 3: 12, 4: 8 }), [])
@@ -1138,32 +1146,67 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
     }
   }, [columnsOpen])
 
-  // Consistent width per column to align headers and data
+  // Scroll shadow detection for horizontal table scroll
+  useEffect(() => {
+    const el = tableScrollRef.current
+    if (!el) return
+    
+    const handleScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el
+      setScrollState({
+        left: scrollLeft > 10,
+        right: scrollLeft < scrollWidth - clientWidth - 10
+      })
+    }
+    
+    el.addEventListener('scroll', handleScroll)
+    // Initial check and check on resize
+    handleScroll()
+    window.addEventListener('resize', handleScroll)
+    
+    return () => {
+      el.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
+    }
+  }, [limitedSites.length])
+
+  // Even spacing for all columns - uniform widths for consistent layout
   const columnWidthClasses: Record<ColumnKey, string> = useMemo(() => ({
-    name: 'min-w-[7rem] w-[8rem] sm:w-[10rem] max-w-[11rem]',
-    niche: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    countryLang: 'min-w-[7rem] w-[8rem] sm:w-[10rem] max-w-[11rem]',
-    authority: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    spam: 'min-w-[4rem] w-[5rem] sm:w-[7rem] max-w-[8rem]',
-    price: 'min-w-[4rem] w-[5rem] sm:w-[7rem] max-w-[8rem]',
-    trend: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    cart: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    website: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    traffic: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    organicTraffic: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    authorityScore: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    availability: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    sampleUrl: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    lastPublished: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    outboundLimit: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    backlinkNature: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    backlinksAllowed: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    wordLimit: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    tatDays: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    linkPlacement: 'min-w-[6rem] w-[7rem] sm:w-[9rem] max-w-[10rem]',
-    permanence: 'min-w-[5rem] w-[6rem] sm:w-[8rem] max-w-[9rem]',
-    order: 'min-w-[4rem] w-[5rem] sm:w-[6rem] max-w-[7rem]'
+    // All columns have even spacing
+    name: 'min-w-[180px] sm:min-w-[200px]',
+    authority: 'min-w-[180px] sm:min-w-[200px]',
+    price: 'min-w-[180px] sm:min-w-[200px]',
+    cart: 'min-w-[180px] sm:min-w-[200px]',
+    niche: 'min-w-[180px] sm:min-w-[200px]',
+    countryLang: 'min-w-[180px] sm:min-w-[200px]',
+    spam: 'min-w-[180px] sm:min-w-[200px]',
+    trend: 'min-w-[180px] sm:min-w-[200px]',
+    website: 'min-w-[180px] sm:min-w-[200px]',
+    traffic: 'min-w-[180px] sm:min-w-[200px]',
+    organicTraffic: 'min-w-[180px] sm:min-w-[200px]',
+    authorityScore: 'min-w-[180px] sm:min-w-[200px]',
+    availability: 'min-w-[180px] sm:min-w-[200px]',
+    sampleUrl: 'min-w-[180px] sm:min-w-[200px]',
+    lastPublished: 'min-w-[180px] sm:min-w-[200px]',
+    outboundLimit: 'min-w-[180px] sm:min-w-[200px]',
+    backlinkNature: 'min-w-[180px] sm:min-w-[200px]',
+    backlinksAllowed: 'min-w-[180px] sm:min-w-[200px]',
+    wordLimit: 'min-w-[180px] sm:min-w-[200px]',
+    tatDays: 'min-w-[180px] sm:min-w-[200px]',
+    linkPlacement: 'min-w-[180px] sm:min-w-[200px]',
+    permanence: 'min-w-[180px] sm:min-w-[200px]',
+    order: 'min-w-[180px] sm:min-w-[200px]'
   }), [])
+
+  // Helper function to generate consistent column classes for headers and cells
+  const getColumnClassName = useCallback((key: ColumnKey, isHeader: boolean) => {
+    const base = columnWidthClasses[key]
+    const alignment = rightAligned.has(key) ? 'text-right' : centerAligned.has(key) ? 'text-center' : 'text-left'
+    const padding = 'px-2 sm:px-3 md:px-4 lg:px-6'
+    const py = isHeader ? 'py-2 sm:py-3' : rowPaddingByLevel[rowLevel]
+    
+    return `${base} ${alignment} ${padding} ${py} whitespace-nowrap`
+  }, [columnWidthClasses, rightAligned, centerAligned, rowLevel, rowPaddingByLevel])
 
   const renderCell = (key: ColumnKey, s: Site) => {
     switch (key) {
@@ -1172,7 +1215,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
           <div className="font-medium">
             <div className="overflow-hidden text-ellipsis whitespace-nowrap leading-tight text-sm sm:text-base" title={s.name}>
               {/* Mask the domain with stars; reveal on hover click */}
-              <MaskedWebsite site={s} maxStars={rowLevel === 4 ? 18 : 14} />
+              <MaskedWebsite site={s} maxStars={10} />
             </div>
             {(() => {
               const stripped = s.url.replace(/^https?:\/\//, "")
@@ -1187,37 +1230,37 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
               return null
             })()}
             {rowLevel >= 3 && (
-              <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+              <div className="mt-1 flex flex-col gap-1">
                 {(() => {
                   const v = (s.publishing.backlinkNature || '').toLowerCase()
                   if (v.includes('do')) {
                     return (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700 w-fit">
                         <Link2 className="w-3 h-3" /> Do-follow
                       </span>
                     )
                   }
                   if (v.includes('no')) {
                     return (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700 w-fit">
                         <Link2 className="w-3 h-3" /> No-follow
                       </span>
                     )
                   }
                   if (v.includes('sponsor')) {
                     return (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700 w-fit">
                         <Link2 className="w-3 h-3" /> Sponsored
                       </span>
                     )
                   }
                   return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800/40 dark:text-gray-300 dark:border-gray-700">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800/40 dark:text-gray-300 dark:border-gray-700 w-fit">
                       <Link2 className="w-3 h-3" /> {s.publishing.backlinkNature || '-'}
                     </span>
                   )
                 })()}
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700 w-fit">
                   <Link2 className="w-3 h-3" /> Outbound {s.quality?.outboundLinkLimit ?? '-'}
                 </span>
               </div>
@@ -1227,47 +1270,27 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
       case 'niche':
         return (
           <div className="max-w-full">
-            <div className="flex flex-wrap gap-1.5 max-w-full">
+            <div className="flex flex-col gap-1 max-w-full">
               {(() => {
                 const niches = s.niche.split(',').map(n => n.trim()).filter(Boolean)
-                if (rowLevel === 1) {
-                  // Short: Show only first niche + dots if more exist
-                  return (
-                    <>
-                      <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                        <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[7.5rem]" title={niches[0]}>{niches[0]}</span>
+                const maxNiches = 3
+                const displayNiches = niches.slice(0, maxNiches)
+                const hasMore = niches.length > maxNiches
+                
+                return (
+                  <>
+                    {displayNiches.map((n, idx) => (
+                      <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center w-fit" title={n}>
+                        <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[7.5rem]">{n}</span>
                       </span>
-                      {niches.length > 1 && (
-                        <span className="px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                          ...
-                        </span>
-                      )}
-                    </>
-                  )
-                } else if (rowLevel === 2) {
-                  // Medium: Show up to 2 niches + dots if more exist
-                  return (
-                    <>
-                      {niches.slice(0, 2).map((n, idx) => (
-                        <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                          <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[7.5rem]" title={n}>{n}</span>
-                        </span>
-                      ))}
-                      {niches.length > 2 && (
-                        <span className="px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                          ...
-                        </span>
-                      )}
-                    </>
-                  )
-                } else {
-                  // Tall and Extra Tall: Show all niches
-                  return niches.map((n, idx) => (
-                    <span key={`${n}-${idx}`} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-600 inline-flex items-center justify-center">
-                      <span className="overflow-hidden text-ellipsis whitespace-nowrap inline-block max-w-[7.5rem]" title={n}>{n}</span>
-                    </span>
-                  ))
-                }
+                    ))}
+                    {hasMore && (
+                      <span className="px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400" title={`+${niches.length - maxNiches} more: ${niches.slice(maxNiches).join(', ')}`}>
+                        +{niches.length - maxNiches} more...
+                      </span>
+                    )}
+                  </>
+                )
               })()}
             </div>
             {rowLevel >= 3 && (
@@ -1533,16 +1556,17 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
           </div>
         </header>
       </div>
-      <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0">
-        <div className="min-w-[600px] sm:min-w-[800px]">
+      <div className="relative">
+        <div className="overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+          <div style={{ minWidth: 'max-content' }}>
           {/* Table header skeleton */}
-          <div className="px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+          <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
             <div className="h-4 w-1/2 sm:w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
           </div>
           {/* Rows skeleton */}
           <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
             {Array.from({ length: 10 }).map((_, idx) => (
-              <div key={idx} className="px-4 sm:px-5 py-3 grid grid-cols-6 gap-3 sm:gap-5 items-center">
+              <div key={idx} className="px-2 sm:px-3 md:px-4 lg:px-6 py-3 grid grid-cols-6 gap-3 sm:gap-5 items-center">
                 <div className="col-span-2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                 <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                 <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -1551,6 +1575,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
               </div>
             ))}
           </div>
+        </div>
         </div>
       </div>
     </Card>
@@ -1571,7 +1596,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
             <div className="flex items-center gap-1.5">
               <Popover open={rowsOpen} onOpenChange={setRowsOpen}>
               <PopoverTrigger asChild>
-                <Button ref={rowHeightButtonRef} variant="outline" size="sm" className="h-7 text-xs inline-flex items-center gap-1 px-1.5 sm:px-2">
+                <Button ref={rowHeightButtonRef} variant="outline" size="sm" className="h-8 sm:h-7 text-xs inline-flex items-center gap-1 px-3 sm:px-2 min-h-[44px] sm:min-h-0">
                   <span className="hidden sm:inline">Rows: {rowLevel === 1 ? 'Short' : rowLevel === 2 ? 'Medium' : rowLevel === 3 ? 'Tall' : 'Extra Tall'}</span>
                   <span className="sm:hidden">{rowLevel === 1 ? 'S' : rowLevel === 2 ? 'M' : rowLevel === 3 ? 'L' : 'XL'}</span>
                   <svg className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -1601,7 +1626,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs inline-flex items-center gap-1 px-1.5 sm:px-2"
+                className="h-8 sm:h-7 text-xs inline-flex items-center gap-1.5 px-3 sm:px-2 min-h-[44px] sm:min-h-0"
                 onClick={() => setColumnsOpen(o => !o)}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -1609,7 +1634,15 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
                   <rect x="10" y="4" width="5" height="16" rx="1" />
                   <rect x="17" y="4" width="4" height="16" rx="1" />
                 </svg>
-                <span>Columns</span>
+                {/* Mobile: Show count of hidden columns */}
+                <span className="sm:hidden">
+                  Cols {visibleColumns.length < allKeys.length && (
+                    <span className="ml-1 text-[10px] opacity-70">
+                      ({allKeys.length - visibleColumns.length} hidden)
+                    </span>
+                  )}
+                </span>
+                <span className="hidden sm:inline">Columns</span>
                 <svg className={`w-3 h-3 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
                   <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
                 </svg>
@@ -1654,7 +1687,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Sort by</span>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="h-8 w-full sm:w-44 text-xs">
+                <SelectTrigger className="h-8 w-full sm:w-44 text-xs min-h-[44px] sm:min-h-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1819,16 +1852,29 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
         </div>
       )}
       
-      {/* Unified scroll container for header + body to keep horizontal sync */}
-      <div className="overflow-x-auto no-scrollbar -mx-3 sm:-mx-4 md:mx-0">
-        <Table className="dark:text-gray-300 w-full min-w-[500px] sm:min-w-[600px] md:min-w-[800px]">
+      {/* Optimized scroll container with shadow indicators */}
+      <div className="relative">
+        {/* Left scroll shadow indicator */}
+        <div 
+          className={`pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white dark:from-gray-800 to-transparent z-10 transition-opacity duration-200 ${scrollState.left ? 'opacity-100' : 'opacity-0'}`}
+        />
+        {/* Right scroll shadow indicator */}
+        <div 
+          className={`pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-800 to-transparent z-10 transition-opacity duration-200 ${scrollState.right ? 'opacity-100' : 'opacity-0'}`}
+        />
+        
+        <div 
+          ref={tableScrollRef}
+          className="overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+        >
+        <Table className="dark:text-gray-300 w-full" style={{ minWidth: 'max-content' }}>
           <UITableHeader>
-            <TableRow className="text-xs sm:text-sm font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+            <TableRow className="text-[10px] sm:text-xs font-semibold uppercase text-gray-500 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
               {columnDefs.map(col => (
                 visibleColumns.includes(col.key) ? (
-                  <TableHead key={col.key} className={`px-1.5 sm:px-2 md:px-5 py-2 sm:py-3 whitespace-nowrap ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}>
+                  <TableHead key={col.key} className={getColumnClassName(col.key, true)}>
                     <div className="inline-flex items-center gap-1 sm:gap-2">
-                      <span className="text-xs">{col.label}</span>
+                      <span className="text-[10px] sm:text-xs">{col.label}</span>
                       {col.key === 'trend' && (
                         <span className="px-1 sm:px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-medium bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">Hover</span>
                       )}
@@ -1836,36 +1882,37 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
                   </TableHead>
                 ) : null
               ))}
-              {/* Cart column always visible */}
-              <TableHead className="px-1.5 sm:px-2 md:px-5 py-2 sm:py-3 whitespace-nowrap text-center min-w-[5rem] w-[6rem] sm:w-[7rem] md:w-[9rem] max-w-[10rem] sticky right-0 z-20 bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.06)]">
+              {/* Cart column always visible with distinct background color */}
+              <TableHead className="px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 whitespace-nowrap text-center min-w-[180px] sm:min-w-[200px] sticky right-0 z-30 bg-gray-800 dark:bg-gray-950 text-white border-l border-gray-700 dark:border-gray-800 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.15)]">
                 <div className="inline-flex items-center gap-1 sm:gap-2">
-                  <span className="text-xs sm:text-sm">Cart</span>
+                  <span className="text-[10px] sm:text-xs">Cart</span>
                 </div>
               </TableHead>
             </TableRow>
           </UITableHeader>
           <TableBody className="text-xs sm:text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
             {limitedSites.length === 0 ? (
-              <TableRow><TableCell className="px-1.5 sm:px-2 md:px-5 py-3 sm:py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
-            ) : limitedSites.map(s => (
-              <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer odd:bg-gray-50/40 dark:odd:bg-gray-800/20`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
+              <TableRow><TableCell className="px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
+            ) : limitedSites.map((s, index) => (
+              <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-100 ease-out table-row-hover`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
                   visibleColumns.includes(col.key) ? (
                     <TableCell key={col.key}
-                      className={`px-1.5 sm:px-2 md:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} ${rightAligned.has(col.key) ? 'text-right' : centerAligned.has(col.key) ? 'text-center' : 'text-left'} ${columnWidthClasses[col.key as ColumnKey]}`}
+                      className={getColumnClassName(col.key, false)}
                     >
                       {renderCell(col.key, s)}
                 </TableCell>
                   ) : null
                 ))}
-                {/* Cart column always visible */}
-                <TableCell className={`px-1.5 sm:px-2 md:px-5 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[5rem] w-[6rem] sm:w-[7rem] md:w-[9rem] max-w-[10rem] sticky right-0 z-10 bg-gray-50 dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-[inset_1px_0_0_rgba(0,0,0,0.04)]`}>
+                {/* Cart column always visible with distinct background color */}
+                <TableCell className={`px-2 sm:px-3 md:px-4 lg:px-6 whitespace-nowrap ${rowPaddingByLevel[rowLevel]} text-center min-w-[180px] sm:min-w-[200px] sticky right-0 z-20 bg-gray-800 dark:bg-gray-950 border-l border-gray-700 dark:border-gray-800 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.15)]`}>
                   {renderCell('cart', s)}
                 </TableCell>
                     </TableRow>
                   ))}
           </TableBody>
         </Table>
+        </div>
       </div>
             <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
               <DialogContent className="max-w-7xl rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl bg-white dark:bg-gray-950 p-0 overflow-hidden text-[12px] sm:text-[13px]">
@@ -2829,7 +2876,7 @@ export default function PublishersClient() {
         {/* Results table skeleton */}
         <Card className="bg-white dark:bg-gray-800 shadow-sm">
           <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <header className="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <header className="px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
               <div className="flex items-center gap-2">
                 <div className="h-7 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -2837,16 +2884,17 @@ export default function PublishersClient() {
               </div>
             </header>
           </div>
-          <div className="overflow-x-auto no-scrollbar -mx-4 sm:mx-0">
-            <div className="min-w-[600px] sm:min-w-[800px]">
+          <div className="relative">
+            <div className="overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+              <div style={{ minWidth: 'max-content' }}>
               {/* Table header skeleton */}
-              <div className="px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+              <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
                 <div className="h-4 w-1/2 sm:w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
               </div>
               {/* Rows skeleton */}
               <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
                 {Array.from({ length: 8 }).map((_, idx) => (
-                  <div key={idx} className="px-4 sm:px-5 py-3 grid grid-cols-6 gap-3 sm:gap-5 items-center">
+                  <div key={idx} className="px-2 sm:px-3 md:px-4 lg:px-6 py-3 grid grid-cols-6 gap-3 sm:gap-5 items-center">
                     <div className="col-span-2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                     <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                     <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
@@ -2855,6 +2903,7 @@ export default function PublishersClient() {
                   </div>
                 ))}
               </div>
+            </div>
             </div>
           </div>
         </Card>
@@ -2888,7 +2937,40 @@ export default function PublishersClient() {
           <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col" ref={projectPanelRef}>
             <div className="flex-1 sticky top-0">
               {loading && sites.length === 0 ? (
-                <div className="h-96 bg-gray-50 dark:bg-gray-900 animate-pulse rounded-lg" />
+                <div className="w-full h-full flex flex-col">
+                  {/* Search and controls section skeleton */}
+                  <div className="flex-shrink-0 mb-4">
+                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+                    <div className="space-y-3">
+                      <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    </div>
+                  </div>
+
+                  {/* Quick tips section skeleton */}
+                  <div className="flex-shrink-0">
+                    <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+                    <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+                  </div>
+                  
+                  {/* Project panel skeleton */}
+                  <div className="mt-4 flex-1 flex flex-col min-h-0 max-h-[250px]">
+                    <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-3 sm:p-4 flex flex-col gap-3 h-full">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                        </div>
+                        <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        <div className="space-y-2">
+                          {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800/60 rounded-lg animate-pulse" />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="h-8 w-full bg-violet-600/20 dark:bg-violet-600/10 rounded-lg animate-pulse" />
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <MemoizedPublishersHelpCarousel 
                   sites={displayedSites}
@@ -3055,7 +3137,7 @@ function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site:
           href={`https://${revealed}`}
           target="_blank"
           rel="noreferrer"
-          className="text-violet-600 hover:text-violet-700 underline truncate max-w-[11rem]"
+          className="text-violet-600 hover:text-violet-700 underline truncate max-w-[140px] sm:max-w-[180px]"
           onClick={(e) => e.stopPropagation()}
           title={revealed}
         >
@@ -3063,8 +3145,8 @@ function MaskedWebsite({ site, maxStars = 14, showRevealButton = true }: { site:
         </a>
       ) : (
         <span
-          className="text-gray-300 dark:text-gray-200/80 tracking-wide truncate max-w-[11rem] select-none cursor-pointer leading-4 min-h-[18px] sm:leading-5 sm:min-h-[20px]"
-          title="Hidden website"
+          className="text-gray-300 dark:text-gray-200/80 tracking-wide truncate select-none cursor-pointer leading-4 min-h-[18px] sm:leading-5 sm:min-h-[20px]"
+          title="Click to reveal website"
           onClick={onReveal}
           role="button"
           aria-label="Reveal website"

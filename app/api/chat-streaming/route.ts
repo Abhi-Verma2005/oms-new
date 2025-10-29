@@ -388,7 +388,12 @@ ${currentFiltersContext}
 
 **1. DETERMINE INTENT:**
 - ACTION: User wants to see/modify filtered results → Call applyFilters
+  * Keywords: "show me", "find me", "get me", "filter", "apply", "search for", "look for", "I want", "I need"
+  * Quality terms: "good", "decent", "premium", "high-quality", "best", "top"
+  * Specific criteria: "under $X", "DA above X", "tech sites", "from India", "with low spam"
+  * **IMPORTANT: If user asks to "show", "find", or "get" with ANY quality term or criteria, it's an ACTION request**
 - INFORMATION: User wants to learn/understand → No tool needed
+  * Keywords: "what is", "how does", "explain", "tell me about", "what are the benefits"
 - UNCLEAR: Ambiguous request → Use judgment
 
 **2. IDENTIFY OPERATION TYPE:**
@@ -673,6 +678,46 @@ Analysis:
   "parameters": {},
   "confidence": 0.98
 }
+
+Example 8 - INITIAL FILTER (QUALITY TERM):
+User: "Show me good websites"
+Current: {}
+Response: "I'll find quality tech publishers..."
+Analysis:
+{
+  "shouldExecuteTool": true,
+  "reasoning": "ACTION request with quality term - user explicitly asked to 'show me' websites with 'good' quality. This is a clear filter action request.",
+  "toolName": "applyFilters",
+  "parameters": {
+    "daMin": 50,
+    "drMin": 50,
+    "spamMax": 3,
+    "semrushOverallTrafficMin": 10000
+  },
+  "confidence": 0.95
+}
+
+Example 9 - INITIAL FILTER WITH CRITERIA:
+User: "Find me tech sites under $500"
+Current: {}
+Response: "I'll search for affordable tech publishers..."
+Analysis:
+{
+  "shouldExecuteTool": true,
+  "reasoning": "ACTION request with specific criteria - user wants to see filtered results for tech sites with price constraint",
+  "toolName": "applyFilters",
+  "parameters": {
+    "niche": "technology",
+    "priceMax": 500
+  },
+  "confidence": 0.98
+}
+
+**CRITICAL RULES:**
+1. If user says "show me", "find me", "get me", "search for" + ANY criteria → shouldExecuteTool = true
+2. If user mentions quality terms ("good", "decent", "premium") in a request → shouldExecuteTool = true
+3. If user provides specific filter criteria → shouldExecuteTool = true
+4. Only set shouldExecuteTool = false for pure information questions ("what is", "how does", "explain")
 
 Be intelligent about understanding the user's intent and perform the correct filter operation.`
           }

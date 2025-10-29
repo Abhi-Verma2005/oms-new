@@ -452,3 +452,51 @@ input[type="range"].dual-range::-ms-thumb {
   opacity: 0.8;
 }
 
+/* Thin scrollbars for table - responsive design */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-gray-300 {
+  scrollbar-color: rgb(209 213 219) transparent;
+}
+
+.dark .scrollbar-thumb-gray-600 {
+  scrollbar-color: rgb(75 85 99) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(209 213 219);
+  border-radius: 4px;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(75 85 99);
+}
+
+/* Scroll shadow indicators */
+.scroll-shadow-left {
+  transition: opacity 200ms ease;
+}
+
+.scroll-shadow-right {
+  transition: opacity 200ms ease;
+}
+
+/* Hardware-accelerated hover for table rows */
+.table-row-hover {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
