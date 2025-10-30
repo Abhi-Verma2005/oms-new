@@ -1,7 +1,7 @@
 'use client'
 
 import { useAdminFilters } from '@/hooks/use-admin-filters'
-import { Suspense } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { AdminLayout } from '@/components/admin/admin-layout'
@@ -26,6 +26,7 @@ function AdminProjectsInner() {
     setSearch,
     setSorting,
     handlePageChange,
+    updateFilters,
   } = useAdminFilters('/api/admin/projects', {
     searchPlaceholder: 'Search by name or domain…',
     sortOptions: [
@@ -35,6 +36,68 @@ function AdminProjectsInner() {
     defaultSort: 'createdAt-desc',
     defaultLimit: 20,
   })
+
+  // Load last-used filters for this page from SavedView on mount
+  useEffect(() => {
+    const loadSaved = async () => {
+      try {
+        const res = await fetch('/api/views', { cache: 'no-store' })
+        if (!res.ok) return
+        const json = await res.json()
+        const views = Array.isArray(json?.views) ? json.views : []
+        const name = 'admin-projects:last-used'
+        const saved = views.find((v: any) => v.name === name)
+        const savedFilters = saved?.filters || {}
+
+        if (savedFilters) {
+          if (typeof savedFilters.search === 'string') {
+            setSearch(savedFilters.search)
+          }
+          if (savedFilters.sortBy || savedFilters.sortOrder) {
+            setSorting(savedFilters.sortBy || 'createdAt', savedFilters.sortOrder || 'desc')
+          }
+          if (typeof savedFilters.limit === 'number') {
+            updateFilters({ limit: savedFilters.limit }, true)
+          }
+          if (typeof savedFilters.page === 'number' && savedFilters.page > 1) {
+            handlePageChange(savedFilters.page)
+          }
+        }
+      } catch (_) {
+        // ignore
+      }
+    }
+    loadSaved()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist filters to SavedView whenever filters change (debounced)
+  const saveDebounceRef = useRef<NodeJS.Timeout | null>(null)
+  useEffect(() => {
+    const payload = {
+      name: 'admin-projects:last-used',
+      filters: {
+        search: filters.search,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        page: filters.page,
+        limit: filters.limit,
+      },
+    }
+
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+    saveDebounceRef.current = setTimeout(() => {
+      fetch('/api/views', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => {})
+    }, 400)
+
+    return () => {
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current)
+    }
+  }, [filters.search, filters.sortBy, filters.sortOrder, filters.page, filters.limit])
 
   const projects = (data as ProjectRow[]) || []
 

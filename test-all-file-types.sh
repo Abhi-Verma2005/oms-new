@@ -25,3 +25,4 @@ curl -s -X POST http://localhost:3000/api/upload-document \
   | jq -r '.success // "Failed"'
 
 echo "✅ All tests completed!"
+

@@ -207,3 +207,4 @@ function formatDocumentContextForCSV(chunks: any[], userMessage: string): string
 
 // Run the comprehensive test
 testEnhancedXLSXProcessing()
+
