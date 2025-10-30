@@ -33,3 +33,4 @@ fs.writeFileSync('minimal-system-message.txt', minimalSystemMessage);
 console.log('✅ Minimal system message created');
 console.log(`📊 Length: ${minimalSystemMessage.length} characters`);
 console.log(`📊 Estimated tokens: ${Math.ceil(minimalSystemMessage.length / 4)} tokens`);
+

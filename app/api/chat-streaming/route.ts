@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { ragSystem } from '@/lib/rag-minimal'
 import { applyFilters } from '@/lib/tools-minimal'
+import { normalizeNiche } from '@/lib/pineconeNicheNormalize'
 
 export const maxDuration = 60
 
@@ -55,6 +56,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Pre-compute normalized niche hint (RAG) from the raw user message before Stage 1
+    let normalizedNicheHint: string | null = null
+    try {
+      const normalizedFromMessage = await normalizeNiche(userMessage)
+      if (normalizedFromMessage?.name) {
+        normalizedNicheHint = normalizedFromMessage.name
+        console.log(`🔎 Normalized niche hint (pre-Stage 1): ${normalizedNicheHint}`)
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to compute normalized niche hint before Stage 1')
+    }
+
     // ===== STAGE 1: TEXT RESPONSE GENERATION =====
     console.log('\n📝 STAGE 1: Generating conversational response...')
     
@@ -66,6 +79,9 @@ export async function POST(req: NextRequest) {
 ${currentFiltersContext}
 
 ${documentContext}
+
+**SYSTEM NORMALIZED NICHE HINT (from vector search):**
+${normalizedNicheHint ? normalizedNicheHint : 'None'}
 
 **COMPREHENSIVE FILTER KNOWLEDGE:**
 
@@ -114,14 +130,20 @@ ${documentContext}
   * Filter: tatDaysMin, tatDaysMax
 
 **Geographic & Language:**
-- **Country**: us, uk, ca, au, india, de, fr, es, it, br, mx, etc.
+- **Country**: United States, United Kingdom, Canada, Australia, India, Germany, France, Spain, Italy, Brazil, Mexico, etc.
+  * Always use the country's full English name in outputs and filters (e.g., "United States", not "US").
+  * Be forgiving of user typos, short forms, demonyms, and 2-letter codes; interpret them to the correct full country name.
+  * Always convert any user-provided country input (codes, demonyms, typos, short forms) to the proper full official English country name in both your conversational response and the tool parameters.
   * Filter: country
 - **Language**: en, es, fr, de, it, pt (English, Spanish, French, German, Italian, Portuguese)
   * Filter: language
 
 **Content & Niche:**
-- **Niches**: technology, health, finance, business, lifestyle, education, travel, food, sports, entertainment, news, blog, ecommerce
-  * Each niche has different quality standards and pricing
+- **Niches**: Must come from an ALLOWED WHITELIST provided by the system/business.
+  * Map user phrases (including typos, synonyms, plural/singular, and related terms) to the closest allowed niche using fuzzy matching.
+  * If multiple are close, pick the best semantic match; if unclear, ask a brief clarification.
+  * Never invent new niches; always normalize to a single allowed niche string from the whitelist.
+  * If the SYSTEM NORMALIZED NICHE HINT (above) is provided, reference that exact niche term verbatim in your conversational response; do not generalize or rename it.
   * Filter: niche
 
 **Traffic & Performance:**
@@ -383,6 +405,8 @@ Be intelligent, helpful, use beautiful markdown formatting, and show that you un
             stage: 2
           })}\n\n`))
           
+          // Normalized niche hint computed pre-Stage 1 (see above)
+          
           const stage2SystemMessage = {
             role: 'system' as const,
             content: `You are an intelligent filter operation analyzer. Your job is to determine what filter operations the user wants to perform.
@@ -395,6 +419,9 @@ Be intelligent, helpful, use beautiful markdown formatting, and show that you un
 
 **CURRENT FILTERS:**
 ${currentFiltersContext}
+
+**SYSTEM NORMALIZED NICHE HINT (from vector search):**
+${normalizedNicheHint ? normalizedNicheHint : 'None'}
 
 **FILTER OPERATION ANALYSIS:**
 
@@ -478,18 +505,17 @@ ${currentFiltersContext}
 - "any turnaround", "don't care about TAT" → Remove tatDaysMin, tatDaysMax
 
 **Geographic:**
-- Country names → country: "[country_code]"
-- "US", "USA", "America" → country: "us"
-- "UK", "Britain" → country: "uk"
-- "India" → country: "india"
-- "Canada" → country: "ca"
-- "Australia" → country: "au"
-- "Germany" → country: "de"
-- "France" → country: "fr"
-- "Spain" → country: "es"
-- "Italy" → country: "it"
-- "Brazil" → country: "br"
-- "Mexico" → country: "mx"
+- Always output full official English country names in the final parameters (e.g., "United States", "United Kingdom").
+- Normalize fuzzy inputs (abbreviations, 2-letter ISO codes, demonyms, and common typos) to full names:
+  - "US", "USA", "U.S.", "America", "U.S.A", "United States of America" → country: "United States"
+  - "UK", "U.K.", "Britain", "Great Britain", "GB", "U.K" → country: "United Kingdom"
+  - "UAE", "U.A.E", "Emirates" → country: "United Arab Emirates"
+  - "Korea", "S. Korea" → country: "South Korea"; "N. Korea" → country: "North Korea"
+  - "Czech", "Czechia" → country: "Czech Republic"
+  - "Netherlands", "Holland" → country: "Netherlands"
+  - "Russia", "Russian Federation" → country: "Russia"
+  - Common 2-letter codes (CA, AU, IN, DE, FR, ES, IT, BR, MX, JP, CN, ZA, SE, NO, FI, DK, NL, IE) → map to their full names
+- If the user provides a country already as a full name (even with minor typos like "Unted States"), correct to the proper full name.
 - "any country", "global" → Remove country filter
 
 **Language:**
@@ -502,22 +528,17 @@ ${currentFiltersContext}
 - "any language" → Remove language filter
 
 **Niche/Topic:**
-- Industry mentions → niche: "[niche]"
-- Custom/unknown phrases are allowed → niche: set to the user's phrase verbatim (e.g., "saas marketing", "ai tools", "crypto gaming"). Do not restrict to a fixed list.
-- "tech", "technology" → niche: "technology"
-- "health", "medical", "wellness" → niche: "health"
-- "finance", "financial" → niche: "finance"
-- "business" → niche: "business"
-- "lifestyle" → niche: "lifestyle"
-- "education" → niche: "education"
-- "travel" → niche: "travel"
-- "food" → niche: "food"
-- "sports" → niche: "sports"
-- "entertainment" → niche: "entertainment"
-- "news" → niche: "news"
-- "blog" → niche: "blog"
-- "ecommerce", "shopping" → niche: "ecommerce"
-- "any niche", "all topics" → Remove niche filter
+- Niche MUST be chosen from an ALLOWED WHITELIST of categories maintained by the business (do not create new categories).
+- Map user input to the closest allowed niche using fuzzy matching (handle typos, synonyms, related terms, plural/singular, hyphenation).
+- Prefer higher-confidence matches; if ambiguity remains between multiple candidates, ask a short clarifying question before applying.
+- The system performs vector-based normalization to the closest allowed category; do not invent new categories. If still ambiguous, ask briefly.
+- If the SYSTEM NORMALIZED NICHE HINT is provided above, ALWAYS use that exact value for the 'niche' parameter without changing/generalizing it.
+- Examples of normalization (illustrative):
+  - "car repairing" → "Car Repair" (if present)
+  - "numerology" → "Numerology"
+  - "wordpress course" → "WordPress Course"
+  - "digital marketing"/"DIGITAL MARKETING" → "Digital Marketing"
+- If user says "any niche" or "all topics" → Remove niche filter
 
 **Traffic:**
 - "high traffic", "popular", "busy" → semrushOverallTrafficMin: 50000
@@ -593,14 +614,14 @@ Analysis:
   "parameters": {
     "priceMax": 500,
     "niche": "tech",
-    "country": "india"
+    "country": "India"
   },
   "confidence": 0.95
 }
 
 Example 2 - REPLACE:
 User: "change price to under $200"
-Current: { priceMax: 500, niche: "tech", country: "india" }
+Current: { priceMax: 500, niche: "tech", country: "India" }
 Response: "I'll update the price filter..."
 Analysis:
 {
@@ -610,14 +631,14 @@ Analysis:
   "parameters": {
     "priceMax": 200,
     "niche": "tech",
-    "country": "india"
+    "country": "India"
   },
   "confidence": 0.92
 }
 
 Example 3 - CLEAR ALL:
 User: "clear all and show me health sites"
-Current: { priceMax: 500, niche: "tech", country: "india" }
+Current: { priceMax: 500, niche: "tech", country: "India" }
 Response: "I'll start fresh and find health sites..."
 Analysis:
 {
@@ -632,7 +653,7 @@ Analysis:
 
 Example 4 - REMOVE:
 User: "remove the country filter"
-Current: { priceMax: 500, niche: "tech", country: "india" }
+Current: { priceMax: 500, niche: "tech", country: "India" }
 Response: "I'll remove the country restriction..."
 Analysis:
 {
@@ -756,7 +777,19 @@ Be intelligent about understanding the user's intent and perform the correct fil
           }
 
           const stage2Data = await stage2Response.json()
-          const analysis = JSON.parse(stage2Data.choices[0]?.message?.content || '{}')
+          const rawContent = stage2Data.choices[0]?.message?.content || '{}'
+          let analysis: any
+          try {
+            analysis = JSON.parse(rawContent)
+          } catch (e) {
+            // Try to extract first JSON object substring
+            const m = rawContent.match(/\{[\s\S]*\}/)
+            try {
+              analysis = m ? JSON.parse(m[0]) : { shouldExecuteTool: false, toolName: null, parameters: {}, reasoning: 'Invalid JSON from analysis', confidence: 0.0 }
+            } catch {
+              analysis = { shouldExecuteTool: false, toolName: null, parameters: {}, reasoning: 'Invalid JSON from analysis', confidence: 0.0 }
+            }
+          }
           
           console.log(`🎯 Stage 2 Analysis:`)
           console.log(`   Should Execute: ${analysis.shouldExecuteTool}`)
@@ -768,6 +801,20 @@ Be intelligent about understanding the user's intent and perform the correct fil
             
             // Execute the filter tool
             try {
+              // Normalize niche via Pinecone if present
+              if (analysis.parameters && typeof analysis.parameters.niche === 'string' && analysis.parameters.niche.trim().length > 0) {
+                try {
+                  const normalized = await normalizeNiche(analysis.parameters.niche)
+                  if (normalized?.name) {
+                    analysis.parameters.niche = normalized.name
+                    console.log(`   ✅ Normalized niche to canonical: ${normalized.name} (score: ${normalized.score.toFixed(3)})`)
+                  } else {
+                    console.log(`   ⚠️ Niche normalization low confidence for: ${analysis.parameters.niche}`)
+                  }
+                } catch (e) {
+                  console.warn('   ⚠️ Niche normalization failed, proceeding with original value')
+                }
+              }
               const result = await applyFilters(analysis.parameters, userId)
               console.log(`✅ Filter executed successfully`)
               

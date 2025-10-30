@@ -41,3 +41,4 @@ async function testUpload() {
 }
 
 testUpload();
+

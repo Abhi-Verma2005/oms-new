@@ -160,14 +160,16 @@ export const useFilterStore = create<FilterState>()(
       updateFromAI: (newFilters, searchQuery) => {
         console.log('🔄 ZUSTAND: updateFromAI called with:', { newFilters, searchQuery })
         set((state) => {
-          const updatedFilters = state.validateFilters({ ...state.filters, ...newFilters })
-          console.log('📊 ZUSTAND: Updated filters:', updatedFilters)
+          // IMPORTANT: Replace filters entirely with AI-provided object to allow removals/clear-all
+          const incoming = (newFilters ?? {}) as Filters
+          const updatedFilters = state.validateFilters({ ...incoming })
+          console.log('📊 ZUSTAND: Replaced filters with:', updatedFilters)
           return {
             filters: updatedFilters,
             searchQuery: searchQuery !== undefined ? searchQuery : state.searchQuery
           }
         })
-        console.log('✅ ZUSTAND: updateFromAI completed')
+        console.log('✅ ZUSTAND: updateFromAI completed (replace mode)')
       },
       
       getCurrentState: () => {
