@@ -171,21 +171,16 @@ function FiltersUI({
 }) {
   const { log } = useActivityLogger()
   const [lastLogged, setLastLogged] = useState<any>(null)
+  const skipNextFiltersEffect = useRef(false);
   // debounce logging of filter changes
   useEffect(() => {
-    const id = setTimeout(() => {
-      try {
-        const payload = summarizeFilters(filters)
-        const asString = JSON.stringify(payload)
-        if (asString !== lastLogged) {
-          log('APPLY_FILTERS', 'NAVIGATION', 'Updated publishers filters', payload)
-          setLastLogged(asString)
-        }
-      } catch {}
-    }, 600)
-    return () => clearTimeout(id)
+    if (skipNextFiltersEffect.current) {
+      skipNextFiltersEffect.current = false;
+      return;
+    }
+    if (applyingViewId) setApplyingViewId("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters])
+  }, [filters]);
   // Saved views (loaded on demand)
   const [views, setViews] = useState<Array<{ id: string; name: string; filters: any }>>([])
   const [viewName, setViewName] = useState("")
@@ -198,12 +193,21 @@ function FiltersUI({
   // Keep draft changes local to the modal until Apply is clicked
   const [draftFilters, setDraftFilters] = useState<Filters>(filters)
   // Track manual Apply to control loading behavior
-  const manualApplyRef = useRef(false)
+  const manualApplyRef = React.useRef(false)
   const [countrySearch, setCountrySearch] = useState("")
   const [nicheSearch, setNicheSearch] = useState("")
   const [recommendations, setRecommendations] = useState<CategoryRecommendation[]>([])
   const [loadingCats, setLoadingCats] = useState(false)
   const [catError, setCatError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // If a view is selected and filters are updated, clear the view
+    if (applyingViewId) {
+      setApplyingViewId("");
+    }
+    // Deliberately omit setApplyingViewId from deps: it's stable from useState.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   useEffect(() => {
     if (!nicheSearch || nicheSearch.trim().length < 2) {
@@ -273,8 +277,12 @@ function FiltersUI({
     const v = views.find(v => v.id === id)
     if (!v) return
     setApplyingViewId(id)
+    skipNextFiltersEffect.current = true; // <- mark this update as "view apply"
     setFilters({ ...defaultFilters, ...v.filters })
-    setTimeout(() => setApplyingViewId(""), 50)
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('applyFilters'))
+      setApplyingViewId("")
+    }, 50)
   }
 
   const deleteViewById = async (id: string) => {
