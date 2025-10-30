@@ -653,7 +653,7 @@ function FiltersUI({
             <Input placeholder="Enter niche" value={draftFilters.niche || ''} onChange={(e) => { setDraftFilters({ ...draftFilters, niche: e.target.value }); setNicheSearch(e.target.value) }} />
             <div className="max-h-48 overflow-auto no-scrollbar border border-gray-200 dark:border-gray-700/60 rounded p-2">
               {loadingCats ? <div className="text-sm">Loading…</div> : catError ? <div className="text-sm text-red-500">{catError}</div> : recommendations.length ? recommendations.map(r => (
-                <button key={r.category} className="block w-full text-left text-sm px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => { setDraftFilters({ ...draftFilters, niche: r.category }); setModalOpen(false) }}>{r.category}</button>
+                <button key={r.category} className="block w-full text-left text-sm px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700" onClick={() => { setDraftFilters({ ...draftFilters, niche: r.category }); }}>{r.category}</button>
               )) : <div className="text-sm text-gray-500">Type at least 2 characters</div>}
             </div>
           </div>
