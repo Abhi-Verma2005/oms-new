@@ -2299,10 +2299,7 @@ export default function PublishersClient() {
 
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
-  const { selectedProjectId } = useProjectStore()
-  useEffect(() => {
-    log('Project toggled:', { selectedProjectId })
-  }, [selectedProjectId])
+  const { selectedProjectId, projectsLoading, setProjectsLoading } = useProjectStore()
 
   // Handle auto-send query when sidebar opens - optimized to prevent function dependencies
   useEffect(() => {
@@ -2399,7 +2396,7 @@ export default function PublishersClient() {
   const prevProjectIdRef = useRef<string | null>(null)
   const [projectChangeCount, setProjectChangeCount] = useState(0)
 
-  // Minimal per-project hydration from localStorage on project change/reload
+  // Per-project hydration: try DB first, then fall back to localStorage, else defaults
   useEffect(() => {
     const projectChanged = prevProjectIdRef.current !== selectedProjectId
     
@@ -2412,38 +2409,62 @@ export default function PublishersClient() {
     prevProjectIdRef.current = selectedProjectId
     
     if (!selectedProjectId) {
-      // No project selected -> use defaults
+      // No project selected -> load from individual cache, else defaults
+      try {
+        const raw = localStorage.getItem('oms:last-filters:individual')
+        if (raw) {
+          const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
+          const nextFilters = { ...defaultFilters, ...(saved?.filters || {}) }
+          setFilters(nextFilters)
+          setSearchQuery(typeof saved?.q === 'string' ? saved.q : "")
+          setProjectChangeCount(prev => prev + 1)
+          return
+        }
+      } catch {}
       setFilters(defaultFilters)
       setSearchQuery("")
-      // Increment to trigger fetch with defaults
       setProjectChangeCount(prev => prev + 1)
       return
     }
     
-    try {
-      const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
-      if (!raw) {
-        console.log('No saved filters for project, using defaults:', selectedProjectId)
-        setFilters(defaultFilters)
-        setSearchQuery("")
-        // Increment to trigger fetch with defaults
-        setProjectChangeCount(prev => prev + 1)
-        return
-      }
-      const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
-      const nextFilters = { ...defaultFilters, ...(saved?.filters || {}) }
-      console.log('Loaded saved filters for project:', { projectId: selectedProjectId, filters: nextFilters })
-      setFilters(nextFilters)
-      setSearchQuery(typeof saved?.q === 'string' ? saved!.q! : "")
-      // Increment to trigger fetch with loaded filters
-      setProjectChangeCount(prev => prev + 1)
-    } catch {
-      console.log('Error loading filters for project, using defaults:', selectedProjectId)
+    const hydrate = async () => {
+      // 1) Try DB
+      try {
+        const res = await fetch(`/api/projects/${encodeURIComponent(selectedProjectId)}/filters?page=publishers`, { cache: 'no-store' })
+        if (res.ok) {
+          const { preference } = await res.json()
+          if (preference && typeof preference === 'object') {
+            const saved = preference as { filters?: Partial<Filters>; q?: string }
+            const nextFilters = { ...defaultFilters, ...(saved?.filters || {}) }
+            setFilters(nextFilters)
+            setSearchQuery(typeof saved?.q === 'string' ? saved.q : "")
+            try { localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(saved)) } catch {}
+            setProjectChangeCount(prev => prev + 1)
+            return
+          }
+        }
+      } catch {}
+      
+      // 2) Fallback to localStorage
+      try {
+        const raw = localStorage.getItem(`oms:last-filters:${selectedProjectId}`)
+        if (raw) {
+          const saved = JSON.parse(raw) as { filters?: Partial<Filters>; q?: string }
+          const nextFilters = { ...defaultFilters, ...(saved?.filters || {}) }
+          setFilters(nextFilters)
+          setSearchQuery(typeof saved?.q === 'string' ? saved.q : "")
+          setProjectChangeCount(prev => prev + 1)
+          return
+        }
+      } catch {}
+      
+      // 3) Defaults
       setFilters(defaultFilters)
       setSearchQuery("")
-      // Increment to trigger fetch with defaults
       setProjectChangeCount(prev => prev + 1)
     }
+    
+    hydrate()
   }, [selectedProjectId, setFilters, setSearchQuery])
 
   // Listen for apply filters event from modal - moved after fetchData definition
@@ -2538,6 +2559,8 @@ export default function PublishersClient() {
       if (!skipLoading) {
         if (isInitialLoad) {
           setLoading(false)
+          // Initial data fetch finished; now it's safe to show the full UI
+          try { setProjectsLoading(false) } catch {}
         } else {
           setTableLoading(false)
         }
@@ -2643,9 +2666,13 @@ export default function PublishersClient() {
 
   // Project filter loading is now handled by the filter store
 
-  // Persist last-used filters per project whenever filters/query change (server + local, debounced)
+  // Persist last-used filters whenever filters/query change (server + local, debounced)
   useEffect(() => {
-    if (!selectedProjectId) return
+    if (!selectedProjectId) {
+      const payload = { filters, q: searchQuery }
+      try { localStorage.setItem('oms:last-filters:individual', JSON.stringify(payload)) } catch {}
+      return
+    }
     const payload = { filters, q: searchQuery }
     // Local cache
     try { localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(payload)) } catch {}
@@ -2927,6 +2954,94 @@ export default function PublishersClient() {
       completeTutorial()
       return prev
     })
+  }
+
+  // Show skeleton while projects are loading to avoid flashing initial UI
+  if (projectsLoading) {
+    return (
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8 pt-3 sm:pt-4 w/full max-w-[96rem] mx-auto no-scrollbar bg-gray-50 dark:bg-transparent">
+        <div className="flex flex-col sm:flex-row sm:justify-between no-scrollbar sm:items-center mb-3 sm:mb-4 gap-3 sm:gap-4">
+          <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch min-h-[300px] sm:min-h-[400px]">
+          <div className="lg:col-span-7 xl:col-span-7 flex flex-col">
+            <div className="flex-1">
+              <Card className="bg-white dark:bg-gray-800 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="h-7 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                    ))}
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+                    <div className="h-8 w-full sm:w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-full sm:w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col">
+            <div className="flex-1 sticky top-0">
+              <Card className="bg-white dark:bg-gray-800 shadow-sm h-full">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="text-center">
+                        <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2 mx-auto" />
+                        <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="space-y-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+        <Card className="bg-white dark:bg-gray-800 shadow-sm">
+          <div className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <header className="px-3 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="h-5 w-40 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="flex items-center gap-2">
+                <div className="h-7 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-7 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            </header>
+          </div>
+          <div className="relative">
+            <div className="overflow-x-auto overflow-y-visible scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+              <div style={{ minWidth: 'max-content' }}>
+                <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-3 bg-gray-50 dark:bg-gray-800/30 border-t border-b border-gray-100 dark:border-gray-700/60">
+                  <div className="h-4 w-1/2 sm:w-1/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
+                  {Array.from({ length: 8 }).map((_, idx) => (
+                    <div key={idx} className="px-2 sm:px-3 md:px-4 lg:px-6 py-3 grid grid-cols-6 gap-3 sm:gap-5 items-center">
+                      <div className="col-span-2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      <div className="col-span-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      <div className="col-span-1 h-7 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   // Show skeleton while loading initial data

@@ -12,6 +12,8 @@ interface ProjectState {
   selectedProject: UserProject | null
   setSelectedProject: (project: UserProject | null) => void
   clearProject: () => void
+  projectsLoading: boolean
+  setProjectsLoading: (loading: boolean) => void
 }
 
 export const useProjectStore = create<ProjectState>()(
@@ -22,6 +24,8 @@ export const useProjectStore = create<ProjectState>()(
       setSelectedProject: (project) =>
         set({ selectedProjectId: project?.id ?? null, selectedProject: project }),
       clearProject: () => set({ selectedProjectId: null, selectedProject: null }),
+      projectsLoading: true,
+      setProjectsLoading: (loading) => set({ projectsLoading: loading }),
     }),
     {
       name: 'oms-project-store',
