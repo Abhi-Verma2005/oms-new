@@ -3160,75 +3160,83 @@ export default function PublishersClient() {
         <div className="grid grid-cols-1 mb-6 sm:mb-8 lg:mb-10 lg:grid-cols-12 lg:gap-6 xl:gap-8 items-stretch">
           <div className="lg:col-span-7 xl:col-span-7 flex flex-col relative" ref={filtersContainerRef}>
             <div className="flex-1 flex flex-col">
-              {loading && sites.length === 0 ? (
-                <div className="space-y-4">
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                </div>
-              ) : (
-                <>
-                  {memoizedFiltersUI}
-                  {/* Mobile/Tablet compact project toggle just below filters */}
-                  <div className="relative z-40 mt-3">
-                    <ProjectToggleCompact />
+              <div className="min-h-[28rem] flex flex-col h-full overflow-hidden">
+                {loading && sites.length === 0 ? (
+                  <div className="space-y-4 h-full">
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    <div className="h-56 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                   </div>
-                </>
-              )}
+                ) : (
+                  <>
+                    <div className="flex-1 min-h-0 h-full">
+                      {memoizedFiltersUI}
+                    </div>
+                    {/* Mobile/Tablet compact project toggle just below filters */}
+                    <div className="relative z-40 mt-3 flex-shrink-0">
+                      <ProjectToggleCompact />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="hidden lg:flex lg:col-span-5 xl:col-span-5 flex-col" ref={projectPanelRef}>
             <div className="flex-1 sticky top-0">
-              {loading && sites.length === 0 ? (
-                <div className="w-full h-full flex flex-col">
-                  {/* Search and controls section skeleton */}
-                  <div className="flex-shrink-0 mb-4">
-                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
-                    <div className="space-y-3">
-                      <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                    </div>
-                  </div>
-
-                  {/* Quick tips section skeleton */}
-                  <div className="flex-shrink-0">
-                    <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
-                    <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
-                  </div>
-                  
-                  {/* Project panel skeleton */}
-                  <div className="mt-4 flex-1 flex flex-col min-h-0 max-h-[250px]">
-                    <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-3 sm:p-4 flex flex-col gap-3 h-full">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                          <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-                        </div>
-                        <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                        <div className="space-y-2">
-                          {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800/60 rounded-lg animate-pulse" />
-                          ))}
-                        </div>
+              <div className="min-h-[28rem] h-full overflow-hidden flex flex-col">
+                {loading && sites.length === 0 ? (
+                  <div className="w-full h-full flex flex-col">
+                    {/* Search and controls section skeleton */}
+                    <div className="flex-shrink-0 mb-4">
+                      <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+                      <div className="space-y-3">
+                        <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                       </div>
-                      <div className="h-8 w-full bg-violet-600/20 dark:bg-violet-600/10 rounded-lg animate-pulse" />
+                    </div>
+
+                    {/* Quick tips section skeleton */}
+                    <div className="flex-shrink-0">
+                      <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+                      <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+                    </div>
+                    
+                    {/* Project panel skeleton */}
+                    <div className="mt-4 flex-1 flex flex-col min-h-0">
+                      <div className="rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 p-3 sm:p-4 flex flex-col gap-3 h-full">
+                        <div className="flex-1 space-y-3 overflow-hidden">
+                          <div className="flex items-center justify-between">
+                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                            <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+                          </div>
+                          <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="space-y-2">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800/60 rounded-lg animate-pulse" />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="h-8 w-full bg-violet-600/20 dark:bg-violet-600/10 rounded-lg animate-pulse" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <MemoizedPublishersHelpCarousel 
-                  sites={displayedSites}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  loading={loading}
-                  hasCheckoutFab={hasCheckoutFab}
-                  suggestions={suggestions}
-                  suggestionsLoading={suggestionsLoading}
-                  suggestionsOpen={suggestionsOpen}
-                  setSuggestionsOpen={setSuggestionsOpen}
-                  handleSetSuggestionsContainerRef={handleSetSuggestionsContainerRef}
-                  handlePickSuggestion={handlePickSuggestion}
-                />
-              )}
+                ) : (
+                  <div className="flex-1 min-h-0 h-full">
+                    <MemoizedPublishersHelpCarousel 
+                      sites={displayedSites}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      loading={loading}
+                      hasCheckoutFab={hasCheckoutFab}
+                      suggestions={suggestions}
+                      suggestionsLoading={suggestionsLoading}
+                      suggestionsOpen={suggestionsOpen}
+                      setSuggestionsOpen={setSuggestionsOpen}
+                      handleSetSuggestionsContainerRef={handleSetSuggestionsContainerRef}
+                      handlePickSuggestion={handlePickSuggestion}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
