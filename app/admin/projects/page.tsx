@@ -41,7 +41,7 @@ function AdminProjectsInner() {
   useEffect(() => {
     const loadSaved = async () => {
       try {
-        const res = await fetch('/api/views', { cache: 'no-store' })
+        const res = await fetch('/api/views?projectId=individual', { cache: 'no-store' })
         if (!res.ok) return
         const json = await res.json()
         const views = Array.isArray(json?.views) ? json.views : []
@@ -90,7 +90,7 @@ function AdminProjectsInner() {
       fetch('/api/views', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, projectId: 'individual' }),
       }).catch(() => {})
     }, 400)
 

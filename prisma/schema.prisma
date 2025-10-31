@@ -224,11 +224,13 @@ model Transaction {
 model SavedView {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
+  projectId String?  @map("project_id")
   name      String
   filters   Json
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project? @relation(fields: [projectId], references: [id])
 
   @@unique([userId, name])
   @@map("saved_views")
@@ -639,6 +641,7 @@ model Project {
   searchInterests SearchInterest[]
   activities      UserActivity[]
   wishlists       Wishlist[]
+  savedViews      SavedView[]
 
   @@index([userId, createdAt])
   @@map("projects")

@@ -231,13 +231,16 @@ function FiltersUI({
     return () => clearTimeout(tid)
   }, [nicheSearch])
 
+  // Project selection for scoping views
+  const { selectedProjectId: selectedProjectIdForViews } = useProjectStore()
+
   // Load views on demand when dropdown is opened
   const loadViews = async (forceRefresh = false) => {
     if ((viewsLoaded && !forceRefresh) || loadingViews) return
     setLoadingViews(true)
     try {
       console.log('Loading views from API...', forceRefresh ? '(forced refresh)' : '')
-      const res = await fetch('/api/views', { cache: 'no-store' })
+      const res = await fetch(`/api/views?projectId=${encodeURIComponent(selectedProjectIdForViews || 'individual')}` as any, { cache: 'no-store' })
       console.log('Views API response status:', res.status)
       if (res.ok) {
         const data = await res.json()
@@ -264,7 +267,7 @@ function FiltersUI({
     const name = viewName.trim()
     if (!name) return
     try {
-      const res = await fetch('/api/views', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, filters }) })
+      const res = await fetch('/api/views', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, filters, projectId: selectedProjectIdForViews || 'individual' }) })
       if (!res.ok) return
       
       // Force refresh views after saving
@@ -1035,6 +1038,19 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
   const [selectedSite, setSelectedSite] = useState<Site | null>(null)
   const rowHeightButtonRef = useRef<HTMLButtonElement | null>(null)
   useEffect(() => { onRowHeightButtonRef?.(rowHeightButtonRef.current) }, [onRowHeightButtonRef])
+
+  // Open details modal when a site is dispatched from outside (e.g., search suggestions)
+  useEffect(() => {
+    const handleOpen = (e: CustomEvent) => {
+      const site = (e as any)?.detail?.site as Site | undefined
+      if (site) {
+        setSelectedSite(site)
+        setDetailsOpen(true)
+      }
+    }
+    window.addEventListener('openSiteDetails', handleOpen as EventListener)
+    return () => window.removeEventListener('openSiteDetails', handleOpen as EventListener)
+  }, [])
 
   // Scroll state management for shadow indicators
   const [scrollState, setScrollState] = useState({ left: false, right: true })
@@ -1929,7 +1945,32 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
                   <DialogTitle className="flex items-start justify-between gap-3 sm:gap-4">
                     {selectedSite ? (
                       <div className="min-w-0">
-                        <div className="text-base sm:text-lg md:text-xl font-semibold tracking-tight truncate"></div>
+                        <div className="text-base sm:text-lg md:text-xl font-semibold tracking-tight truncate">
+                          <span className="align-middle">
+                            <MaskedWebsite site={selectedSite} maxStars={14} />
+                          </span>
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+                          {selectedSite.category && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-gray-300/60 dark:border-white/10 bg-white/60 dark:bg-gray-900/50 backdrop-blur-sm">
+                              <span className="text-gray-600 dark:text-gray-300">Category</span>
+                              <span className="font-medium text-gray-800 dark:text-gray-200">{selectedSite.category}</span>
+                            </span>
+                          )}
+                          {selectedSite.country && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-gray-300/60 dark:border-white/10 bg-white/60 dark:bg-gray-900/50 backdrop-blur-sm">
+                              <span className="text-gray-600 dark:text-gray-300">{selectedSite.country}</span>
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700">
+                            ${selectedSite.publishing.price.toLocaleString()}
+                          </span>
+                          {selectedSite.additional?.availability !== undefined && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${selectedSite.additional.availability ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700' : 'bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700'}`}>
+                              {selectedSite.additional.availability ? 'Available' : 'Unavailable'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <span>Site Details</span>
@@ -2415,9 +2456,25 @@ export default function PublishersClient() {
     suggestionsRef.current = el
   }, [])
   
+  const openDetailsForWebsite = useCallback(async (website: string) => {
+    try {
+      const apiFilters = convertFiltersToAPI(filters, website, 1, 1)
+      const result = await fetchSitesWithFilters(apiFilters)
+      const first = result?.sites?.[0]
+      if (first) {
+        const site = transformAPISiteToSite(first)
+        window.dispatchEvent(new CustomEvent('openSiteDetails', { detail: { site } }))
+      }
+    } catch {
+      // silently ignore; no modal if not found
+    }
+  }, [filters])
+
   const handlePickSuggestion = useCallback((val: string) => {
     setSearchQuery(val)
-  }, [])
+    setSuggestionsOpen(false)
+    openDetailsForWebsite(val)
+  }, [openDetailsForWebsite])
 
   const fetchData = useCallback(async (apiFilters: APIFilters = {}, skipLoading = false) => {
     // Allow Apply-triggered fetches even if loading
@@ -2464,7 +2521,8 @@ export default function PublishersClient() {
     const handleApplyFilters = () => {
       const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
       console.log('Applying filters from modal:', { filters, apiFilters })
-      fetchData(apiFilters)
+      // On project change: fetch without clearing current table state
+      fetchData(apiFilters, true)
     }
 
     const handleResetSearchQuery = () => {
