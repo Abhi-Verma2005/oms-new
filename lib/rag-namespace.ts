@@ -8,3 +8,4 @@ export function getNamespace(type: 'publishers' | 'documents', userId?: string):
   throw new Error('Invalid namespace configuration')
 }
 
+

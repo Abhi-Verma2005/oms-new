@@ -545,6 +545,8 @@ ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 - "medium traffic", "established" → semrushOverallTrafficMin: 10000
 - "low traffic", "growing" → semrushOverallTrafficMin: 1000
 - "organic traffic" → semrushOrganicTrafficMin: [value]
+- "traffic between X and Y" → semrushOverallTrafficMin: X, semrushOverallTrafficMax: Y
+- "organic traffic between X and Y" → semrushOrganicTrafficMin: X, semrushOrganicTrafficMax: Y
 - "increasing traffic", "growing" → trend: "increasing"
 - "stable traffic", "consistent" → trend: "stable"
 - "declining traffic", "decreasing" → trend: "decreasing"

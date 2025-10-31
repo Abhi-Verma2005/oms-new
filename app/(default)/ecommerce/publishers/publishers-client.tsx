@@ -72,7 +72,9 @@ type Filters = {
   spamMin?: number
   spamMax?: number
   semrushOverallTrafficMin?: number
+  semrushOverallTrafficMax?: number
   semrushOrganicTrafficMin?: number
+  semrushOrganicTrafficMax?: number
   priceMin?: number
   priceMax?: number
   tatDaysMax?: number
@@ -105,7 +107,9 @@ const defaultFilters: Filters = {
   spamMin: undefined,
   spamMax: undefined,
   semrushOverallTrafficMin: undefined,
+  semrushOverallTrafficMax: undefined,
   semrushOrganicTrafficMin: undefined,
+  semrushOrganicTrafficMax: undefined,
   priceMin: undefined,
   priceMax: undefined,
   tatDaysMax: undefined,
@@ -138,7 +142,9 @@ function convertFiltersToAPI(f: Filters, searchQuery: string, page: number = 1, 
   if (f.priceMin !== undefined) api.sellingPrice = { ...(api.sellingPrice || {}), min: f.priceMin }
   if (f.priceMax !== undefined) api.sellingPrice = { ...(api.sellingPrice || {}), max: f.priceMax }
   if (f.semrushOverallTrafficMin !== undefined) api.semrushTraffic = { ...(api.semrushTraffic || {}), min: f.semrushOverallTrafficMin }
+  if (f.semrushOverallTrafficMax !== undefined) api.semrushTraffic = { ...(api.semrushTraffic || {}), max: f.semrushOverallTrafficMax }
   if (f.semrushOrganicTrafficMin !== undefined) api.semrushOrganicTraffic = { ...(api.semrushOrganicTraffic || {}), min: f.semrushOrganicTrafficMin }
+  if (f.semrushOrganicTrafficMax !== undefined) api.semrushOrganicTraffic = { ...(api.semrushOrganicTraffic || {}), max: f.semrushOrganicTrafficMax }
   if (f.niche) api.niche = f.niche
   if (f.language) api.language = f.language
   if (f.country) api.webCountry = f.country
@@ -703,41 +709,51 @@ function FiltersUI({
           </div>
         )
       }
-      case 'semrushOverallTrafficMin': {
+      case 'semrushOverallTrafficMin':
+      case 'semrushOverallTrafficMax': {
         const lo = draftFilters.semrushOverallTrafficMin ?? 0
+        const hi = draftFilters.semrushOverallTrafficMax ?? 10000000
+        const fmt = (v: number) => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : `${v}`
         return (
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium">Semrush Traffic (min)</span>
-              <span className="tabular-nums">{(0/1000000).toFixed(1)}M – {(10000000/1000000).toFixed(1)}M</span>
+              <span className="font-medium">Semrush Traffic</span>
+              <span className="tabular-nums">{fmt(lo)} – {fmt(hi)}</span>
             </div>
             <Slider
               min={0}
               max={10000000}
-              value={[lo]}
+              value={[lo, hi]}
               onValueChange={(vals: number[]) => {
                 if (loading) return
-                setDraftFilters({ ...draftFilters, semrushOverallTrafficMin: vals[0] as number })
+                const minV = vals[0] as number
+                const maxV = vals[1] as number
+                setDraftFilters({ ...draftFilters, semrushOverallTrafficMin: minV, semrushOverallTrafficMax: maxV })
               }}
             />
           </div>
         )
       }
-      case 'semrushOrganicTrafficMin': {
+      case 'semrushOrganicTrafficMin':
+      case 'semrushOrganicTrafficMax': {
         const lo = draftFilters.semrushOrganicTrafficMin ?? 0
+        const hi = draftFilters.semrushOrganicTrafficMax ?? 10000000
+        const fmt = (v: number) => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(1)}K` : `${v}`
         return (
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium">Semrush Organic Traffic (min)</span>
-              <span className="tabular-nums">{(0/1000000).toFixed(1)}M – {(10000000/1000000).toFixed(1)}M</span>
+              <span className="font-medium">Semrush Organic Traffic</span>
+              <span className="tabular-nums">{fmt(lo)} – {fmt(hi)}</span>
             </div>
             <Slider
               min={0}
               max={10000000}
-              value={[lo]}
+              value={[lo, hi]}
               onValueChange={(vals: number[]) => {
                 if (loading) return
-                setDraftFilters({ ...draftFilters, semrushOrganicTrafficMin: vals[0] as number })
+                const minV = vals[0] as number
+                const maxV = vals[1] as number
+                setDraftFilters({ ...draftFilters, semrushOrganicTrafficMin: minV, semrushOrganicTrafficMax: maxV })
               }}
             />
           </div>
@@ -867,7 +883,9 @@ function FiltersUI({
     add('spamMax', `Spam ≤ ${filters.spamMax}`, filters.spamMax)
     add('spamMin', `Spam ≥ ${filters.spamMin}`, filters.spamMin)
     add('semrushOverallTrafficMin', `Semrush Traffic ≥ ${filters.semrushOverallTrafficMin}`, filters.semrushOverallTrafficMin)
+    add('semrushOverallTrafficMax', `Semrush Traffic ≤ ${filters.semrushOverallTrafficMax}`, filters.semrushOverallTrafficMax)
     add('semrushOrganicTrafficMin', `Semrush Organic ≥ ${filters.semrushOrganicTrafficMin}`, filters.semrushOrganicTrafficMin)
+    add('semrushOrganicTrafficMax', `Semrush Organic ≤ ${filters.semrushOrganicTrafficMax}`, filters.semrushOrganicTrafficMax)
     add('priceMin', `$ ≥ ${filters.priceMin}`, filters.priceMin)
     add('priceMax', `$ ≤ ${filters.priceMax}`, filters.priceMax)
     add('tatDaysMin', `TAT ≥ ${filters.tatDaysMin}`, filters.tatDaysMin)
@@ -1014,7 +1032,7 @@ function FiltersUI({
 }
 
 function summarizeFilters(f: Filters) {
-  const keys = ['niche','language','country','daMin','daMax','paMin','paMax','drMin','drMax','spamMin','spamMax','semrushOverallTrafficMin','semrushOrganicTrafficMin','priceMin','priceMax','tatDaysMin','tatDaysMax','trend','availability','backlinkNature','linkPlacement','permanence','tool']
+  const keys = ['niche','language','country','daMin','daMax','paMin','paMax','drMin','drMax','spamMin','spamMax','semrushOverallTrafficMin','semrushOverallTrafficMax','semrushOrganicTrafficMin','semrushOrganicTrafficMax','priceMin','priceMax','tatDaysMin','tatDaysMax','trend','availability','backlinkNature','linkPlacement','permanence','tool']
   const out: Record<string, any> = {}
   for (const k of keys) {
     const v = (f as any)[k]
@@ -2340,7 +2358,9 @@ export default function PublishersClient() {
       spamMin: getNum('spamMin'),
       spamMax: getNum('spamMax'),
       semrushOverallTrafficMin: getNum('semrushOverallTrafficMin'),
+      semrushOverallTrafficMax: getNum('semrushOverallTrafficMax'),
       semrushOrganicTrafficMin: getNum('semrushOrganicTrafficMin'),
+      semrushOrganicTrafficMax: getNum('semrushOrganicTrafficMax'),
       priceMin: getNum('priceMin'),
       priceMax: getNum('priceMax'),
       tatDaysMax: getNum('tatDaysMax'),

@@ -92,3 +92,4 @@ console.log('✅ Canvas dependency for Node.js support');
 console.log('\n🚀 The PDF processing system is ready for production use!');
 console.log('📄 PDFs will now be processed with 100% accuracy and flawless extraction.');
 
+
