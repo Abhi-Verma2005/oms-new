@@ -57,6 +57,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   })
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isBackgroundPending, setIsBackgroundPending] = useState(false)
+  const lastSubmitTsRef = useRef(0)
   const [error, setError] = useState<Error | null>(null)
   const [toolActions, setToolActions] = useState<any[]>([])
   const [showToolFeedback, setShowToolFeedback] = useState(false)
@@ -283,21 +285,15 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     setInput(e.target.value)
   }
 
-  const handleSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
-    e.preventDefault()
-    if (!input.trim() || isLoading) return
-
-    const userMessage: Message = { role: 'user', content: input }
+  const sendMessage = async (text: string) => {
+    const userMessage: Message = { role: 'user', content: text }
     setMessages(prev => [...prev, userMessage])
-    setInput('')
     setIsLoading(true)
     setError(null)
 
     try {
-      // Get current filter state from filter store
       const { filters: currentFilters, searchQuery } = getCurrentState()
 
-      // Create streaming response
       const response = await fetch('/api/chat-streaming', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,7 +302,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
           userId,
           currentFilters,
           searchQuery,
-          selectedDocuments // Include selected documents
+          selectedDocuments
         })
       })
 
@@ -314,14 +310,11 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
         throw new Error(`HTTP ${response.status}`)
       }
 
-      // Handle streaming response
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
       let assistantMessage = ''
-      let toolResults: any[] = []
 
       if (reader) {
-        // Add empty assistant message for streaming
         setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
         while (true) {
@@ -332,60 +325,37 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
           const lines = chunk.split('\n')
 
           for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data === '[DONE]') continue
+            if (!line.startsWith('data: ')) continue
+            const data = line.slice(6)
+            if (data === '[DONE]') continue
 
-              try {
-                const parsed = JSON.parse(data)
-                
-                // Handle content streaming
-                if (parsed.content) {
-                  assistantMessage += parsed.content
-                  setMessages(prev => {
-                    const newMessages = [...prev]
-                    const lastMessage = newMessages[newMessages.length - 1]
-                    if (lastMessage?.role === 'assistant') {
-                      newMessages[newMessages.length - 1] = {
-                        role: 'assistant',
-                        content: assistantMessage
-                      }
-                    }
-                    return newMessages
-                  })
-                }
+            try {
+              const parsed = JSON.parse(data)
 
-                // Handle tool results
+              if (parsed.type === 'stage1_complete') {
+                // Stop loader and enable textarea after Stage 1
+                setIsLoading(false)
+                continue
+              }
+
+              if (parsed.type === 'background_started') {
+                setIsBackgroundPending(true)
+                continue
+              }
+
+              if (parsed.type === 'background_result') {
                 if (parsed.toolResults) {
-                  console.log('🎯 AI SIDEBAR: Received toolResults:', parsed.toolResults)
-                  toolResults = parsed.toolResults
                   setToolActions(parsed.toolResults)
                   setShowToolFeedback(true)
-                  
-                  // Handle tool execution
                   for (const toolResult of parsed.toolResults) {
                     switch (toolResult.action) {
                       case 'filter_applied':
                         if (toolResult.filters) {
-                          console.log('🔍 AI SIDEBAR: Applying filters directly to state:', toolResult.filters)
-                          
-                          // Set flag to indicate this is an AI change (for immediate fetch)
                           if (typeof (window as any).setAIFilterFlag === 'function') {
-                            console.log('🚩 AI SIDEBAR: Setting AI filter flag')
                             ;(window as any).setAIFilterFlag()
-                          } else {
-                            console.warn('⚠️ AI SIDEBAR: setAIFilterFlag function not available')
                           }
-                          
-                          // Use the Zustand store to update filters directly
-                          console.log('🔄 AI SIDEBAR: Calling updateFromAI with:', toolResult.filters)
                           updateFromAI(toolResult.filters)
-                          console.log('✅ AI SIDEBAR: Filters applied directly to state via Zustand store')
-                          
-                          // Show success feedback for longer to indicate data is being fetched
                           setTimeout(() => setShowToolFeedback(false), 3000)
-                        } else {
-                          console.warn('⚠️ AI SIDEBAR: No filters in toolResult:', toolResult)
                         }
                         break
                       case 'navigate':
@@ -395,31 +365,69 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                         }
                         break
                       case 'cart_updated':
-                        console.log('🛒 Cart updated:', toolResult.message)
-                        setTimeout(() => setShowToolFeedback(false), 3000)
-                        break
                       case 'search_completed':
-                        console.log('🔍 RAG Search completed:', toolResult.message)
-                        if (toolResult.sources && toolResult.sources.length > 0) {
-                          console.log('📚 Found documents:', toolResult.sources)
-                        }
                         setTimeout(() => setShowToolFeedback(false), 3000)
                         break
                     }
                   }
                 }
-              } catch (e) {
-                // Skip invalid JSON
+                continue
               }
+
+              if (parsed.type === 'background_error') {
+                // Non-fatal for conversation UX
+                console.warn('Background error:', parsed.error)
+                continue
+              }
+
+              if (parsed.type === 'background_complete' || parsed.type === 'background_complete_noop') {
+                setIsBackgroundPending(false)
+                continue
+              }
+
+              // Content streaming from Stage 1
+              if (parsed.content) {
+                assistantMessage += parsed.content
+                setMessages(prev => {
+                  const newMessages = [...prev]
+                  const lastMessage = newMessages[newMessages.length - 1]
+                  if (lastMessage?.role === 'assistant') {
+                    newMessages[newMessages.length - 1] = {
+                      role: 'assistant',
+                      content: assistantMessage
+                    }
+                  }
+                  return newMessages
+                })
+              }
+            } catch (_) {
+              // ignore
             }
           }
         }
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error'))
-    } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
+    e.preventDefault()
+    e.stopPropagation?.()
+    const now = Date.now()
+    if (now - lastSubmitTsRef.current < 400) {
+      return
+    }
+    lastSubmitTsRef.current = now
+    if (!input.trim()) return
+    if (isBackgroundPending) return
+
+    const text = input
+    setInput('')
+
+    if (isLoading) return
+    await sendMessage(text)
   }
 
   // Auto-scroll to bottom when new messages arrive
@@ -761,7 +769,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                  className={cn(
+                        className={cn(
                           "flex items-center border rounded-md text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:border-purple-500 bg-gray-100/70 dark:bg-gray-700/40 border-gray-200 dark:border-gray-700/60 transition-all duration-200",
                           selectedDocuments.length > 0 
                             ? "justify-center w-7 h-7 p-0 gap-0"
@@ -945,10 +953,12 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   placeholder="Start a conversation..."
                   className="px-3 py-2 focus:ring-0 resize-none bg-white dark:bg-gray-900 border-none text-gray-800 placeholder:text-gray-400 dark:text-white"
                   style={{ minHeight: '48px', maxHeight: '140px', height: 'auto', boxShadow: 'none' }}
-                  disabled={false}
+                  disabled={isLoading || isBackgroundPending}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
+                      e.stopPropagation()
+                      if ((e as any).repeat) return
                       handleSubmit(e)
                     }
                   }}
@@ -971,7 +981,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={isLoading || !input.trim()}
+                    disabled={isLoading || isBackgroundPending || !input.trim()}
                     className="h-7 w-7 p-0 text-white bg-violet-600 hover:bg-violet-700 rounded-full"
                   >
                     <ArrowUp className="w-4 h-4" />

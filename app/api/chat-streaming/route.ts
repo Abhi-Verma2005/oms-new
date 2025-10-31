@@ -390,8 +390,20 @@ Be intelligent, helpful, use beautiful markdown formatting, and show that you un
 
           console.log(`✅ Stage 1 Complete: "${stage1Response}"`)
 
+          // Notify client that Stage 1 is finished so UI can stop loader and enable input
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+            type: 'stage1_complete',
+            stage: 1
+          })}\n\n`))
+
           // ===== STAGE 2: TOOL ANALYSIS & EXECUTION =====
           console.log('\n🔧 STAGE 2: Analyzing if tools are needed...')
+
+          // Let the client know background processing is starting
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+            type: 'background_started',
+            stage: 2
+          })}\n\n`))
           
           // Normalized niche hint computed pre-Stage 1 (see above)
           
@@ -808,8 +820,10 @@ Be intelligent about understanding the user's intent and perform the correct fil
               const result = await applyFilters(analysis.parameters, userId)
               console.log(`✅ Filter executed successfully`)
               
-              // Send tool result to client (using old format for compatibility)
+              // Send tool result to client as background result
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'background_result',
+                stage: 2,
                 toolResults: [{
                   ...result,
                   analysis: {
@@ -820,23 +834,34 @@ Be intelligent about understanding the user's intent and perform the correct fil
                 message: `🧠 Smart AI: ${result.message}`,
                 intelligence: 'Applied filters based on your request'
               })}\n\n`))
+              // Background processing finished (tool path)
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'background_complete',
+                stage: 2
+              })}\n\n`))
               
             } catch (error) {
               console.error('❌ Tool execution failed:', error)
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-                type: 'tool_error',
+                type: 'background_error',
                 stage: 2,
                 error: error instanceof Error ? error.message : 'Unknown error'
+              })}\n\n`))
+              // Even on error, consider background done
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'background_complete',
+                stage: 2
               })}\n\n`))
             }
           } else {
             console.log(`ℹ️ No tool execution needed`)
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
-              type: 'no_tool',
+              type: 'background_complete_noop',
               stage: 2,
               reasoning: analysis.reasoning
             })}\n\n`))
           }
+
 
           // Store conversation
           try {
