@@ -128,7 +128,7 @@ export default function PublishersHelpCarousel({
         <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Search & Controls</div>
         <div className="space-y-3">
           {/* Search input */}
-          <div className="relative" ref={setSuggestionsContainerRef}>
+          <div className="relative px-1" ref={setSuggestionsContainerRef}>
             <Input
               className="h-8 text-xs w-full"
               placeholder="Search by website or URL"
@@ -138,7 +138,7 @@ export default function PublishersHelpCarousel({
             />
             {/* Suggestions dropdown */}
             {suggestionsOpen && (suggestionsLoading || (suggestions && suggestions.length > 0)) && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-xl overflow-hidden">
+              <div className="absolute left-1 right-1 top-full mt-1 z-50 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-xl overflow-hidden">
                 {suggestionsLoading ? (
                   <div className="px-3 py-2 text-[11px] text-gray-500">Searching…</div>
                 ) : (
