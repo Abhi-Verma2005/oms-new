@@ -151,13 +151,19 @@ function convertFiltersToAPI(f: Filters, searchQuery: string, page: number = 1, 
   if (f.backlinkNature) api.linkAttribute = f.backlinkNature
   if (typeof f.availability === 'boolean') api.availability = f.availability
   if (f.remarkIncludes) api.websiteRemark = f.remarkIncludes
-  if (searchQuery.trim()) api.website = searchQuery.trim()
+  // Do not filter by website via search query anymore; clicking a recommendation opens details modal
   
   // Add pagination parameters
   api.page = page
   api.limit = limit
   api.offset = (page - 1) * limit
   
+  try {
+    if (typeof window !== 'undefined' && (window as any).__DEBUG_PUBLISHERS) {
+      console.log('🧭 PUBLISHERS: convertFiltersToAPI', { in: { f, searchQuery, page, limit }, out: api })
+    }
+  } catch {}
+
   return api
 }
 
@@ -263,6 +269,14 @@ function FiltersUI({
       setLoadingViews(false)
     }
   }
+
+  // Refresh views when the selected project changes to prevent showing another project's views
+  useEffect(() => {
+    setViews([])
+    setViewsLoaded(false)
+    setApplyingViewId("")
+    loadViews(true)
+  }, [selectedProjectIdForViews])
 
   const persistViews = (next: Array<{ id: string; name: string; filters: any }>) => {
     setViews(next)
@@ -1041,7 +1055,7 @@ function summarizeFilters(f: Filters) {
   return out
 }
 
-function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef, onLimitedSitesChange, onRowLevelChange, currentPage, itemsPerPage }: { sites: Site[]; loading: boolean; sortBy: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'; setSortBy: (v: 'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh') => void; onRowHeightButtonRef?: (el: HTMLButtonElement | null) => void; onLimitedSitesChange?: (limitedSites: Site[]) => void; onRowLevelChange?: (rowLevel: 1 | 2 | 3 | 4) => void; currentPage: number; itemsPerPage: number }) {
+function ResultsTable({ sites, loading, onRowHeightButtonRef, onLimitedSitesChange, onRowLevelChange, currentPage, itemsPerPage }: { sites: Site[]; loading: boolean; onRowHeightButtonRef?: (el: HTMLButtonElement | null) => void; onLimitedSitesChange?: (limitedSites: Site[]) => void; onRowLevelChange?: (rowLevel: 1 | 2 | 3 | 4) => void; currentPage: number; itemsPerPage: number }) {
   const { addItem, removeItem, isItemInCart } = useCart()
   const [rowLevel, setRowLevel] = useState<1 | 2 | 3 | 4>(4)
   // Track the currently hovered site for the trend preview panel
@@ -1727,20 +1741,6 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Sort by</span>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="h-8 w-full sm:w-44 text-xs min-h-[44px] sm:min-h-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Relevance</SelectItem>
-                  <SelectItem value="nameAsc">Name: A → Z</SelectItem>
-                  <SelectItem value="priceLow">Price: Low → High</SelectItem>
-                  <SelectItem value="authorityHigh">Authority: High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </header>
         
@@ -1963,11 +1963,7 @@ function ResultsTable({ sites, loading, sortBy, setSortBy, onRowHeightButtonRef,
                   <DialogTitle className="flex items-start justify-between gap-3 sm:gap-4">
                     {selectedSite ? (
                       <div className="min-w-0">
-                        <div className="text-base sm:text-lg md:text-xl font-semibold tracking-tight truncate">
-                          <span className="align-middle">
-                            <MaskedWebsite site={selectedSite} maxStars={14} />
-                          </span>
-                        </div>
+                        <div className="text-base sm:text-lg md:text-xl font-semibold tracking-tight truncate">Site Details</div>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400">
                           {selectedSite.category && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-gray-300/60 dark:border-white/10 bg-white/60 dark:bg-gray-900/50 backdrop-blur-sm">
@@ -2261,6 +2257,10 @@ function WishlistInlineButton({ site }: { site: Site }) {
 }
 
 export default function PublishersClient() {
+  // Debug logger for project toggles and data fetching
+  const DEBUG_PUBLISHERS = true
+  const log = (...args: any[]) => { if (DEBUG_PUBLISHERS) console.log('🧭 PUBLISHERS:', ...args) }
+  useEffect(() => { try { (window as any).__DEBUG_PUBLISHERS = DEBUG_PUBLISHERS } catch {} }, [])
   const router = useRouter()
   const { shouldAutoSendQuery, autoSendQuery, clearAutoSend } = useSearchToChatStore()
   const { sendMessage } = useAIChatUtils()
@@ -2300,6 +2300,9 @@ export default function PublishersClient() {
   const { getTotalItems } = useCart()
   const hasCheckoutFab = getTotalItems() > 0
   const { selectedProjectId } = useProjectStore()
+  useEffect(() => {
+    log('Project toggled:', { selectedProjectId })
+  }, [selectedProjectId])
 
   // Handle auto-send query when sidebar opens - optimized to prevent function dependencies
   useEffect(() => {
@@ -2446,7 +2449,6 @@ export default function PublishersClient() {
   // Listen for apply filters event from modal - moved after fetchData definition
 
   // URL sync removed - store handles all state management
-  const [sortBy, setSortBy] = useState<'relevance' | 'nameAsc' | 'priceLow' | 'authorityHigh'>('relevance')
   
   // Row height configuration
   const maxRowsByLevel: Record<1 | 2 | 3 | 4, number> = { 1: 30, 2: 20, 3: 12, 4: 8 }
@@ -2497,6 +2499,7 @@ export default function PublishersClient() {
   }, [openDetailsForWebsite])
 
   const fetchData = useCallback(async (apiFilters: APIFilters = {}, skipLoading = false) => {
+    log('fetchData:start', { apiFilters, skipLoading })
     // Allow Apply-triggered fetches even if loading
     if (loading && !skipLoading && !manualApplyRef.current) return
     
@@ -2514,16 +2517,22 @@ export default function PublishersClient() {
     setError(null)
     try {
       const result = await fetchSitesWithFilters(apiFilters)
+      log('fetchData:success', { total: result.total, sites: result?.sites?.length })
       const transformed = result.sites.map(transformAPISiteToSite)
       setSites(transformed)
       setTotalItems(result.total)
       setTotalPages(Math.ceil(result.total / itemsPerPage))
+      if ((result.total || 0) === 0) {
+        log('fetchData:empty', { hint: 'No results returned for filters', apiFilters })
+      }
     } catch (e: any) {
+      log('fetchData:error', { message: e?.message })
       setError(e?.message || 'Failed to load')
       setSites([])
       setTotalItems(0)
       setTotalPages(0)
     } finally {
+      log('fetchData:finally', { isInitial: (sites.length === 0) && !manualApplyRef.current })
       // Reset manual apply flag after any fetch completes
       manualApplyRef.current = false
       if (!skipLoading) {
@@ -2577,7 +2586,7 @@ export default function PublishersClient() {
     // Small delay to ensure state has updated from the previous useEffect
     const timer = setTimeout(() => {
       const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
-      console.log('🔄 Project changed - fetching with updated filters:', { 
+      log('project-change:fetch', { 
         projectId: selectedProjectId, 
         filters, 
         searchQuery,
@@ -2602,7 +2611,7 @@ export default function PublishersClient() {
     // Only fetch on initial load when there are no sites
     if (sites.length === 0) {
       const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000) // Fetch up to 1000 items
-      console.log('Initial load filters:', { filters, apiFilters, priceMin: filters.priceMin, priceMax: filters.priceMax });
+      log('initial-load', { filters, apiFilters, priceMin: filters.priceMin, priceMax: filters.priceMax })
       fetchData(apiFilters)
     }
   }, []) // Only run once on mount
@@ -2614,13 +2623,13 @@ export default function PublishersClient() {
     // Only fetch automatically for AI-origin changes
     if (aiFilterChangeRef.current) {
       const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
-      console.log('📡 PUBLISHERS: Auto-fetching due to AI filter changes:', { filters, apiFilters, fromAI: aiFilterChangeRef.current })
+      log('ai-change:auto-fetch', { filters, apiFilters, fromAI: aiFilterChangeRef.current })
       // AI changes: immediate fetch
       console.log('⚡ PUBLISHERS: AI change detected - immediate fetch')
       fetchData(apiFilters)
       aiFilterChangeRef.current = false // Reset flag
     } else {
-      console.log('ℹ️ PUBLISHERS: Non-AI filter change detected - waiting for Apply')
+      log('non-ai-change:waiting-apply')
     }
   }, [filters, searchQuery, fetchData]) // Watch for filter changes
 
@@ -2784,23 +2793,7 @@ export default function PublishersClient() {
     return sites
   }, [sites])
 
-  const displayedSites = useMemo(() => {
-    const arr = [...results]
-    switch (sortBy) {
-      case 'nameAsc':
-        arr.sort((a, b) => a.name.localeCompare(b.name))
-        break
-      case 'priceLow':
-        arr.sort((a, b) => (a.publishing.price || 0) - (b.publishing.price || 0))
-        break
-      case 'authorityHigh':
-        arr.sort((a, b) => (b.da + b.pa + b.dr) - (a.da + a.pa + a.dr))
-        break
-      default:
-        break
-    }
-    return arr
-  }, [results, sortBy])
+  const displayedSites = useMemo(() => results, [results])
 
   // Memoize FiltersUI to prevent unnecessary re-renders
   const memoizedFiltersUI = React.useMemo(() => (
@@ -2829,15 +2822,13 @@ export default function PublishersClient() {
     <ResultsTable 
       sites={displayedSites} 
       loading={tableLoading} 
-      sortBy={sortBy} 
-      setSortBy={(v) => setSortBy(v)} 
       onRowHeightButtonRef={(el) => { rowHeightButtonElRef.current = el }} 
       onLimitedSitesChange={setLimitedSites} 
       onRowLevelChange={setRowLevel} 
       currentPage={currentPage} 
       itemsPerPage={maxRowsByLevel[rowLevel]} 
     />
-  ), [displayedSites, tableLoading, sortBy, currentPage, maxRowsByLevel, rowLevel])
+  ), [displayedSites, tableLoading, currentPage, maxRowsByLevel, rowLevel])
 
   // Save interest only if, after a short delay, results remain zero for a meaningful query - optimized
   useEffect(() => {
