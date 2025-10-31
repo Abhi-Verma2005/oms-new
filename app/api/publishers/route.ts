@@ -19,6 +19,10 @@ export async function GET(request: Request) {
   const country = searchParams.get('country')
   const priceMin = searchParams.get('priceMin')
   const priceMax = searchParams.get('priceMax')
+  const semrushOverallTrafficMin = searchParams.get('semrushOverallTrafficMin')
+  const semrushOverallTrafficMax = searchParams.get('semrushOverallTrafficMax')
+  const semrushOrganicTrafficMin = searchParams.get('semrushOrganicTrafficMin')
+  const semrushOrganicTrafficMax = searchParams.get('semrushOrganicTrafficMax')
   const daMin = searchParams.get('daMin')
   const daMax = searchParams.get('daMax')
   const drMin = searchParams.get('drMin')
@@ -42,6 +46,14 @@ export async function GET(request: Request) {
     ...(drMax ? { max: Number(drMax) } : {}),
   }
   if (spamMax) filters.spamScore = { max: Number(spamMax) }
+  if (semrushOverallTrafficMin || semrushOverallTrafficMax) filters.semrushTraffic = {
+    ...(semrushOverallTrafficMin ? { min: Number(semrushOverallTrafficMin) } : {}),
+    ...(semrushOverallTrafficMax ? { max: Number(semrushOverallTrafficMax) } : {}),
+  }
+  if (semrushOrganicTrafficMin || semrushOrganicTrafficMax) filters.semrushOrganicTraffic = {
+    ...(semrushOrganicTrafficMin ? { min: Number(semrushOrganicTrafficMin) } : {}),
+    ...(semrushOrganicTrafficMax ? { max: Number(semrushOrganicTrafficMax) } : {}),
+  }
   if (availability === 'true') filters.availability = true
 
   const result = await fetchSitesWithFilters(filters)
@@ -89,7 +101,9 @@ export async function POST(request: Request) {
       if (stateFilters.priceMin !== undefined) apiFilters.sellingPrice = { ...(apiFilters.sellingPrice || {}), min: stateFilters.priceMin }
       if (stateFilters.priceMax !== undefined) apiFilters.sellingPrice = { ...(apiFilters.sellingPrice || {}), max: stateFilters.priceMax }
       if (stateFilters.semrushOverallTrafficMin !== undefined) apiFilters.semrushTraffic = { ...(apiFilters.semrushTraffic || {}), min: stateFilters.semrushOverallTrafficMin }
+      if (stateFilters.semrushOverallTrafficMax !== undefined) apiFilters.semrushTraffic = { ...(apiFilters.semrushTraffic || {}), max: stateFilters.semrushOverallTrafficMax }
       if (stateFilters.semrushOrganicTrafficMin !== undefined) apiFilters.semrushOrganicTraffic = { ...(apiFilters.semrushOrganicTraffic || {}), min: stateFilters.semrushOrganicTrafficMin }
+      if (stateFilters.semrushOrganicTrafficMax !== undefined) apiFilters.semrushOrganicTraffic = { ...(apiFilters.semrushOrganicTraffic || {}), max: stateFilters.semrushOrganicTrafficMax }
       if (stateFilters.niche) apiFilters.niche = stateFilters.niche
       if (stateFilters.language) apiFilters.language = stateFilters.language
       if (stateFilters.country) apiFilters.webCountry = stateFilters.country
