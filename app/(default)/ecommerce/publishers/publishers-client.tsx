@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import {
   AlertTriangle,
@@ -30,7 +31,8 @@ import {
   Layers,
   CheckCircle,
   RefreshCw,
-  Bot
+  Bot,
+  ChevronDown
 } from "lucide-react"
 import { fetchSitesWithFilters, transformAPISiteToSite, type APIFilters, type Site, fetchCategoryRecommendations, type CategoryRecommendation } from "@/lib/sample-sites"
 import PaginationPublishers from "@/components/pagination-publishers"
@@ -63,6 +65,8 @@ type Filters = {
   language?: string
   country?: string
   tool?: string
+  // Hidden until set via suggestion click
+  website?: string
   daMin?: number
   daMax?: number
   paMin?: number
@@ -98,6 +102,7 @@ const defaultFilters: Filters = {
   language: "",
   country: "",
   tool: undefined,
+  website: undefined,
   daMin: undefined,
   daMax: undefined,
   paMin: undefined,
@@ -148,6 +153,7 @@ function convertFiltersToAPI(f: Filters, searchQuery: string, page: number = 1, 
   if (f.niche) api.niche = f.niche
   if (f.language) api.language = f.language
   if (f.country) api.webCountry = f.country
+  if (f.website) api.website = f.website
   if (f.backlinkNature) api.linkAttribute = f.backlinkNature
   if (typeof f.availability === 'boolean') api.availability = f.availability
   if (f.remarkIncludes) api.websiteRemark = f.remarkIncludes
@@ -438,6 +444,7 @@ function FiltersUI({
   }
 
   const pebbleIconMap: Partial<Record<keyof Filters, React.ReactNode>> = {
+    website: <Link2 className="w-3.5 h-3.5 text-violet-600" />,
     niche: <Tag className="w-3.5 h-3.5 text-violet-600" />,
     language: <Languages className="w-3.5 h-3.5 text-violet-600" />,
     country: <Globe className="w-3.5 h-3.5 text-violet-600" />,
@@ -467,6 +474,7 @@ function FiltersUI({
   }
 
   const tooltipByKey: Partial<Record<keyof Filters, string>> = {
+    website: 'Filter by specific website/domain (e.g., example.com)',
     niche: 'Filter by website topic (e.g., Technology, Health, Finance) ',
     language: 'Filter by primary language of the website',
     country: 'Filter by website country for geo‑targeted content',
@@ -485,8 +493,8 @@ function FiltersUI({
     permanence: 'How long the link remains (lifetime or 12 months)',
   }
 
-  const pebble = (label: string, key: keyof Filters) => {
-    const hasValue = filters[key] !== undefined && filters[key] !== "" && filters[key] !== null
+  const Pebble: React.FC<{ label: string; k: keyof Filters }> = ({ label, k }) => {
+    const hasValue = filters[k] !== undefined && filters[k] !== "" && filters[k] !== null
     const [isHovered, setIsHovered] = useState(false)
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
     const buttonRef = useRef<HTMLButtonElement>(null)
@@ -523,7 +531,7 @@ function FiltersUI({
           <button
             ref={buttonRef}
             type="button"
-            onClick={() => open(key)}
+            onClick={() => open(k)}
             disabled={loading}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -532,17 +540,17 @@ function FiltersUI({
                 ? "bg-violet-600 text-white border-violet-600 shadow-md" 
                 : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:bg-gray-300 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
             } ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-            id={`filter-pebble-${String(key)}`}
-            data-filter-key={String(key)}
+            id={`filter-pebble-${String(k)}`}
+            data-filter-key={String(k)}
           >
-            {pebbleIconMap[key]}
+            {pebbleIconMap[k]}
             <span>{label}</span>
             {hasValue ? <span className="ml-0.5 opacity-70">•</span> : null}
           </button>
         </div>
         
         {/* Portal-based Tooltip */}
-        {tooltipByKey[key] && isHovered && typeof document !== 'undefined' && createPortal(
+        {tooltipByKey[k] && isHovered && typeof document !== 'undefined' && createPortal(
           <div 
             className="pointer-events-none fixed whitespace-nowrap px-3 py-1.5 text-xs rounded-md bg-gray-900 text-white shadow-lg z-[9999] transition-opacity"
             style={{
@@ -552,7 +560,7 @@ function FiltersUI({
             }}
           >
             <div className="font-medium mb-0.5">{label}</div>
-            <div className="text-gray-300">{tooltipByKey[key]}</div>
+            <div className="text-gray-300">{tooltipByKey[k]}</div>
             <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
           </div>,
           document.body
@@ -620,6 +628,16 @@ function FiltersUI({
   const renderModalBody = () => {
     if (!activeKey) return null
     switch (activeKey) {
+      case 'website':
+        return (
+          <div className="p-4 space-y-2">
+            <Input
+              placeholder="example.com"
+              value={draftFilters.website || ''}
+              onChange={(e) => setDraftFilters({ ...draftFilters, website: e.target.value })}
+            />
+          </div>
+        )
       case 'country':
         return (
           <div className="p-4 space-y-2">
@@ -885,6 +903,7 @@ function FiltersUI({
     const add = (key: keyof Filters, label?: string, value?: unknown) => {
       if (value !== undefined && value !== '' && value !== null) chips.push({ key, label: label || String(value) })
     }
+    add('website', `Website: ${filters.website}`, filters.website)
     add('niche', `Niche: ${filters.niche}`, filters.niche)
     add('language', `Lang: ${filters.language}`, filters.language)
     add('country', `Country: ${filters.country}`, filters.country)
@@ -925,51 +944,41 @@ function FiltersUI({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-3.5 gap-2 sm:gap-3 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Apply saved view */}
-          <Select 
-            value={applyingViewId || undefined} 
-            onValueChange={(v) => { if (v === '__none__') { setApplyingViewId(""); return } applyViewById(v) }}
+          <DropdownMenu
             onOpenChange={(open) => {
               if (open && !viewsLoaded) {
                 loadViews()
               }
             }}
           >
-            <SelectTrigger className="h-8 w-full sm:w-48 text-xs">
-              <SelectValue placeholder={
-                loadingViews ? 'Loading views...' : 
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-8 w-full sm:w-48 text-xs">
+                {loadingViews ? 'Loading views...' : 
                 views.length ? 'Apply saved view' : 
-                viewsLoaded ? 'No saved views' : 'Apply saved view'
-              } />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Saved Views</SelectLabel>
-                <SelectItem value="__none__">None</SelectItem>
-                {loadingViews ? (
-                  <SelectItem value="__loading__" disabled>Loading...</SelectItem>
-                ) : (
-                  views.map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                  ))
-                )}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+                viewsLoaded ? 'No saved views' : 'Apply saved view'}
+                <ChevronDown className="ml-2 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48">
+              <DropdownMenuLabel>Saved Views</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {loadingViews ? (
+                <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
+              ) : (
+                views.map(v => (
+                  <DropdownMenuItem key={v.id} onClick={() => applyViewById(v.id)}>
+                    {v.name}
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {/* Save as view */}
           <Input className="h-8 text-xs w-full sm:w-48" placeholder="Save as view..." value={viewName} onChange={(e) => setViewName(e.target.value)} disabled={loading} />
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             <Button className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" onClick={saveCurrentView} disabled={loading || !viewName.trim()}>
               <CheckCircle className="w-3 h-3" />
               Save
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-8 inline-flex items-center gap-1.5 text-xs px-2 sm:px-3 flex-1 sm:flex-none" 
-              onClick={onRefresh} 
-              disabled={loading}
-            >
-              <RefreshCw className="w-3 h-3" />
-              Apply Filters
             </Button>
             <Button 
               className="h-8 text-xs px-2 sm:px-3 flex-1 sm:flex-none bg-[#755FF8] text-white hover:bg-[#755FF8]/80" 
@@ -993,6 +1002,18 @@ function FiltersUI({
 
       {/* Grouped filter pebbles - takes remaining space */}
       <div className="space-y-2 sm:space-y-3 flex-1 overflow-hidden">
+          {/* Conditionally show Website filter pebble only when set */}
+          {filters.website ? (
+            <div className="space-y-1.5 sm:space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                <Link2 className="w-4 h-4" />
+                <span className="font-medium">Website</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 overflow-hidden">
+                <span><Pebble label="Website" k="website" /></span>
+              </div>
+            </div>
+          ) : null}
           {Object.entries(groupedPebbles).map(([category, pebbles]) => (
             <div key={category} className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -1001,7 +1022,7 @@ function FiltersUI({
               </div>
               <div className="flex flex-wrap gap-1.5 sm:gap-2 overflow-hidden">
                 {pebbles.map(p => (
-                  <span key={p.key}>{pebble(p.label, p.key)}</span>
+                  <span key={p.key}><Pebble label={p.label} k={p.key} /></span>
                 ))}
               </div>
             </div>
@@ -1046,7 +1067,7 @@ function FiltersUI({
 }
 
 function summarizeFilters(f: Filters) {
-  const keys = ['niche','language','country','daMin','daMax','paMin','paMax','drMin','drMax','spamMin','spamMax','semrushOverallTrafficMin','semrushOverallTrafficMax','semrushOrganicTrafficMin','semrushOrganicTrafficMax','priceMin','priceMax','tatDaysMin','tatDaysMax','trend','availability','backlinkNature','linkPlacement','permanence','tool']
+  const keys = ['website','niche','language','country','daMin','daMax','paMin','paMax','drMin','drMax','spamMin','spamMax','semrushOverallTrafficMin','semrushOverallTrafficMax','semrushOrganicTrafficMin','semrushOrganicTrafficMax','priceMin','priceMax','tatDaysMin','tatDaysMax','trend','availability','backlinkNature','linkPlacement','permanence','tool']
   const out: Record<string, any> = {}
   for (const k of keys) {
     const v = (f as any)[k]
@@ -2514,10 +2535,17 @@ export default function PublishersClient() {
   }, [filters])
 
   const handlePickSuggestion = useCallback((val: string) => {
+    // Set search query for display, and apply hidden website filter
     setSearchQuery(val)
     setSuggestionsOpen(false)
-    openDetailsForWebsite(val)
-  }, [openDetailsForWebsite])
+    // Apply website filter and trigger the standard apply flow
+    const nextFilters = { ...filters, website: val }
+    setFilters(nextFilters)
+    // Trigger refetch via existing applyFilters listener
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('applyFilters'))
+    }, 0)
+  }, [filters, setFilters, setSearchQuery])
 
   const fetchData = useCallback(async (apiFilters: APIFilters = {}, skipLoading = false) => {
     log('fetchData:start', { apiFilters, skipLoading })
@@ -2663,6 +2691,15 @@ export default function PublishersClient() {
       setCurrentPage(pageFromUrl)
     }
   }, [relevantParams]) // Remove currentPage from dependencies to prevent circular updates
+
+  // Clamp current page when row height (items per page) changes to avoid empty table
+  useEffect(() => {
+    const clientSideItemsPerPage = maxRowsByLevel[rowLevel]
+    const clientSideTotalPages = Math.max(1, Math.ceil(totalItems / clientSideItemsPerPage))
+    if (currentPage > clientSideTotalPages) {
+      setCurrentPage(clientSideTotalPages)
+    }
+  }, [rowLevel, totalItems])
 
   // Project filter loading is now handled by the filter store
 

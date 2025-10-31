@@ -39,6 +39,8 @@ export interface Filters {
   availability?: boolean
   
   // Search & Metadata
+  // Hidden website/domain filter (shown only when set via suggestions)
+  website?: string
   sampleUrl?: string
   remarkIncludes?: string
   guidelinesUrlIncludes?: string
