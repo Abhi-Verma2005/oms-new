@@ -2521,8 +2521,7 @@ export default function PublishersClient() {
     const handleApplyFilters = () => {
       const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
       console.log('Applying filters from modal:', { filters, apiFilters })
-      // On project change: fetch without clearing current table state
-      fetchData(apiFilters, true)
+      fetchData(apiFilters)
     }
 
     const handleResetSearchQuery = () => {

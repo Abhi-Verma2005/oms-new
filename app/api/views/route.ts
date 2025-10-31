@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     if (!name) return new Response('Name required', { status: 400 })
 
     console.log('Views API: Creating/updating view for user:', session.user.id, 'name:', name, 'projectId:', projectId)
-
+    
     // Maintain existing uniqueness (userId + name) while attaching optional projectId
     const existing = await prisma.savedView.findUnique({
       where: { userId_name: { userId: session.user.id, name } }
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         })
       : await prisma.savedView.create({
           data: { userId: session.user.id, name, filters, projectId }
-        })
+    })
 
     console.log('Views API: Created/updated view:', savedView)
     return Response.json({ ok: true, id: savedView.id })
