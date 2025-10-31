@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useLayoutEffect } from 'react'
 import { useProjectStore, type UserProject } from '@/stores/project-store'
 import { cn } from '@/lib/utils'
 import {
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select'
 
 export function ProjectSelector({ className }: { className?: string }) {
-  const { selectedProjectId, selectedProject, setSelectedProject, clearProject } = useProjectStore()
+  const { selectedProjectId, selectedProject, setSelectedProject, setProjectsLoading } = useProjectStore()
   const [projects, setProjects] = useState<UserProject[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -20,6 +20,7 @@ export function ProjectSelector({ className }: { className?: string }) {
   const fetchProjects = useCallback(() => {
     let cancelled = false
     setLoading(true)
+    setProjectsLoading(true)
     fetch('/api/projects')
       .then(async (r) => {
         if (!r.ok) throw new Error('Failed to load projects')
@@ -37,6 +38,9 @@ export function ProjectSelector({ className }: { className?: string }) {
       .finally(() => {
         if (cancelled) return
         setLoading(false)
+        // Keep global projectsLoading true; the view should hide initial UI
+        // until the first publishers data load finishes. It will be cleared
+        // from within the publishers client after the initial fetch.
       })
     return () => {
       cancelled = true
@@ -50,6 +54,11 @@ export function ProjectSelector({ className }: { className?: string }) {
       cancel?.()
     }
   }, [fetchProjects])
+
+  // Ensure global loading is true before first paint to avoid initial UI flash
+  useLayoutEffect(() => {
+    setProjectsLoading(true)
+  }, [])
 
   // Listen for new project creation
   useEffect(() => {

@@ -11,6 +11,17 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const page = req.nextUrl.searchParams.get('page') || 'publishers'
   const { id: projectId } = await ctx.params
 
+  // Special handling for "individual" (no project) using SavedView as storage
+  if (projectId === 'individual') {
+    const name = `default_filters_${page}`
+    const view = await prisma.savedView.findUnique({
+      where: { userId_name: { userId, name } }
+    })
+    const res = NextResponse.json({ preference: view?.filters ?? null })
+    addSecurityHeaders(res)
+    return res
+  }
+
   const pref = await prisma.projectFilterPreference.findUnique({
     where: { userId_projectId_page: { userId, projectId, page } },
   })
@@ -29,6 +40,25 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const page: string = (req.nextUrl.searchParams.get('page') as string) || body.page || 'publishers'
   const data = body?.data ?? body?.filters ?? {}
   const { id: projectId } = await ctx.params
+
+  // Special handling for "individual" (no project) using SavedView as storage
+  if (projectId === 'individual') {
+    const name = `default_filters_${page}`
+    const existing = await prisma.savedView.findUnique({
+      where: { userId_name: { userId, name } }
+    })
+    const saved = existing
+      ? await prisma.savedView.update({
+          where: { userId_name: { userId, name } },
+          data: { filters: data }
+        })
+      : await prisma.savedView.create({
+          data: { userId, name, filters: data, projectId: null }
+        })
+    const res = NextResponse.json({ preference: saved.filters })
+    addSecurityHeaders(res)
+    return res
+  }
 
   const saved = await prisma.projectFilterPreference.upsert({
     where: { userId_projectId_page: { userId, projectId, page } },
