@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Send, Bot, Minimize2, Trash2 } from 'lucide-react'
 import { useAIChatbot } from './ai-chatbot-provider'
 import { useUserContextForAI, useUserContextStore } from '@/stores/user-context-store'
+import { useFilterStore } from '@/stores/filter-store'
 
 interface Message {
   id: string
@@ -25,6 +26,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const router = useRouter()
   const { } = useAIChatbot()
   const { getUserContextForAI, refreshUserData, isLoading: userContextLoading } = useUserContextForAI()
+  const { getCurrentState } = useFilterStore()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -71,6 +73,7 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
     try {
       // Get user context for AI
       const userContextForAI = getUserContextForAI()
+      const { currentRowsVisible } = getCurrentState()
       
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
@@ -80,12 +83,12 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
         body: JSON.stringify({
           message: userMessage.content,
           messages: messages,
-          // Include preloaded config so the API doesn't need to fetch again
-          config: config ?? undefined,
           // Include current URL for context-aware filtering
           currentUrl: window.location.href,
           // Include user context for personalized responses
-          userContext: userContextForAI
+          userContext: userContextForAI,
+          // Include current rows visible count
+          currentRowsVisible
         })
       })
 

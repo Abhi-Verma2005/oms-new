@@ -21,13 +21,25 @@ export async function GET(req: NextRequest) {
       where.projectId = projectId
     }
 
+    // Include default views in the list - they should be visible in the dropdown
     const views = await prisma.savedView.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        // Put "Default" view first if it exists
+        { name: 'asc' },
+        { createdAt: 'desc' }
+      ]
     })
     
-    console.log('Views API: Returning views:', views)
-    return Response.json({ views })
+    // Sort manually to put "Default" at the top
+    const sortedViews = views.sort((a, b) => {
+      if (a.name === 'Default' && b.name !== 'Default') return -1
+      if (a.name !== 'Default' && b.name === 'Default') return 1
+      return 0
+    })
+    
+    console.log('Views API: Returning views:', sortedViews)
+    return Response.json({ views: sortedViews })
   } catch (error) {
     console.log('Views API: Error fetching views:', error)
     return Response.json({ views: [] })
@@ -51,17 +63,22 @@ export async function POST(req: NextRequest) {
 
     console.log('Views API: Creating/updating view for user:', session.user.id, 'name:', name, 'projectId:', projectId)
     
-    // Maintain existing uniqueness (userId + name) while attaching optional projectId
-    const existing = await prisma.savedView.findUnique({
-      where: { userId_name: { userId: session.user.id, name } }
+    // Find existing view by userId, name, and projectId (using the new unique constraint)
+    const existing = await prisma.savedView.findFirst({
+      where: {
+        userId: session.user.id,
+        name,
+        projectId: projectId === 'individual' ? null : projectId
+      }
     })
+    
     const savedView = existing
       ? await prisma.savedView.update({
-          where: { userId_name: { userId: session.user.id, name } },
-          data: { filters, projectId, updatedAt: new Date() }
+          where: { id: existing.id },
+          data: { filters, updatedAt: new Date() }
         })
       : await prisma.savedView.create({
-          data: { userId: session.user.id, name, filters, projectId }
+          data: { userId: session.user.id, name, filters, projectId: projectId === 'individual' ? null : projectId }
     })
 
     console.log('Views API: Created/updated view:', savedView)

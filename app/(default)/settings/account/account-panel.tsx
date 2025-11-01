@@ -21,6 +21,7 @@ export default function AccountPanel() {
 
   const [oldPassword, setOldPassword] = useState<string>('')
   const [newPassword, setNewPassword] = useState<string>('')
+  const [confirmPassword, setConfirmPassword] = useState<string>('')
   const [pwSaving, setPwSaving] = useState<boolean>(false)
   const [pwMsg, setPwMsg] = useState<string | null>(null)
 
@@ -64,12 +65,16 @@ export default function AccountPanel() {
 
   const handlePasswordChange = async () => {
     setPwMsg(null)
-    if (!oldPassword || !newPassword) {
-      setPwMsg('Please fill both fields')
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPwMsg('Please fill all fields')
       return
     }
     if (newPassword.length < 8) {
       setPwMsg('New password must be at least 8 characters')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPwMsg('New passwords do not match')
       return
     }
     setPwSaving(true)
@@ -84,6 +89,7 @@ export default function AccountPanel() {
       setPwMsg('Password updated')
       setOldPassword('')
       setNewPassword('')
+      setConfirmPassword('')
     } catch (e: any) {
       setPwMsg(e.message || 'Failed to update password')
     } finally {
@@ -162,6 +168,10 @@ export default function AccountPanel() {
                 <div>
                   <label className="block text-sm font-medium mb-1" htmlFor="new-pw">New Password</label>
                   <input id="new-pw" className="form-input w-full" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1" htmlFor="confirm-pw">Confirm New Password</label>
+                  <input id="confirm-pw" className="form-input w-full" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                 </div>
               </div>
               {pwMsg && <div className={`text-sm mt-2 ${pwMsg.includes('updated') ? 'text-green-600' : 'text-red-500'}`}>{pwMsg}</div>}

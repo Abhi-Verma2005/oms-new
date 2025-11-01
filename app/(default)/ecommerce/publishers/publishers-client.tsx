@@ -179,32 +179,42 @@ function FiltersUI({
   setFilters, 
   loading, 
   onRefresh,
-  onApplyDraft
+  onApplyDraft,
+  onViewAppliedChange,
+  initialAppliedViewId,
+  onApplyView,
+  searchQuery,
+  onRefreshViews
 }: { 
   filters: Filters
   setFilters: React.Dispatch<React.SetStateAction<Filters>>
   loading: boolean
   onRefresh: () => void
   onApplyDraft: (draft: Filters) => void
+  onViewAppliedChange?: (viewId: string | null) => void
+  initialAppliedViewId?: string | null
+  onApplyView?: (viewFilters: Filters, searchQuery: string) => void
+  searchQuery?: string
+  onRefreshViews?: React.MutableRefObject<(() => void) | null>
 }) {
   const { log } = useActivityLogger()
   const [lastLogged, setLastLogged] = useState<any>(null)
   const skipNextFiltersEffect = useRef(false);
-  // debounce logging of filter changes
-  useEffect(() => {
-    if (skipNextFiltersEffect.current) {
-      skipNextFiltersEffect.current = false;
-      return;
-    }
-    if (applyingViewId) setApplyingViewId("");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  // Note: We no longer clear applyingViewId when filters change - views persist their applied state
   // Saved views (loaded on demand)
   const [views, setViews] = useState<Array<{ id: string; name: string; filters: any }>>([])
   const [viewName, setViewName] = useState("")
-  const [applyingViewId, setApplyingViewId] = useState("")
+  const [applyingViewId, setApplyingViewId] = useState(initialAppliedViewId || "")
   const [loadingViews, setLoadingViews] = useState(false)
   const [viewsLoaded, setViewsLoaded] = useState(false)
+  
+  // Sync with parent's applied view ID when it changes (e.g., default view loaded)
+  useEffect(() => {
+    if (initialAppliedViewId && initialAppliedViewId !== applyingViewId) {
+      setApplyingViewId(initialAppliedViewId)
+      if (onViewAppliedChange) onViewAppliedChange(initialAppliedViewId)
+    }
+  }, [initialAppliedViewId])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [activeKey, setActiveKey] = useState<keyof Filters | null>(null)
@@ -218,14 +228,7 @@ function FiltersUI({
   const [loadingCats, setLoadingCats] = useState(false)
   const [catError, setCatError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // If a view is selected and filters are updated, clear the view
-    if (applyingViewId) {
-      setApplyingViewId("");
-    }
-    // Deliberately omit setApplyingViewId from deps: it's stable from useState.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  // Removed: no longer clear applyingViewId when filters change - views should persist
 
   useEffect(() => {
     if (!nicheSearch || nicheSearch.trim().length < 2) {
@@ -257,30 +260,62 @@ function FiltersUI({
     if ((viewsLoaded && !forceRefresh) || loadingViews) return
     setLoadingViews(true)
     try {
-      console.log('Loading views from API...', forceRefresh ? '(forced refresh)' : '')
       const res = await fetch(`/api/views?projectId=${encodeURIComponent(selectedProjectIdForViews || 'individual')}` as any, { cache: 'no-store' })
-      console.log('Views API response status:', res.status)
       if (res.ok) {
         const data = await res.json()
-        console.log('Views API response data:', data)
-        setViews(data.views || [])
+        const loadedViews = data.views || []
+        setViews(loadedViews)
         setViewsLoaded(true)
-      } else {
-        console.log('Views API error:', res.status, res.statusText)
+        
+        // If a default view is applied but not in the loaded views, check if we need to add it
+        // (This handles the case where default view was just created)
+        if (initialAppliedViewId && !loadedViews.find((v: any) => v.id === initialAppliedViewId)) {
+          // Default view might not be in the list yet, try to fetch it
+          try {
+            const defaultRes = await fetch(`/api/projects/${encodeURIComponent(selectedProjectIdForViews || 'individual')}/filters?page=publishers`, { cache: 'no-store' })
+            if (defaultRes.ok) {
+              const { defaultViewId } = await defaultRes.json()
+              if (defaultViewId === initialAppliedViewId) {
+                // Reload views to get the default view
+                const reloadRes = await fetch(`/api/views?projectId=${encodeURIComponent(selectedProjectIdForViews || 'individual')}` as any, { cache: 'no-store' })
+                if (reloadRes.ok) {
+                  const reloadData = await reloadRes.json()
+                  setViews(reloadData.views || [])
+                }
+              }
+            }
+          } catch {}
+        }
       }
     } catch (error) {
-      console.log('Views API fetch error:', error)
+      // Silently handle errors
     }
     finally {
       setLoadingViews(false)
     }
   }
 
+  // Expose loadViews to parent via ref
+  useEffect(() => {
+    if (onRefreshViews) {
+      onRefreshViews.current = () => loadViews(true)
+    }
+    return () => {
+      if (onRefreshViews) {
+        onRefreshViews.current = null
+      }
+    }
+  }, [onRefreshViews])
+
   // Refresh views when the selected project changes to prevent showing another project's views
   useEffect(() => {
     setViews([])
     setViewsLoaded(false)
-    setApplyingViewId("")
+    // Don't clear applyingViewId if initialAppliedViewId is set (default view should persist)
+    if (!initialAppliedViewId) {
+      setApplyingViewId("")
+      if (onViewAppliedChange) onViewAppliedChange(null)
+    }
     loadViews(true)
   }, [selectedProjectIdForViews])
 
@@ -293,25 +328,127 @@ function FiltersUI({
     const name = viewName.trim()
     if (!name) return
     try {
-      const res = await fetch('/api/views', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, filters, projectId: selectedProjectIdForViews || 'individual' }) })
+      // Save with the correct structure: { filters: {...}, q: "searchQuery" }
+      const payload = { filters, q: searchQuery || "" }
+      const res = await fetch('/api/views', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ name, filters: payload, projectId: selectedProjectIdForViews || 'individual' }) 
+      })
       if (!res.ok) return
       
       // Force refresh views after saving
       await loadViews(true)
       setViewName("")
-    } catch {}
+    } catch (error) {
+      // Silently handle errors
+    }
   }
 
-  const applyViewById = (id: string) => {
-    const v = views.find(v => v.id === id)
-    if (!v) return
+  const applyViewById = async (id: string) => {
+    // Refresh views first to get latest data before applying
+    // Fetch fresh data directly to avoid stale state issues
+    let updatedViews: Array<{ id: string; name: string; filters: any }> = []
+    try {
+      const res = await fetch(`/api/views?projectId=${encodeURIComponent(selectedProjectIdForViews || 'individual')}`, { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        updatedViews = data.views || []
+        // Update local state for UI consistency
+        setViews(updatedViews)
+        setViewsLoaded(true)
+      }
+    } catch {}
+    
+    const v = updatedViews.find((v: any) => v.id === id)
+    if (!v) {
+      // If not found in fresh fetch, try current views as fallback
+      const fallbackView = views.find(v => v.id === id)
+      if (!fallbackView) return
+      // Use fallback view but still refresh in background
+      loadViews(true).catch(() => {})
+      // Continue with fallback view
+      const savedData = fallbackView.filters as any
+      let viewFilters = {}
+      let viewSearchQuery = ""
+      
+      if (savedData && typeof savedData === 'object') {
+        if ('filters' in savedData) {
+          viewFilters = savedData.filters || {}
+          viewSearchQuery = savedData.q || ""
+        } else if ('q' in savedData) {
+          const { q, ...rest } = savedData
+          viewFilters = rest
+          viewSearchQuery = q || ""
+        } else {
+          viewFilters = savedData
+          viewSearchQuery = ""
+        }
+      }
+      
+      setApplyingViewId(id)
+      if (onViewAppliedChange) onViewAppliedChange(id)
+      skipNextFiltersEffect.current = true
+      
+      const mergedFilters = { ...defaultFilters, ...viewFilters }
+      
+      if (onApplyView) {
+        onApplyView(mergedFilters, viewSearchQuery)
+      } else {
+        setFilters(mergedFilters)
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('applyFilters'))
+        }, 50)
+      }
+      return
+    }
+    
     setApplyingViewId(id)
+    if (onViewAppliedChange) onViewAppliedChange(id)
     skipNextFiltersEffect.current = true; // <- mark this update as "view apply"
-    setFilters({ ...defaultFilters, ...v.filters })
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('applyFilters'))
-      setApplyingViewId("")
-    }, 50)
+    
+    // Extract filters and searchQuery from saved view structure
+    // Saved views store: { filters: {...}, q: "searchQuery" }
+    const savedData = v.filters as any
+    let viewFilters = {}
+    let viewSearchQuery = ""
+    
+    // Handle different possible structures
+    if (savedData && typeof savedData === 'object') {
+      // If it has a 'filters' property, it's the nested structure
+      if ('filters' in savedData) {
+        viewFilters = savedData.filters || {}
+        viewSearchQuery = savedData.q || ""
+      } else if ('q' in savedData) {
+        // If it has 'q' but not 'filters', might be malformed, try to extract filters
+        const { q, ...rest } = savedData
+        viewFilters = rest
+        viewSearchQuery = q || ""
+      } else {
+        // Flat structure - assume it's just filters
+        viewFilters = savedData
+        viewSearchQuery = ""
+      }
+    }
+    
+    // Apply filters
+    const mergedFilters = { ...defaultFilters, ...viewFilters }
+    
+    // If onApplyView callback is provided, use it to apply both filters and searchQuery
+    if (onApplyView) {
+      onApplyView(mergedFilters, viewSearchQuery)
+    } else {
+      // Fallback: set filters and dispatch event
+      setFilters(mergedFilters)
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('applyFilters'))
+      }, 50)
+    }
+  }
+  
+  const clearAppliedView = () => {
+    setApplyingViewId("")
+    if (onViewAppliedChange) onViewAppliedChange(null)
   }
 
   const deleteViewById = async (id: string) => {
@@ -320,7 +457,10 @@ function FiltersUI({
       if (res.ok) {
         // Force refresh views after deletion
         await loadViews(true)
-        if (applyingViewId === id) setApplyingViewId("")
+        if (applyingViewId === id) {
+          setApplyingViewId("")
+          if (onViewAppliedChange) onViewAppliedChange(null)
+        }
       }
     } catch {}
   }
@@ -946,14 +1086,21 @@ function FiltersUI({
           {/* Apply saved view */}
           <DropdownMenu
             onOpenChange={(open) => {
-              if (open && !viewsLoaded) {
-                loadViews()
+              if (open) {
+                // Always refresh views when dropdown opens to get latest data
+                // This ensures updated views are shown after filter changes
+                if (initialAppliedViewId || applyingViewId) {
+                  loadViews(true)
+                } else if (!viewsLoaded) {
+                  loadViews()
+                }
               }
             }}
           >
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-8 w-full sm:w-48 text-xs">
                 {loadingViews ? 'Loading views...' : 
+                applyingViewId ? views.find(v => v.id === applyingViewId)?.name || 'View applied' :
                 views.length ? 'Apply saved view' : 
                 viewsLoaded ? 'No saved views' : 'Apply saved view'}
                 <ChevronDown className="ml-2 h-3 w-3" />
@@ -965,11 +1112,18 @@ function FiltersUI({
               {loadingViews ? (
                 <DropdownMenuItem disabled>Loading...</DropdownMenuItem>
               ) : (
-                views.map(v => (
-                  <DropdownMenuItem key={v.id} onClick={() => applyViewById(v.id)}>
-                    {v.name}
-                  </DropdownMenuItem>
-                ))
+                <>
+                  {views.map(v => (
+                    <DropdownMenuItem key={v.id} onClick={() => applyViewById(v.id)}>
+                      <div className="flex items-center justify-between w-full">
+                        <span>{v.name}</span>
+                        {applyingViewId === v.id && (
+                          <CheckCircle className="w-4 h-4 text-violet-600 ml-2" />
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1701,32 +1855,33 @@ function ResultsTable({ sites, loading, onRowHeightButtonRef, onLimitedSitesChan
             </Popover>
             </div>
             <div className="relative" ref={columnsRef}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 sm:h-7 text-xs inline-flex items-center gap-1.5 px-3 sm:px-2 min-h-[44px] sm:min-h-0"
-                onClick={() => setColumnsOpen(o => !o)}
-              >
-                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <rect x="3" y="4" width="5" height="16" rx="1" />
-                  <rect x="10" y="4" width="5" height="16" rx="1" />
-                  <rect x="17" y="4" width="4" height="16" rx="1" />
-                </svg>
-                {/* Mobile: Show count of hidden columns */}
-                <span className="sm:hidden">
-                  Cols {visibleColumns.length < allKeys.length && (
-                    <span className="ml-1 text-[10px] opacity-70">
-                      ({allKeys.length - visibleColumns.length} hidden)
+              <Popover open={columnsOpen} onOpenChange={setColumnsOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 sm:h-7 text-xs inline-flex items-center gap-1.5 px-3 sm:px-2 min-h-[44px] sm:min-h-0"
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <rect x="3" y="4" width="5" height="16" rx="1" />
+                      <rect x="10" y="4" width="5" height="16" rx="1" />
+                      <rect x="17" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                    {/* Mobile: Show count of hidden columns */}
+                    <span className="sm:hidden">
+                      Cols {visibleColumns.length < allKeys.length && (
+                        <span className="ml-1 text-[10px] opacity-70">
+                          ({allKeys.length - visibleColumns.length} hidden)
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-                <span className="hidden sm:inline">Columns</span>
-                <svg className={`w-3 h-3 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
-                </svg>
-              </Button>
-              {columnsOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10 rounded-lg shadow-lg z-50">
+                    <span className="hidden sm:inline">Columns</span>
+                    <svg className={`w-3 h-3 transition-transform ${columnsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor" aria-hidden>
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.24a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z" clipRule="evenodd" />
+                    </svg>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 bg-white dark:bg-gray-800 border-[0.5px] border-gray-200 dark:border-white/10 rounded-lg shadow-xl p-0">
                   <div className="px-2 py-1.5 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
                     <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={showAllColumns}>Show all</button>
                     <button className="text-[10px] text-gray-600 dark:text-gray-300 hover:underline transition-transform active:scale-95" onClick={resetColumns}>Reset</button>
@@ -1759,8 +1914,8 @@ function ResultsTable({ sites, loading, onRowHeightButtonRef, onLimitedSitesChan
                       Showing {visibleColumns.length} of {allKeys.length} columns
                     </div>
                   )}
-                </div>
-              )}
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </header>
@@ -2256,7 +2411,7 @@ function WishlistInlineButton({ site }: { site: Site }) {
           onClick={(e) => { e.stopPropagation(); removeFromWishlist(site.id) }}
           title="Remove from wishlist"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
           </svg>
         </Button>
@@ -2410,12 +2565,24 @@ export default function PublishersClient() {
   const [loading, setLoading] = useState(false)
   const [tableLoading, setTableLoading] = useState(false) // Separate loading state for table
   const [error, setError] = useState<string | null>(null)
+  
+  // Update row count in filter store when limitedSites changes
+  const { setCurrentRowsVisible } = useFilterStore()
+  useEffect(() => {
+    setCurrentRowsVisible(limitedSites.length)
+  }, [limitedSites.length, setCurrentRowsVisible])
+  
+  // Track which view is currently applied (so we can save filters to it)
+  const [appliedViewId, setAppliedViewId] = useState<string | null>(null)
+  // Ref to refresh views list in FiltersUI after updates
+  const refreshViewsRef = useRef<(() => void) | null>(null)
 
   // URL loading removed - store handles all state management
 
   // Track previous project ID to detect actual changes and trigger refetch
   const prevProjectIdRef = useRef<string | null>(null)
   const [projectChangeCount, setProjectChangeCount] = useState(0)
+  const isInitialLoadRef = useRef(true)
 
   // Per-project hydration: try DB first, then fall back to localStorage, else defaults
   useEffect(() => {
@@ -2425,6 +2592,9 @@ export default function PublishersClient() {
       // Not a real project change, just a re-render
       return
     }
+    
+    // Clear applied view when project changes
+    setAppliedViewId(null)
     
     // Update tracking ref
     prevProjectIdRef.current = selectedProjectId
@@ -2449,17 +2619,23 @@ export default function PublishersClient() {
     }
     
     const hydrate = async () => {
-      // 1) Try DB
+      // 1) Try DB - this will create default view if it doesn't exist
       try {
         const res = await fetch(`/api/projects/${encodeURIComponent(selectedProjectId)}/filters?page=publishers`, { cache: 'no-store' })
         if (res.ok) {
-          const { preference } = await res.json()
+          const { preference, defaultViewId } = await res.json()
           if (preference && typeof preference === 'object') {
             const saved = preference as { filters?: Partial<Filters>; q?: string }
             const nextFilters = { ...defaultFilters, ...(saved?.filters || {}) }
             setFilters(nextFilters)
             setSearchQuery(typeof saved?.q === 'string' ? saved.q : "")
             try { localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(saved)) } catch {}
+            
+            // Auto-apply default view if we have its ID
+            if (defaultViewId) {
+              setAppliedViewId(defaultViewId)
+            }
+            
             setProjectChangeCount(prev => prev + 1)
             return
           }
@@ -2600,7 +2776,6 @@ export default function PublishersClient() {
   useEffect(() => {
     const handleApplyFilters = () => {
       const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
-      console.log('Applying filters from modal:', { filters, apiFilters })
       fetchData(apiFilters)
     }
 
@@ -2704,23 +2879,60 @@ export default function PublishersClient() {
   // Project filter loading is now handled by the filter store
 
   // Persist last-used filters whenever filters/query change (server + local, debounced)
+  // Always save to a view (either applied view or default view)
   useEffect(() => {
-    if (!selectedProjectId) {
-      const payload = { filters, q: searchQuery }
-      try { localStorage.setItem('oms:last-filters:individual', JSON.stringify(payload)) } catch {}
+    // Skip auto-save on initial mount/hydration
+    if (isInitialLoadRef.current) {
+      // Mark as loaded after first project hydration completes
+      if (projectChangeCount > 0) {
+        isInitialLoadRef.current = false
+      }
       return
     }
+    
     const payload = { filters, q: searchQuery }
+    
+    // If a view is applied, save to that view
+    if (appliedViewId) {
+      const t = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/views/${appliedViewId}`, {
+            method: 'PATCH', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ filters: payload })
+          })
+          // Refresh views list after successful update
+          if (res.ok && refreshViewsRef.current) {
+            refreshViewsRef.current()
+          }
+        } catch {}
+      }, 500)
+      return () => clearTimeout(t)
+    }
+    
+    // Otherwise, save to default view (which is always created for projects)
+    // For individual, use localStorage
+    if (!selectedProjectId) {
+      try { 
+        localStorage.setItem('oms:last-filters:individual', JSON.stringify(payload))
+      } catch {}
+      return
+    }
+    
     // Local cache
-    try { localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(payload)) } catch {}
-    // Server save (debounced)
+    try { 
+      localStorage.setItem(`oms:last-filters:${selectedProjectId}`, JSON.stringify(payload))
+    } catch {}
+    
+    // Server save to default view (debounced)
+    // This will create/update the default view for the project
     const t = setTimeout(() => {
       fetch(`/api/projects/${encodeURIComponent(selectedProjectId)}/filters?page=publishers`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: payload })
       }).catch(() => {})
     }, 500)
     return () => clearTimeout(t)
-  }, [filters, searchQuery, selectedProjectId])
+  }, [filters, searchQuery, selectedProjectId, appliedViewId, projectChangeCount])
 
   // Store-only approach - no URL monitoring needed
 
@@ -2865,21 +3077,37 @@ export default function PublishersClient() {
       filters={filters} 
       setFilters={setFiltersForUI} 
       loading={loading}
+      searchQuery={searchQuery}
       onRefresh={() => {
         // Apply current filters
         manualApplyRef.current = true
         const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
-        console.log('Applying filters from button:', { filters, apiFilters })
         fetchData(apiFilters)
       }}
       onApplyDraft={(draft) => {
         manualApplyRef.current = true
         const apiFilters = convertFiltersToAPI(draft, searchQuery, 1, 1000)
-        console.log('Applying filters from modal (parent):', { draft, apiFilters })
         fetchData(apiFilters)
       }}
+      onApplyView={(viewFilters, viewSearchQuery) => {
+        // Apply view filters and search query
+        manualApplyRef.current = true
+        
+        // Update state first
+        setFiltersForUI(viewFilters)
+        setSearchQuery(viewSearchQuery)
+        
+        // Call fetchData directly with the provided filters (don't wait for state update)
+        const apiFilters = convertFiltersToAPI(viewFilters, viewSearchQuery, 1, 1000)
+        fetchData(apiFilters)
+      }}
+      onViewAppliedChange={(viewId) => {
+        setAppliedViewId(viewId)
+      }}
+      initialAppliedViewId={appliedViewId}
+      onRefreshViews={refreshViewsRef}
     />
-  ), [filters, setFiltersForUI, loading, searchQuery, fetchData])
+  ), [filters, setFiltersForUI, loading, searchQuery, fetchData, appliedViewId, setSearchQuery])
 
   // Memoize ResultsTable to prevent unnecessary re-renders
   const memoizedResultsTable = React.useMemo(() => (

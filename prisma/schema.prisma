@@ -232,7 +232,7 @@ model SavedView {
   project   Project? @relation(fields: [projectId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, name])
+  @@unique([userId, name, projectId])
   @@map("saved_views")
 }
 

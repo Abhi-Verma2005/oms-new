@@ -8,7 +8,7 @@ export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, userId, documentUpload, currentFilters: requestCurrentFilters, selectedDocuments } = await req.json()
+    const { messages, userId, documentUpload, currentFilters: requestCurrentFilters, selectedDocuments, currentRowsVisible } = await req.json()
     
     if (!userId || !messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
@@ -20,10 +20,15 @@ export async function POST(req: NextRequest) {
     const userMessage = messages[messages.length - 1]?.content || ''
     console.log(`🚀 Two-Stage LLM Processing for user ${userId}`)
     console.log(`📊 Current filters from frontend:`, currentFilters)
+    console.log(`📊 Current rows visible:`, currentRowsVisible)
     
     const currentFiltersContext = Object.keys(currentFilters).length > 0 
       ? `Current filters: ${JSON.stringify(currentFilters, null, 2)}`
       : 'No filters currently applied'
+    
+    const rowsVisibleContext = typeof currentRowsVisible === 'number' && currentRowsVisible > 0
+      ? `\n\n**CURRENT TABLE STATE:**\nCurrently showing ${currentRowsVisible} row${currentRowsVisible !== 1 ? 's' : ''} in the table.`
+      : ''
 
     // FIXED: Smart document context retrieval
     let documentContext = ''
@@ -77,6 +82,7 @@ export async function POST(req: NextRequest) {
 
 **CURRENT FILTERS:**
 ${currentFiltersContext}
+${rowsVisibleContext}
 
 ${documentContext}
 
@@ -203,22 +209,43 @@ ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 - **Last Published**: Filter by last publication date
   * Filter: lastPublishedAfter
 
+**Website Filter (EXCLUSIVE):**
+- **Website**: Filter by specific website name/domain (EXCLUSIVE FILTER)
+  * Filter: website
+  * **CRITICAL**: When a website filter is applied, ALL other filters are automatically cleared/replaced
+  * This filter is exclusive - only the website filter will be active, no other filters can coexist with it
+  * Use when user asks for a specific website, e.g., "show me example.com", "find techcrunch.com", "filter for wikipedia.org"
+  * The website value should be the domain name (with or without protocol, e.g., "techcrunch.com" or "https://techcrunch.com")
+
 **FILTER OPERATION INTELLIGENCE:**
+
+**SPECIAL RULE - Website Filter (EXCLUSIVE):**
+- **When user asks for a specific website**: Apply ONLY the website filter, clear ALL other filters
+- Keywords: "show me [website]", "find [website]", "filter for [website]", "search for [website]", "[website] only"
+- Examples: 
+  * "show me techcrunch.com" → Apply website: "techcrunch.com", clear all other filters
+  * "find example.com" → Apply website: "example.com", clear all other filters
+  * "filter for wikipedia.org" → Apply website: "wikipedia.org", clear all other filters
+- **IMPORTANT**: When website filter is present, NO other filters should be applied or kept
+- If user currently has filters applied and asks for a website, replace everything with just the website filter
 
 **When to APPEND filters:**
 - User says "also", "and", "plus", "add", "include"
 - User wants to add more criteria to existing search
 - Example: "also show ones from India" (adds country filter)
+- **EXCEPTION**: Never append filters when user asks for a specific website - website filter is always exclusive
 
 **When to REPLACE specific filters:**
 - User says "change", "instead", "actually", "update"
 - User wants to modify a specific aspect
 - Example: "change price to under $200" (replaces price filter)
+- **EXCEPTION**: If replacing with a website filter, clear ALL filters first
 
 **When to CLEAR ALL filters:**
 - User says "clear", "reset", "remove all", "start over", "new search"
 - User wants a fresh start
 - Example: "clear all filters and show me tech sites"
+- **ALSO**: When applying a website filter, this automatically happens
 
 **When to REMOVE specific filters:**
 - User says "remove", "no", "without", "exclude"
@@ -317,6 +344,16 @@ You: "I'll set the **turnaround time** ⚡ to a minimum of **5 days**. This mean
 • Only sites that can publish within 5+ days
 • Filters out slower publishers
 • Ensures reasonable delivery speed for your content"
+
+User: "Show me techcrunch.com"
+You: "I'll search for **TechCrunch** 🔍 for you.
+
+This will show you:
+• Publisher details for TechCrunch
+• Pricing and availability information
+• All relevant publishing opportunities
+
+> 📝 **Note**: When searching for a specific website, all other filters are cleared to show only that website."
 
 Be intelligent, helpful, use beautiful markdown formatting, and show that you understand both the technical aspects and the user's business needs.`
     }
@@ -569,26 +606,50 @@ ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 - "available only", "in stock" → availability: true
 - "any availability" → Remove availability
 
+**Website (EXCLUSIVE FILTER):**
+- "show me [website]", "find [website]", "filter for [website]", "search for [website]", "[website] only"
+- Extract the website domain name from user input
+- Normalize: Remove protocol (http://, https://), remove www., keep domain + TLD
+- Examples:
+  * "show me techcrunch.com" → website: "techcrunch.com"
+  * "find https://www.example.org" → website: "example.org"
+  * "filter for www.wikipedia.org" → website: "wikipedia.org"
+  * "search for example.com" → website: "example.com"
+- **CRITICAL RULE**: When website filter is applied, ALL other filters must be removed
+- The website filter parameter should contain ONLY the website value, with all other filter keys removed
+- If website filter is present in parameters, the final parameters object should ONLY contain { website: "[value]" }
+
 **4. SMART FILTER MERGING:**
+
+**SPECIAL CASE - Website Filter (EXCLUSIVE):**
+- **If website filter is being applied**: Clear ALL current filters, set ONLY website filter
+- Do NOT merge website filter with any other filters
+- Final parameters: { website: "[value]" } only
+- Example: Current filters: { niche: "tech", priceMax: 500 }, User: "show me example.com"
+  → Final: { website: "example.com" } (all other filters removed)
 
 **For APPEND operations:**
 - Start with current filters
 - Add new filters
 - Keep existing values unless explicitly changed
+- **EXCEPTION**: If adding website filter, ignore this rule and use Website Filter exclusive behavior
 
 **For REPLACE operations:**
 - Start with current filters
 - Replace only the mentioned filter type
 - Keep all other filters unchanged
+- **EXCEPTION**: If replacing with website filter, clear ALL filters first
 
 **For CLEAR ALL operations:**
 - Start with empty filters
 - Add only the new filters mentioned
+- **NOTE**: If clearing to add website filter, this is automatically handled
 
 **For REMOVE operations:**
 - Start with current filters
 - Remove only the mentioned filter type
 - Keep all other filters unchanged
+- **NOTE**: If removing website filter, normal removal behavior applies
 
 **5. RESPONSE FORMAT:**
 
@@ -748,6 +809,36 @@ Analysis:
   "confidence": 0.98
 }
 
+Example 10 - WEBSITE FILTER (EXCLUSIVE):
+User: "Show me techcrunch.com"
+Current: { niche: "tech", priceMax: 500, country: "United States" }
+Response: "I'll search for TechCrunch..."
+Analysis:
+{
+  "shouldExecuteTool": true,
+  "reasoning": "Website filter request - user wants a specific website. This is an exclusive filter that clears all other filters.",
+  "toolName": "applyFilters",
+  "parameters": {
+    "website": "techcrunch.com"
+  },
+  "confidence": 0.95
+}
+
+Example 11 - WEBSITE FILTER FROM URL:
+User: "Find https://www.example.org"
+Current: { niche: "health" }
+Response: "I'll search for example.org..."
+Analysis:
+{
+  "shouldExecuteTool": true,
+  "reasoning": "Website filter request with URL - normalize to domain name and apply exclusively",
+  "toolName": "applyFilters",
+  "parameters": {
+    "website": "example.org"
+  },
+  "confidence": 0.95
+}
+
 **CRITICAL RULES:**
 1. If user says "show me", "find me", "get me", "search for" + ANY criteria → shouldExecuteTool = true
 2. If user mentions quality terms ("good", "decent", "premium") in a request → shouldExecuteTool = true
@@ -801,10 +892,28 @@ Be intelligent about understanding the user's intent and perform the correct fil
           if (analysis.shouldExecuteTool && analysis.toolName === 'applyFilters') {
             console.log(`   Parameters:`, analysis.parameters)
             
+            // WEBSITE FILTER EXCLUSIVE BEHAVIOR: If website filter is present, clear all other filters
+            if (analysis.parameters && analysis.parameters.website) {
+              const websiteValue = analysis.parameters.website
+              console.log(`   🌐 Website filter detected: "${websiteValue}" - Clearing all other filters (exclusive filter)`)
+              
+              // Normalize website value: remove protocol and www.
+              let normalizedWebsite = websiteValue.trim()
+              normalizedWebsite = normalizedWebsite.replace(/^https?:\/\//i, '') // Remove http:// or https://
+              normalizedWebsite = normalizedWebsite.replace(/^www\./i, '') // Remove www.
+              normalizedWebsite = normalizedWebsite.split('/')[0] // Remove path
+              normalizedWebsite = normalizedWebsite.split('?')[0] // Remove query params
+              normalizedWebsite = normalizedWebsite.split('#')[0] // Remove hash
+              
+              // Replace all parameters with only website filter
+              analysis.parameters = { website: normalizedWebsite }
+              console.log(`   ✅ Normalized website filter: "${normalizedWebsite}" (exclusive - all other filters cleared)`)
+            }
+            
             // Execute the filter tool
             try {
-              // Normalize niche via Pinecone if present
-              if (analysis.parameters && typeof analysis.parameters.niche === 'string' && analysis.parameters.niche.trim().length > 0) {
+              // Normalize niche via Pinecone if present (only if website filter is NOT present)
+              if (analysis.parameters && !analysis.parameters.website && typeof analysis.parameters.niche === 'string' && analysis.parameters.niche.trim().length > 0) {
                 try {
                   const normalized = await normalizeNiche(analysis.parameters.niche)
                   if (normalized?.name) {

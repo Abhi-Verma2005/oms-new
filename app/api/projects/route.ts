@@ -37,6 +37,22 @@ export async function POST(req: NextRequest) {
         defaultAnchor: defaultAnchor || null,
       }
     })
+
+    // Create default view for this project immediately
+    try {
+      await prisma.savedView.create({
+        data: {
+          userId: session.user.id,
+          name: 'Default',
+          filters: {},
+          projectId: project.id
+        }
+      })
+    } catch (error: any) {
+      // If view already exists (shouldn't happen), log but don't fail project creation
+      console.log('Note: Default view may already exist for project:', project.id, error.message)
+    }
+
     return NextResponse.json({ data: project }, { status: 201 })
   } catch (e: any) {
     console.error('POST /api/projects error', e)

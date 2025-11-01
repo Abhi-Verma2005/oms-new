@@ -59,6 +59,7 @@ interface FilterState {
   filters: Filters
   searchQuery: string
   selectedProjectId: string | null
+  currentRowsVisible: number
   
   // Actions
   setFilters: (filters: Partial<Filters>) => void
@@ -67,13 +68,14 @@ interface FilterState {
   clearFilter: (key: keyof Filters) => void
   clearKey: (key: keyof Filters) => void
   setProject: (projectId: string | null) => void
+  setCurrentRowsVisible: (count: number) => void
   
   // Validation
   validateFilters: (filters: Filters) => Filters
   
   // AI Integration
   updateFromAI: (filters: Partial<Filters>, searchQuery?: string) => void
-  getCurrentState: () => { filters: Filters; searchQuery: string }
+  getCurrentState: () => { filters: Filters; searchQuery: string; currentRowsVisible: number }
   
   // URL Sync (removed - store-only approach)
   loadFromURL: (searchParams: URLSearchParams) => void
@@ -85,6 +87,7 @@ export const useFilterStore = create<FilterState>()(
       filters: {},
       searchQuery: '',
       selectedProjectId: null,
+      currentRowsVisible: 0,
       
       setFilters: (newFilters) => {
         set((state) => ({
@@ -94,6 +97,10 @@ export const useFilterStore = create<FilterState>()(
       
       setSearchQuery: (query) => {
         set({ searchQuery: query })
+      },
+      
+      setCurrentRowsVisible: (count) => {
+        set({ currentRowsVisible: count })
       },
       
       clearFilters: () => {
@@ -175,8 +182,8 @@ export const useFilterStore = create<FilterState>()(
       },
       
       getCurrentState: () => {
-        const { filters, searchQuery } = get()
-        return { filters, searchQuery }
+        const { filters, searchQuery, currentRowsVisible } = get()
+        return { filters, searchQuery, currentRowsVisible }
       },
       
       // URL sync removed - store handles state management without URL conflicts
@@ -215,7 +222,8 @@ export const useFilterStore = create<FilterState>()(
       partialize: (state) => ({
         filters: state.filters,
         searchQuery: state.searchQuery,
-        selectedProjectId: state.selectedProjectId
+        selectedProjectId: state.selectedProjectId,
+        currentRowsVisible: state.currentRowsVisible
       })
     }
   )

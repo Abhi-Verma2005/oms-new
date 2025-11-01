@@ -292,7 +292,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     setError(null)
 
     try {
-      const { filters: currentFilters, searchQuery } = getCurrentState()
+      const { filters: currentFilters, searchQuery, currentRowsVisible } = getCurrentState()
 
       const response = await fetch('/api/chat-streaming', {
         method: 'POST',
@@ -302,7 +302,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
           userId,
           currentFilters,
           searchQuery,
-          selectedDocuments
+          selectedDocuments,
+          currentRowsVisible
         })
       })
 
