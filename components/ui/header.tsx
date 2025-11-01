@@ -171,18 +171,6 @@ export default function Header({
                 <NavbarDropdownItem href="/settings/account">
                   My Account
                 </NavbarDropdownItem>
-                <NavbarDropdownItem href="/settings/notifications">
-                  My Notifications
-                </NavbarDropdownItem>
-                <NavbarDropdownItem href="/settings/apps">
-                  Connected Apps
-                </NavbarDropdownItem>
-                <NavbarDropdownItem href="/settings/plans">
-                  Plans
-                </NavbarDropdownItem>
-                <NavbarDropdownItem href="/settings/billing">
-                  Billing & Invoices
-                </NavbarDropdownItem>
                 <NavbarDropdownItem href="/settings/feedback">
                   Give Feedback
                 </NavbarDropdownItem>
@@ -347,18 +335,6 @@ export default function Header({
               </div>
               <Link href="/settings/account" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 My Account
-              </Link>
-              <Link href="/settings/notifications" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
-                My Notifications
-              </Link>
-              <Link href="/settings/apps" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
-                Connected Apps
-              </Link>
-              <Link href="/settings/plans" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
-                Plans
-              </Link>
-              <Link href="/settings/billing" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
-                Billing & Invoices
               </Link>
               <Link href="/settings/feedback" className="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors duration-200">
                 Give Feedback

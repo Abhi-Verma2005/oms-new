@@ -2113,7 +2113,7 @@ function ResultsTable({ sites, loading, onRowHeightButtonRef, onLimitedSitesChan
             {limitedSites.length === 0 ? (
               <TableRow><TableCell className="px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-4" colSpan={(visibleColumns.length || 1) + 1}>No results</TableCell></TableRow>
             ) : limitedSites.map((s, index) => (
-              <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-100 ease-out table-row-hover`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
+              <TableRow key={s.id} className={`${rowPaddingByLevel[rowLevel]} cursor-pointer ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'} hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-100 ease-out table-row-hover`} onClick={() => { setSelectedSite(s); setDetailsOpen(true) }}>
                 {columnDefs.map(col => (
                   visibleColumns.includes(col.key) ? (
                     <TableCell key={col.key}

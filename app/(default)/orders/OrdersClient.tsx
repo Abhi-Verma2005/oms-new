@@ -15,22 +15,28 @@ function OrdersList() {
   const [orders, setOrders] = React.useState<UiOrder[]>([])
   const [nextCursor, setNextCursor] = React.useState<string | null>(null)
   const [loadingMore, setLoadingMore] = React.useState(false)
+  const idCounterRef = React.useRef<number>(0)
   const { openSidebar } = useLayout()
   const { addMessage } = useChat()
 
-  const mapOrders = React.useCallback((arr: any[]) => (arr ?? []).map((o: any, idx: number) => ({
-    id: idx,
-    image: undefined,
-    order: `#${o.id.substring(0, 6)}`,
-    date: new Date(o.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
-    customer: o.user?.name || '—',
-    total: `${o.currency} ${(o.totalAmount / 100).toFixed(2)}`,
-    status: o.status,
-    items: String(o.items?.length ?? 0),
-    location: '—',
-    type: '—',
-    description: '',
-  } as UiOrder)), [] )
+  const mapOrders = React.useCallback((arr: any[]) => {
+    return (arr ?? []).map((o: any) => {
+      const numericId = idCounterRef.current++
+      return {
+        id: numericId,
+        image: undefined,
+        order: `#${o.id.substring(0, 6)}`,
+        date: new Date(o.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }),
+        customer: o.user?.name || '—',
+        total: `${o.currency} ${(o.totalAmount / 100).toFixed(2)}`,
+        status: o.status,
+        items: String(o.items?.length ?? 0),
+        location: '—',
+        type: '—',
+        description: '',
+      } as UiOrder
+    })
+  }, [])
 
   React.useEffect(() => {
     fetch('/api/orders?limit=10').then(async (r) => {

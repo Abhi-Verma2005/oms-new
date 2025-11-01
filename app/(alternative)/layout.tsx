@@ -16,12 +16,14 @@ export default function AlternativeLayout({
       </Suspense>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto pt-16">
-        <Suspense fallback={null}>
-          <main className="min-h-full [&>*:first-child]:scroll-mt-16">
-            {children}
-          </main>
-        </Suspense>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto pt-16">
+          <Suspense fallback={null}>
+            <main className="min-h-full [&>*:first-child]:scroll-mt-16">
+              {children}
+            </main>
+          </Suspense>
+        </div>
 
         {/* Global footer */}
         <Suspense fallback={null}>

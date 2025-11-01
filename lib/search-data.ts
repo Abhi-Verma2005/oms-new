@@ -82,33 +82,6 @@ export const searchData: SearchItem[] = [
     icon: 'User',
     keywords: ['account', 'profile', 'settings', 'personal', 'user']
   },
-  {
-    id: 'settings-notifications',
-    title: 'My Notifications',
-    description: 'Notification preferences and settings',
-    href: '/settings/notifications',
-    category: 'settings',
-    icon: 'Bell',
-    keywords: ['notifications', 'alerts', 'settings', 'preferences']
-  },
-  {
-    id: 'settings-apps',
-    title: 'Connected Apps',
-    description: 'Manage connected applications',
-    href: '/settings/apps',
-    category: 'settings',
-    icon: 'AppWindow',
-    keywords: ['apps', 'connected', 'integrations', 'settings']
-  },
-  {
-    id: 'settings-plans',
-    title: 'Plans',
-    description: 'Subscription plans and billing',
-    href: '/settings/plans',
-    category: 'settings',
-    icon: 'CreditCard',
-    keywords: ['plans', 'billing', 'subscription', 'pricing']
-  },
 
   // Admin Pages
   {
