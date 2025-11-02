@@ -7,8 +7,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Slider } from "@/components/ui/slider"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader as UICardHeader, CardTitle as UICardTitle } from "@/components/ui/card"
-import LineChart01 from "@/components/charts/line-chart-01"
-import DoughnutChart from "@/components/charts/doughnut-chart"
 import { Table, TableBody, TableCell, TableHead, TableHeader as UITableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,6 +45,8 @@ const PublishersHelpCarousel = dynamic(() => import("@/components/publishers-hel
   ssr: false,
   loading: () => <div className="h-96 bg-gray-50 dark:bg-gray-900 animate-pulse rounded-lg" />
 })
+const LineChart01 = dynamic(() => import("@/components/charts/line-chart-01"), { ssr: false })
+const DoughnutChart = dynamic(() => import("@/components/charts/doughnut-chart"), { ssr: false })
 import { ProjectSelector } from '@/components/projects/project-selector'
 import ProjectToggleCompact from '@/components/projects/project-toggle-compact'
 import { useActivityLogger } from '@/lib/user-activity-client'
@@ -1534,7 +1534,7 @@ function ResultsTable({ sites, loading, onRowHeightButtonRef, onLimitedSitesChan
         )
       case 'countryLang':
         return (
-          <div className="text-sm leading-tight" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(s) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
+          <div className="text-sm leading-tight" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(s) }} onMouseLeave={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(null) }}>
             {(() => {
               const computedCountry = (s.country && s.country !== 'Not Specified')
                 ? s.country
@@ -2005,7 +2005,7 @@ function ResultsTable({ sites, loading, onRowHeightButtonRef, onLimitedSitesChan
 
       {/* Fixed top-center country preview panel */}
       {countryPreviewSite && (
-  <div key={countryPreviewSite.id} className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { countryHideTimeoutRef.current = setTimeout(() => { setCountryPreviewSite(null) }, 1200) }}>
+  <div key={countryPreviewSite.id} className="hidden sm:block fixed top-4 left-1/2 -translate-x-1/2 w-[380px] sm:w-[520px] max-w-[calc(100vw-1rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur p-4 sm:p-5 shadow-2xl z-[7000]" onMouseEnter={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(countryPreviewSite) }} onMouseLeave={() => { if (countryHideTimeoutRef.current) { clearTimeout(countryHideTimeoutRef.current); countryHideTimeoutRef.current = null } setCountryPreviewSite(null) }}>
           <div className="flex items-start justify-between">
             <div className="text-base font-semibold mb-2">Organic traffic by country</div>
             <div className="text-[11px] text-gray-500 whitespace-nowrap ml-2">Last updated {countryPreviewSite.quality?.lastPublished || '—'}</div>
@@ -2683,6 +2683,9 @@ export default function PublishersClient() {
   const lastPostedQueryRef = useRef<string>("")
   // Marks fetches initiated by the modal Apply button to avoid full-page skeleton
   const manualApplyRef = useRef(false)
+  // Refs to track loading and sites without causing fetchData to change
+  const loadingRef = useRef(false)
+  const sitesLengthRef = useRef(0)
   // Suggestions state for website/url recommendations
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
@@ -2690,6 +2693,14 @@ export default function PublishersClient() {
   const suggestionsAbortRef = useRef<AbortController | null>(null)
   const suggestionsRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  
+  // Sync refs with state
+  useEffect(() => {
+    loadingRef.current = loading
+  }, [loading])
+  useEffect(() => {
+    sitesLengthRef.current = sites.length
+  }, [sites.length])
   
   // Memoize callback functions to prevent PublishersHelpCarousel from re-rendering
   const handleSetSuggestionsContainerRef = useCallback((el: HTMLDivElement | null) => {
@@ -2726,10 +2737,10 @@ export default function PublishersClient() {
   const fetchData = useCallback(async (apiFilters: APIFilters = {}, skipLoading = false) => {
     log('fetchData:start', { apiFilters, skipLoading })
     // Allow Apply-triggered fetches even if loading
-    if (loading && !skipLoading && !manualApplyRef.current) return
+    if (loadingRef.current && !skipLoading && !manualApplyRef.current) return
     
     // Determine if this is initial load or filter change
-    const isInitialLoad = (sites.length === 0) && !manualApplyRef.current
+    const isInitialLoad = (sitesLengthRef.current === 0) && !manualApplyRef.current
     
     if (!skipLoading) {
       if (isInitialLoad) {
@@ -2757,7 +2768,7 @@ export default function PublishersClient() {
       setTotalItems(0)
       setTotalPages(0)
     } finally {
-      log('fetchData:finally', { isInitial: (sites.length === 0) && !manualApplyRef.current })
+      log('fetchData:finally', { isInitial: (sitesLengthRef.current === 0) && !manualApplyRef.current })
       // Reset manual apply flag after any fetch completes
       manualApplyRef.current = false
       if (!skipLoading) {
@@ -2770,12 +2781,12 @@ export default function PublishersClient() {
         }
       }
     }
-  }, [loading, sites.length, itemsPerPage])
+  }, [itemsPerPage])
 
   // Listen for apply filters event from modal
   useEffect(() => {
     const handleApplyFilters = () => {
-      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, itemsPerPage)
       fetchData(apiFilters)
     }
 
@@ -2811,7 +2822,7 @@ export default function PublishersClient() {
     
     // Small delay to ensure state has updated from the previous useEffect
     const timer = setTimeout(() => {
-      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, itemsPerPage)
       log('project-change:fetch', { 
         projectId: selectedProjectId, 
         filters, 
@@ -2836,7 +2847,7 @@ export default function PublishersClient() {
   useEffect(() => { 
     // Only fetch on initial load when there are no sites
     if (sites.length === 0) {
-      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000) // Fetch up to 1000 items
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, itemsPerPage)
       log('initial-load', { filters, apiFilters, priceMin: filters.priceMin, priceMax: filters.priceMax })
       fetchData(apiFilters)
     }
@@ -2848,7 +2859,7 @@ export default function PublishersClient() {
     
     // Only fetch automatically for AI-origin changes
     if (aiFilterChangeRef.current) {
-      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+      const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, itemsPerPage)
       log('ai-change:auto-fetch', { filters, apiFilters, fromAI: aiFilterChangeRef.current })
       // AI changes: immediate fetch
       console.log('⚡ PUBLISHERS: AI change detected - immediate fetch')
@@ -3081,12 +3092,12 @@ export default function PublishersClient() {
       onRefresh={() => {
         // Apply current filters
         manualApplyRef.current = true
-        const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, 1000)
+        const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, itemsPerPage)
         fetchData(apiFilters)
       }}
       onApplyDraft={(draft) => {
         manualApplyRef.current = true
-        const apiFilters = convertFiltersToAPI(draft, searchQuery, 1, 1000)
+        const apiFilters = convertFiltersToAPI(draft, searchQuery, 1, itemsPerPage)
         fetchData(apiFilters)
       }}
       onApplyView={(viewFilters, viewSearchQuery) => {
@@ -3098,7 +3109,7 @@ export default function PublishersClient() {
         setSearchQuery(viewSearchQuery)
         
         // Call fetchData directly with the provided filters (don't wait for state update)
-        const apiFilters = convertFiltersToAPI(viewFilters, viewSearchQuery, 1, 1000)
+        const apiFilters = convertFiltersToAPI(viewFilters, viewSearchQuery, 1, itemsPerPage)
         fetchData(apiFilters)
       }}
       onViewAppliedChange={(viewId) => {
