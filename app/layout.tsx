@@ -12,6 +12,7 @@ import { AIChatbotProvider } from '@/components/ai-chatbot-provider'
 import { LayoutProvider } from '@/contexts/LayoutContext'
 import { ChatProvider } from '@/contexts/chat-context'
 import { ResizableLayout } from '@/components/resizable-layout'
+import { NotificationWebSocketProvider } from '@/contexts/notification-websocket-context'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -36,24 +37,27 @@ export default function RootLayout({
       <body className="font-inter antialiased">
         <Theme>
           <AuthProvider>
-            <AppProvider>
-              <CartProvider>
-                <WishlistProvider>
-                  <NotificationProvider>
-                    <AIChatbotProvider>
-                      <ChatProvider>
-                        <LayoutProvider>
-                          <ResizableLayout>
-                            {children}
-                          </ResizableLayout>
-                          <NotificationToastContainer />
-                        </LayoutProvider>
-                      </ChatProvider>
-                    </AIChatbotProvider>
-                  </NotificationProvider>
-                </WishlistProvider>
-              </CartProvider>
-            </AppProvider>
+            {/* WebSocket Provider inside AuthProvider (for SessionProvider access) but at top level to minimize re-renders */}
+            <NotificationWebSocketProvider>
+              <AppProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    <NotificationProvider>
+                      <AIChatbotProvider>
+                        <ChatProvider>
+                          <LayoutProvider>
+                            <ResizableLayout>
+                              {children}
+                            </ResizableLayout>
+                            <NotificationToastContainer />
+                          </LayoutProvider>
+                        </ChatProvider>
+                      </AIChatbotProvider>
+                    </NotificationProvider>
+                  </WishlistProvider>
+                </CartProvider>
+              </AppProvider>
+            </NotificationWebSocketProvider>
           </AuthProvider>
         </Theme>
       </body>

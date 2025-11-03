@@ -64,15 +64,42 @@ export const useNotificationStore = create<NotificationStore>()(
     addNotification: (notification: NotificationData) => {
       set((state) => {
         // Check if notification already exists
-        const exists = state.notifications.some((n) => n.id === notification.id)
-        if (!exists) {
-          // Add to notifications list
+        const existingIndex = state.notifications.findIndex((n) => n.id === notification.id)
+        
+        if (existingIndex === -1) {
+          // New notification - add to list
           state.notifications.unshift(notification)
           // Add to toast queue for real-time display
           state.toasts.push(notification)
-          // Update unread count
-          state.unreadCount = state.notifications.filter((n) => !n.isRead).length
+        } else {
+          // Notification exists - update it, especially mark as unread if coming via websocket
+          const existing = state.notifications[existingIndex]
+          // If it was read but now coming via websocket as new, mark it as unread
+          if (existing.isRead && !notification.isRead) {
+            state.notifications[existingIndex] = {
+              ...notification,
+              isRead: false,
+              readAt: undefined
+            }
+            // Add to toast queue if it's a new push notification
+            const toastExists = state.toasts.some((n) => n.id === notification.id)
+            if (!toastExists) {
+              state.toasts.push({
+                ...notification,
+                isRead: false
+              })
+            }
+          } else {
+            // Update existing notification with latest data
+            state.notifications[existingIndex] = {
+              ...existing,
+              ...notification,
+              isRead: existing.isRead // Preserve read status unless explicitly set to unread
+            }
+          }
         }
+        // Always update unread count after changes
+        state.unreadCount = state.notifications.filter((n) => !n.isRead).length
       })
     },
 

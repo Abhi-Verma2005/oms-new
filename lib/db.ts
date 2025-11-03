@@ -9,16 +9,13 @@ try {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     PrismaClient = require('@prisma/client').PrismaClient;
-    console.log('✅ PrismaClient imported successfully from @prisma/client');
   } catch (e1) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       PrismaClient = require('@prisma/client/default').PrismaClient;
-      console.log('✅ PrismaClient imported successfully from @prisma/client/default');
     } catch (e2) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       PrismaClient = require('@prisma/client/index').PrismaClient;
-      console.log('✅ PrismaClient imported successfully from @prisma/client/index');
     }
   }
 } catch (e) {
@@ -187,7 +184,6 @@ export const prisma = (() => {
   const instance = createPrismaClient();
   if (instance) {
     globalForPrisma.prisma = instance;
-    console.log('✅ Prisma client initialized successfully');
     return instance;
   } else {
     console.error('❌ Failed to initialize Prisma client - using fallback service');

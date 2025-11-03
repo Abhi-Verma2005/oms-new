@@ -110,6 +110,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   }, [addToast]);
 
+  // Listen for real push notifications dispatched by the WebSocket provider
+  useEffect(() => {
+    const handleIncoming = (event: CustomEvent) => {
+      const notification = event.detail as NotificationData;
+      handleNewNotification({ ...notification, isRead: false });
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('notification-received', handleIncoming as EventListener);
+      return () => {
+        window.removeEventListener('notification-received', handleIncoming as EventListener);
+      };
+    }
+  }, [handleNewNotification]);
+
   const fetchInitialNotifications = async () => {
     try {
       const response = await fetch('/api/notifications?limit=50');

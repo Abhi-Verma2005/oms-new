@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 // POST /api/notifications/[id]/read - Mark notification as read
 export async function POST(
   request: NextRequest,
-  { params }: any
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
     }
 
-    const notificationId = params.id;
+    const { id: notificationId } = await params;
 
     // Check if notification exists and user has access to it
     const notification = await prisma.notification.findFirst({
@@ -41,25 +41,21 @@ export async function POST(
       );
     }
 
-    // Check if already read
-    const existingRead = await prisma.userNotificationRead.findUnique({
+    // Use upsert to handle race conditions - if already read, just return success
+    await prisma.userNotificationRead.upsert({
       where: {
         userId_notificationId: {
           userId: userId,
           notificationId: notificationId
         }
-      }
-    });
-
-    if (existingRead) {
-      return NextResponse.json({ message: 'Already read' });
-    }
-
-    // Mark as read
-    await prisma.userNotificationRead.create({
-      data: {
+      },
+      create: {
         userId: userId,
         notificationId: notificationId
+      },
+      update: {
+        // If already exists, just update readAt
+        readAt: new Date()
       }
     });
 

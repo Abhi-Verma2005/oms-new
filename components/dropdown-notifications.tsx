@@ -42,8 +42,11 @@ export default function DropdownNotifications({ align }: {
     try {
       const response = await fetch('/api/notifications?limit=5');
       if (response.ok) {
-        // The context will handle updating notifications
-        // We just need to trigger the initial fetch
+        const data = await response.json();
+        try {
+          // Hydrate zustand store so badge reflects initial unread state
+          useNotificationStore.getState().updateNotifications(Array.isArray(data.notifications) ? data.notifications : [])
+        } catch {}
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
