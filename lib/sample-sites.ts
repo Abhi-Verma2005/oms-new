@@ -254,7 +254,6 @@ export interface CategoryRecommendation {
 }
 
 function getFallbackSampleData(filters: APIFilters = {}): PaginatedResult {
-  console.log('Using fallback data with filters:', filters);
   const sampleData: APISite[] = [
     {
       id: 1,
@@ -543,9 +542,6 @@ function getFallbackSampleData(filters: APIFilters = {}): PaginatedResult {
   
   const paginatedSites = filtered.slice(offset, offset + limit)
   
-  console.log(`Fallback filtering: ${sampleData.length} total sites, ${filtered.length} after filtering, ${paginatedSites.length} paginated`);
-  console.log('Filtered sites prices:', paginatedSites.map(s => ({ website: s.website, sellingPrice: s.sellingPrice })));
-  
   return {
     sites: paginatedSites,
     total: total
@@ -556,7 +552,6 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<P
   try {
     // Build filter query string
     const filterQuery = buildFilterQuery(filters);
-    console.log('Price filters:', { sellingPrice: filters.sellingPrice, filterQuery });
     
     // For the first request (no filters), don't send any body
     // Only send body when filters are applied
@@ -580,7 +575,6 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<P
       }
       
       requestBody = JSON.stringify(requestPayload);
-      console.log('API request payload:', requestPayload);
     }
 
     const response = await fetch(API_BASE_URL, {
@@ -602,7 +596,6 @@ export async function fetchSitesWithFilters(filters: APIFilters = {}): Promise<P
     let data: any
     try {
       data = JSON.parse(responseText)
-      console.log("data",data)
     } catch (e) {
       return getFallbackSampleData(filters)
     }

@@ -2,48 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-// WebSocket server is now independent - we'll call it via HTTP API
-
-const WS_SERVER_URL = process.env.WS_API_URL || 'http://localhost:8001';
-
-async function broadcastNotification(notification: any) {
-  try {
-    console.log('🔔 Broadcasting notification to WebSocket server:', {
-      url: `${WS_SERVER_URL}/api/broadcast`,
-      notificationId: notification.id,
-      title: notification.title
-    });
-    
-    const response = await fetch(`${WS_SERVER_URL}/api/broadcast`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ notification }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Failed to broadcast notification:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
-      return false;
-    } else {
-      const result = await response.json();
-      console.log('✅ Notification broadcasted successfully:', result);
-      return true;
-    }
-  } catch (error) {
-    console.error('❌ Error broadcasting notification:', error);
-    return false;
-  }
-}
+import WebSocket from 'ws';
 
 // POST /api/admin/notifications/push - Push a notification to all connected users
 export async function POST(request: NextRequest) {
-  console.log('🚀 PUSH API ROUTE CALLED - Starting notification push process');
   try {
     const session = await getServerSession(authOptions);
     
@@ -75,11 +37,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { notificationId } = await request.json();
+    let requestBody;
+    try {
+      requestBody = await request.json();
+    } catch (error) {
+      console.error('❌ [Push] Error parsing request body:', error);
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    const { notificationId } = requestBody;
 
     if (!notificationId) {
+      console.error('❌ [Push] Missing notificationId in request:', requestBody);
       return NextResponse.json(
-        { error: 'Notification ID is required' },
+        { error: 'Notification ID is required', received: requestBody },
         { status: 400 }
       );
     }
@@ -137,29 +111,64 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    // Broadcast the notification via WebSocket
-    console.log('🚀 Starting notification broadcast...');
-    console.log('📋 Notification data:', {
-      id: notificationData.id,
-      title: notificationData.title,
-      isGlobal: notificationData.isGlobal,
-      targetUserIds: notificationData.targetUserIds
-    });
-    
-    const broadcastSuccess = await broadcastNotification(notificationData);
-    
-    if (broadcastSuccess) {
-      console.log(`✅ Notification "${notification.title}" pushed to all connected users by admin ${userId}`);
-      return NextResponse.json({ 
-        message: 'Notification pushed successfully',
-        success: true
+    // Broadcast via backend Notification WebSocket (pure WS path)
+    const wsPort = parseInt(process.env.WS_PORT || '8080', 10) + 1; // notifications on ws port + 1
+    const wsUrl = process.env.NOTIFICATION_WS_URL || `ws://localhost:${wsPort}`;
+
+    // Open a short-lived admin WS client to send the broadcast
+    const ws = new WebSocket(wsUrl);
+
+    const result = await new Promise<{ success: boolean; reason?: string }>((resolve) => {
+      let settled = false;
+
+      const fail = (reason: string) => {
+        if (settled) return; settled = true; resolve({ success: false, reason });
+      };
+      const ok = () => { if (settled) return; settled = true; resolve({ success: true }); };
+
+      ws.on('open', () => {
+        try {
+          // authenticate as admin
+          ws.send(JSON.stringify({ type: 'authenticate', userId: 'system-broadcast-client', isAdmin: true }));
+          // send broadcast
+          ws.send(JSON.stringify({ type: 'broadcast', notification: notificationData }));
+          // wait briefly for ack then succeed
+          const timeout = setTimeout(() => ok(), 150);
+          ws.on('message', (data) => {
+            try {
+              const msg = JSON.parse(data.toString());
+              if (msg.type === 'broadcast-complete') {
+                clearTimeout(timeout);
+                ok();
+              }
+            } catch {
+              // ignore non-JSON
+            }
+          });
+        } catch (err) {
+          fail('send-failed');
+        }
       });
-    } else {
+
+      ws.on('error', () => fail('ws-error'));
+      ws.on('close', (code) => {
+        if (!settled && code !== 1000) fail('ws-closed');
+      });
+    });
+
+    try { ws.close(); } catch {}
+
+    if (!result.success) {
       return NextResponse.json({ 
-        message: 'Notification created but failed to broadcast',
+        message: 'Notification created but failed to broadcast (ws error)',
         success: false
-      }, { status: 500 });
+      }, { status: 503 });
     }
+
+    return NextResponse.json({ 
+      message: 'Notification pushed successfully',
+      success: true
+    });
 
   } catch (error) {
     console.error('Error pushing notification:', error);

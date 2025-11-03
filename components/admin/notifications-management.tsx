@@ -39,6 +39,7 @@ import {
 // } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, Bell, Users, Globe, Calendar, Eye, EyeIcon, Send, Zap, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { broadcastNotificationViaWebSocket } from '@/lib/notification-broadcast';
 
 interface NotificationType {
   id: string;
@@ -75,8 +76,6 @@ export function NotificationsManagement() {
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [previewNotification, setPreviewNotification] = useState<Notification | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [isPushConfirmOpen, setIsPushConfirmOpen] = useState(false);
-  const [notificationToPush, setNotificationToPush] = useState<Notification | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     body: '',
@@ -90,8 +89,6 @@ export function NotificationsManagement() {
   });
   const [statusFilter, setStatusFilter] = useState('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPushing, setIsPushing] = useState(false);
-  const [pushingNotificationId, setPushingNotificationId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -154,21 +151,40 @@ export function NotificationsManagement() {
       if (response.ok) {
         const createdNotification = await response.json();
         toast.success(editingNotification ? 'Notification updated' : 'Notification created');
-        fetchNotifications();
         
-        // If shouldPush is true, immediately push the notification
-        if (shouldPush && createdNotification.id) {
-          // Get the full notification with type for pushing
-          const fullNotification = await fetch(`/api/admin/notifications/${createdNotification.id}`)
-            .then(res => res.json())
-            .then(data => data.notification);
-          
-          if (fullNotification) {
-            setNotificationToPush(fullNotification);
-            setIsPushConfirmOpen(true);
+        // If shouldPush is true, send WebSocket broadcast directly from frontend
+        if (shouldPush && createdNotification.id && createdNotification.isActive) {
+          try {
+            // Prepare notification data for WebSocket broadcast
+            const notificationData = {
+              id: createdNotification.id,
+              title: createdNotification.title,
+              body: createdNotification.body,
+              imageUrl: createdNotification.imageUrl,
+              typeId: createdNotification.typeId,
+              isActive: createdNotification.isActive,
+              isGlobal: createdNotification.isGlobal,
+              targetUserIds: createdNotification.targetUserIds,
+              priority: createdNotification.priority,
+              expiresAt: createdNotification.expiresAt,
+              createdAt: createdNotification.createdAt,
+              updatedAt: createdNotification.updatedAt,
+              type: createdNotification.type
+            };
+
+            const result = await broadcastNotificationViaWebSocket(notificationData);
+            if (result.success) {
+              toast.success('Notification pushed successfully');
+            } else {
+              toast.warning(`Notification created but push failed: ${result.error || 'Unknown error'}`);
+            }
+          } catch (pushError) {
+            console.error('Error pushing notification:', pushError);
+            toast.warning('Notification created but push failed');
           }
         }
         
+        fetchNotifications();
         resetForm();
       } else {
         const error = await response.json();
@@ -222,40 +238,53 @@ export function NotificationsManagement() {
     setIsPreviewOpen(true);
   };
 
-  const handlePushNotification = async (notification: Notification) => {
-    setPushingNotificationId(notification.id);
-    setNotificationToPush(notification);
-    setIsPushConfirmOpen(true);
-  };
-
-  const confirmPushNotification = async () => {
-    if (!notificationToPush) return;
-    setIsPushing(true);
+  const handlePush = async (notification: Notification) => {
+    if (!notification.isActive) {
+      toast.warning('Cannot push an inactive notification');
+      return;
+    }
     
-    try {
-      const response = await fetch('/api/admin/notifications/push', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ notificationId: notificationToPush.id }),
-      });
+    // Check if notification has expired
+    if (notification.expiresAt && new Date(notification.expiresAt) < new Date()) {
+      toast.warning('Cannot push expired notification');
+      return;
+    }
 
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(`Notification pushed to ${data.connectedClients} connected users`);
+    // Validate notification has required fields
+    if (!notification.type) {
+      console.error('[Push] Notification missing type:', notification);
+      toast.error('Notification data is invalid (missing type)');
+      return;
+    }
+
+    try {
+      // Prepare notification data for WebSocket broadcast
+      const notificationData = {
+        id: notification.id,
+        title: notification.title,
+        body: notification.body,
+        imageUrl: notification.imageUrl,
+        typeId: notification.typeId,
+        isActive: notification.isActive,
+        isGlobal: notification.isGlobal,
+        targetUserIds: notification.targetUserIds,
+        priority: notification.priority,
+        expiresAt: notification.expiresAt,
+        createdAt: notification.createdAt,
+        updatedAt: notification.updatedAt,
+        type: notification.type
+      };
+
+      const result = await broadcastNotificationViaWebSocket(notificationData);
+      if (result.success) {
+        toast.success('Notification pushed successfully');
       } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to push notification');
+        console.error('[Push] Broadcast failed:', result.error);
+        toast.error(result.error || 'Failed to push notification');
       }
-    } catch (error) {
-      console.error('Error pushing notification:', error);
+    } catch (e) {
+      console.error('[Push] Error pushing notification:', e);
       toast.error('Failed to push notification');
-    } finally {
-      setIsPushing(false);
-      setIsPushConfirmOpen(false);
-      setNotificationToPush(null);
-      setPushingNotificationId(null);
     }
   };
 
@@ -290,44 +319,6 @@ export function NotificationsManagement() {
     toast.success('Preview notification sent to your screen');
   };
 
-  const handlePushAllActive = async () => {
-    const activeNotifications = notifications.filter(n => n.isActive);
-    
-    if (activeNotifications.length === 0) {
-      toast.error('No active notifications to push');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to push ${activeNotifications.length} active notifications to all connected users?`)) {
-      return;
-    }
-
-    try {
-      const pushPromises = activeNotifications.map(notification => 
-        fetch('/api/admin/notifications/push', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ notificationId: notification.id }),
-        })
-      );
-
-      const results = await Promise.allSettled(pushPromises);
-      const successful = results.filter(result => result.status === 'fulfilled').length;
-      const failed = results.length - successful;
-
-      if (successful > 0) {
-        toast.success(`Successfully pushed ${successful} notifications`);
-      }
-      if (failed > 0) {
-        toast.error(`Failed to push ${failed} notifications`);
-      }
-    } catch (error) {
-      console.error('Error pushing all notifications:', error);
-      toast.error('Failed to push notifications');
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -385,14 +376,6 @@ export function NotificationsManagement() {
           <p className="text-muted-foreground">Manage system notifications</p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={handlePushAllActive}
-            disabled={notifications.filter(n => n.isActive).length === 0}
-          >
-            <Zap className="h-4 w-4 mr-2" />
-            Push All Active
-          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
@@ -566,7 +549,7 @@ export function NotificationsManagement() {
                 </div>
                 <div className="flex gap-2">
                   <Button 
-                    type="button" 
+                    type="button"
                     variant="outline"
                     onClick={(e) => handleSubmit(e, false)}
                     disabled={!formData.title || !formData.body || !formData.typeId || isSubmitting}
@@ -580,25 +563,27 @@ export function NotificationsManagement() {
                       editingNotification ? 'Update' : 'Create'
                     )}
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="default"
-                    onClick={(e) => handleSubmit(e, true)}
-                    disabled={!formData.title || !formData.body || !formData.typeId || isSubmitting}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {editingNotification ? 'Updating...' : 'Creating...'}
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        {editingNotification ? 'Update & Push' : 'Create & Push'}
-                      </>
-                    )}
-                  </Button>
+                  {!editingNotification && (
+                    <Button 
+                      type="button"
+                      variant="default"
+                      onClick={(e) => handleSubmit(e, true)}
+                      disabled={!formData.title || !formData.body || !formData.typeId || isSubmitting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Create & Push
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </DialogFooter>
             </form>
@@ -728,31 +713,19 @@ export function NotificationsManagement() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handlePreviewPush(notification)}
-                              title="Preview push notification"
+                              onClick={() => handlePush(notification)}
+                              title="Push notification"
                               className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                             >
-                              <Zap className="h-4 w-4" />
+                              <Send className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant="default"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => handlePushNotification(notification)}
-                              disabled={pushingNotificationId === notification.id}
-                              title="Push notification now"
-                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => handlePreviewPush(notification)}
+                              title="Preview push notification"
                             >
-                              {pushingNotificationId === notification.id ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                  Pushing...
-                                </>
-                              ) : (
-                                <>
-                                  <Send className="h-4 w-4 mr-1" />
-                                  Push
-                                </>
-                              )}
+                              <Zap className="h-4 w-4" />
                             </Button>
                           </>
                         )}
@@ -909,78 +882,6 @@ export function NotificationsManagement() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
               Close Preview
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Push Confirmation Dialog */}
-      <Dialog open={isPushConfirmOpen} onOpenChange={setIsPushConfirmOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5 text-green-600" />
-              Push Notification
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to push this notification to all connected users? This action will immediately send the notification to all users currently online.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {notificationToPush && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0">
-                  {notificationToPush.type.icon ? (
-                    <span className="text-lg">{notificationToPush.type.icon}</span>
-                  ) : (
-                    <Bell className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {notificationToPush.title}
-                  </h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                    {notificationToPush.body}
-                  </p>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Badge variant={getPriorityColor(notificationToPush.priority)} className="text-xs">
-                      {notificationToPush.priority}
-                    </Badge>
-                    <Badge variant="default" className="bg-blue-500 text-xs">
-                      {notificationToPush.isGlobal ? 'All Users' : `${notificationToPush.targetUserIds.length} Users`}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsPushConfirmOpen(false)}
-              disabled={isPushing}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={confirmPushNotification}
-              disabled={isPushing}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isPushing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Pushing...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Push Now
-                </>
-              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -164,12 +164,6 @@ function convertFiltersToAPI(f: Filters, searchQuery: string, page: number = 1, 
   api.limit = limit
   api.offset = (page - 1) * limit
   
-  try {
-    if (typeof window !== 'undefined' && (window as any).__DEBUG_PUBLISHERS) {
-      console.log('🧭 PUBLISHERS: convertFiltersToAPI', { in: { f, searchQuery, page, limit }, out: api })
-    }
-  } catch {}
-
   return api
 }
 
@@ -2434,7 +2428,7 @@ function WishlistInlineButton({ site }: { site: Site }) {
 
 export default function PublishersClient() {
   // Debug logger for project toggles and data fetching
-  const DEBUG_PUBLISHERS = true
+  const DEBUG_PUBLISHERS = false
   const log = (...args: any[]) => { if (DEBUG_PUBLISHERS) console.log('🧭 PUBLISHERS:', ...args) }
   useEffect(() => { try { (window as any).__DEBUG_PUBLISHERS = DEBUG_PUBLISHERS } catch {} }, [])
   const router = useRouter()
@@ -2855,14 +2849,11 @@ export default function PublishersClient() {
 
   // Auto-fetch data when filters change (AI-only)
   useEffect(() => {
-    console.log('🔄 PUBLISHERS: useEffect triggered with filters:', filters, 'sites.length:', sites.length)
-    
     // Only fetch automatically for AI-origin changes
     if (aiFilterChangeRef.current) {
       const apiFilters = convertFiltersToAPI(filters, searchQuery, 1, itemsPerPage)
       log('ai-change:auto-fetch', { filters, apiFilters, fromAI: aiFilterChangeRef.current })
       // AI changes: immediate fetch
-      console.log('⚡ PUBLISHERS: AI change detected - immediate fetch')
       fetchData(apiFilters)
       aiFilterChangeRef.current = false // Reset flag
     } else {
