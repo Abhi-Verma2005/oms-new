@@ -40,7 +40,7 @@ export interface Filters {
   
   // Search & Metadata
   // Hidden website/domain filter (shown only when set via suggestions)
-  website?: string
+  website?: string | string[]
   sampleUrl?: string
   remarkIncludes?: string
   guidelinesUrlIncludes?: string

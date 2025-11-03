@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useEffect, createContext, useContext, Suspense, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import React, { createContext, useContext, Suspense, useCallback } from 'react'
 // Removed PanelGroup imports - using custom flex layout instead
 import { useLayout } from '@/contexts/LayoutContext'
 import AIChatbotSidebar from './ai-chatbot-sidebar'
+import { cn } from '@/lib/utils'
 
 interface ResizableLayoutProps {
   children: React.ReactNode
@@ -15,62 +15,33 @@ const ResizableLayoutContext = createContext<{
   toggleSidebar: () => void
 } | null>(null)
 
-// Custom hook to toggle sidebar with URL sync, falling back if context not present
+// Custom hook to toggle sidebar without URL sync to prevent page reload
 export const useResizableLayout = () => {
   const resizableContext = useContext(ResizableLayoutContext)
   const { isSidebarOpen, updateSidebarState } = useLayout()
-  const router = useRouter()
-  const searchParams = useSearchParams()
 
   const toggleSidebar = useCallback(() => {
     if (resizableContext?.toggleSidebar) {
       resizableContext.toggleSidebar()
       return
     }
-    // Fallback: toggle and sync URL even when not inside ResizableLayout tree
+    // Fallback: toggle state only (no URL sync to prevent page reload)
     const newState = !isSidebarOpen
     updateSidebarState(newState)
-    // Get fresh searchParams inside the callback to avoid dependency issues
-    const currentParams = typeof window !== 'undefined' 
-      ? new URLSearchParams(window.location.search) 
-      : new URLSearchParams(searchParams?.toString() || '')
-    currentParams.set('sidebar', newState ? 'open' : 'closed')
-    router.replace(`?${currentParams.toString()}`, { scroll: false })
-  }, [resizableContext, isSidebarOpen, updateSidebarState, router]) // Removed searchParams dependency
+  }, [resizableContext, isSidebarOpen, updateSidebarState])
 
   return { toggleSidebar }
 }
 
-// Component that uses useSearchParams - needs to be wrapped in Suspense
+// Component that renders sidebar with sweet animations
 function ResizableLayoutContent({ children }: ResizableLayoutProps) {
-  const { mainWidth, sidebarWidth, isSidebarOpen, closeSidebar, openSidebar, updateSidebarState, setWidths } = useLayout()
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const { mainWidth, sidebarWidth, isSidebarOpen, updateSidebarState, setWidths } = useLayout()
 
-  // Handle URL parameters for sidebar state on mount only
-  useEffect(() => {
-    const sidebarParam = searchParams?.get('sidebar')
-    
-    if (sidebarParam === 'open') {
-      updateSidebarState(true)
-    } else if (sidebarParam === 'closed') {
-      updateSidebarState(false)
-    }
-    // If no parameter, don't change state - keep current state
-  }, []) // Only run on mount
-
-  // Custom toggle function that updates both state and URL
+  // Custom toggle function that only updates state (no URL sync to prevent reload)
   const handleSidebarToggle = useCallback(() => {
     const newState = !isSidebarOpen
     updateSidebarState(newState)
-    
-    // Update URL immediately - get fresh searchParams to avoid dependency issues
-    const currentParams = typeof window !== 'undefined' 
-      ? new URLSearchParams(window.location.search) 
-      : new URLSearchParams(searchParams?.toString() || '')
-    currentParams.set('sidebar', newState ? 'open' : 'closed')
-    router.replace(`?${currentParams.toString()}`, { scroll: false })
-  }, [isSidebarOpen, updateSidebarState, router]) // Removed searchParams dependency
+  }, [isSidebarOpen, updateSidebarState])
 
   // Handle resize functionality
   const handleResize = (e: MouseEvent) => {
@@ -108,44 +79,76 @@ function ResizableLayoutContent({ children }: ResizableLayoutProps) {
 
   return (
     <ResizableLayoutContext.Provider value={contextValue}>
-      {!isSidebarOpen ? (
-        <div className="h-screen overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
+      {/* Mobile Layout - Overlay sidebar */}
+      <div className="lg:hidden relative h-screen bg-gray-50 dark:bg-[#1f2230] overflow-hidden">
+        {/* Backdrop overlay - sweet fade animation */}
+        <div
+          className={cn(
+            "fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-all duration-300 ease-out",
+            isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={handleSidebarToggle}
+        />
+
+        {/* Main Content - Always rendered */}
+        <div className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230]">
           {children}
         </div>
-      ) : (
-        <div className="h-screen bg-gray-50 dark:bg-[#1f2230] flex resizable-container w-full max-w-full overflow-hidden">
-          {/* Mobile: Stack vertically, Desktop: Side by side */}
-          <div className="block lg:hidden flex-1 min-w-0">
-            {/* Mobile: AI Sidebar takes full width */}
-            <div className="h-full bg-gray-50 dark:bg-[#1f2230] w-full overflow-hidden">
-              <AIChatbotSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
-            </div>
-          </div>
-          <div className="hidden lg:flex flex-1 min-w-0">
-            {/* Main Content - Independent container */}
-            <div 
-              className="h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230] flex-1 min-w-0"
-              style={{ width: `${mainWidth}%`, maxWidth: `${mainWidth}%` }}
-            >
-              {children}
-            </div>
-            
-            {/* Resize Handle */}
-            <div 
-              className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-colors cursor-col-resize flex-shrink-0"
-              onMouseDown={handleMouseDown}
-            />
-            
-            {/* AI Sidebar - Independent container */}
-            <div 
-              className="h-full bg-gray-50 dark:bg-[#1f2230] overflow-hidden flex-shrink-0 min-w-0"
-              style={{ width: `${sidebarWidth}%`, maxWidth: `${sidebarWidth}%` }}
-            >
-              <AIChatbotSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
-            </div>
+
+        {/* Mobile Sidebar - Sweet slide animation from right with scale and opacity */}
+        <div
+          className={cn(
+            "fixed top-0 right-0 h-full w-full max-w-md z-50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform",
+            isSidebarOpen 
+              ? "translate-x-0 opacity-100 scale-100" 
+              : "translate-x-full opacity-0 scale-95"
+          )}
+        >
+          <div className="h-full bg-gray-50 dark:bg-[#1f2230] w-full overflow-hidden shadow-2xl">
+            <AIChatbotSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Desktop Layout - Side by side */}
+      <div className="hidden lg:flex h-screen bg-gray-50 dark:bg-[#1f2230] resizable-container w-full max-w-full overflow-hidden">
+        {/* Main Content - Independent container with smooth width transition */}
+        <div 
+          className={cn(
+            "h-full overflow-y-auto no-scrollbar bg-gray-50 dark:bg-[#1f2230] flex-1 min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          )}
+          style={{ 
+            width: isSidebarOpen ? `${mainWidth}%` : '100%', 
+            maxWidth: isSidebarOpen ? `${mainWidth}%` : '100%' 
+          }}
+        >
+          {children}
+        </div>
+        
+        {/* Resize Handle - Only visible when sidebar is open */}
+        {isSidebarOpen && (
+          <div 
+            className="w-1 bg-gray-200/50 dark:bg-white/10 hover:bg-gray-300/50 dark:hover:bg-white/20 transition-all duration-300 cursor-col-resize flex-shrink-0 opacity-100"
+            onMouseDown={handleMouseDown}
+          />
+        )}
+        
+        {/* AI Sidebar - Sweet slide animation from right with scale effect */}
+        <div 
+          className={cn(
+            "h-full bg-gray-50 dark:bg-[#1f2230] overflow-hidden flex-shrink-0 min-w-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] transform shadow-2xl",
+            isSidebarOpen
+              ? "translate-x-0 opacity-100 scale-100"
+              : "translate-x-full opacity-0 scale-95"
+          )}
+          style={{ 
+            width: isSidebarOpen ? `${sidebarWidth}%` : '0%', 
+            maxWidth: isSidebarOpen ? `${sidebarWidth}%` : '0%' 
+          }}
+        >
+          <AIChatbotSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
+        </div>
+      </div>
     </ResizableLayoutContext.Provider>
   )
 }

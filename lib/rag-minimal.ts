@@ -1059,7 +1059,9 @@ export class MinimalRAG {
     userId: string, 
     limit: number = 5,
     maxTokens: number = 8000, // Increased token limit for better context
-    selectedDocuments?: string[] // NEW: Filter by specific documents
+    selectedDocuments?: string[], // NEW: Filter by specific documents
+    retrievalMode?: 'similarity_search' | 'metadata_fetch_all', // NEW: AI-determined retrieval mode
+    chunkType?: string // NEW: For metadata fetch (e.g., 'csv_rows')
   ): Promise<Array<{
     id: string
     content: string
@@ -1076,42 +1078,67 @@ export class MinimalRAG {
 
       console.log(`🔍 Searching documents for user ${userId}: "${query.substring(0, 50)}..."`)
       
-      // Generate query embedding
-      const queryEmbedding = await this.generateEmbedding(query)
-      
-      // FIXED: Search in user's document namespace only
-      const namespace = getNamespace('documents', userId)
-      console.log(`🔍 Searching in Pinecone namespace: ${namespace}`)
-      
-      // FIXED: Add filter for selected documents if provided
-      const queryOptions: any = {
-        vector: queryEmbedding,
-        topK: limit * 2, // Get more results for token filtering
-        includeMetadata: true
-      }
-      
-      // If specific documents are selected, filter by documentId
-      if (selectedDocuments && selectedDocuments.length > 0) {
-        console.log(`📎 Filtering by ${selectedDocuments.length} selected documents:`, selectedDocuments)
-        queryOptions.filter = {
-          documentId: { $in: selectedDocuments }
+      let chunks: Array<{
+        id: string
+        content: string
+        score: number
+        documentId: string
+        documentName: string
+        chunkIndex: number
+        metadata: any
+      }> = []
+
+      // Check if AI determined metadata fetch mode
+      if (retrievalMode === 'metadata_fetch_all' && selectedDocuments && selectedDocuments.length > 0) {
+        console.log(`🤖 Using metadata_fetch_all mode`)
+        const allChunks = []
+        for (const docId of selectedDocuments) {
+          const docChunks = await this.getAllChunksByMetadata(docId, userId, chunkType, maxTokens)
+          allChunks.push(...docChunks)
         }
+        chunks = allChunks
+        console.log(`✅ Retrieved ${chunks.length} chunks via metadata filtering`)
+      } else {
+        // Normal vector similarity search
+        console.log(`🤖 Using similarity_search mode`)
+        
+        // Generate query embedding
+        const queryEmbedding = await this.generateEmbedding(query)
+        
+        // FIXED: Search in user's document namespace only
+        const namespace = getNamespace('documents', userId)
+        console.log(`🔍 Searching in Pinecone namespace: ${namespace}`)
+        
+        // FIXED: Add filter for selected documents if provided
+        const queryOptions: any = {
+          vector: queryEmbedding,
+          topK: limit * 2, // Get more results for token filtering
+          includeMetadata: true
+        }
+        
+        // If specific documents are selected, filter by documentId
+        if (selectedDocuments && selectedDocuments.length > 0) {
+          console.log(`📎 Filtering by ${selectedDocuments.length} selected documents:`, selectedDocuments)
+          queryOptions.filter = {
+            documentId: { $in: selectedDocuments }
+          }
+        }
+        
+        const results = await this.index.namespace(namespace).query(queryOptions)
+        
+        console.log(`📊 Pinecone query results: ${results.matches?.length || 0} matches found`)
+        
+        // Extract and format chunks
+        chunks = results.matches?.map(match => ({
+          id: match.id,
+          content: match.metadata?.text as string || '',
+          score: match.score || 0,
+          documentId: match.metadata?.documentId as string,
+          documentName: match.metadata?.documentName as string,
+          chunkIndex: match.metadata?.chunkIndex as number,
+          metadata: match.metadata || {}
+        })) || []
       }
-      
-      const results = await this.index.namespace(namespace).query(queryOptions)
-      
-      console.log(`📊 Pinecone query results: ${results.matches?.length || 0} matches found`)
-      
-      // Extract and format chunks
-      let chunks = results.matches?.map(match => ({
-        id: match.id,
-        content: match.metadata?.text as string || '',
-        score: match.score || 0,
-        documentId: match.metadata?.documentId as string,
-        documentName: match.metadata?.documentName as string,
-        chunkIndex: match.metadata?.chunkIndex as number,
-        metadata: match.metadata || {}
-      })) || []
       
       // FIXED: Token-aware filtering (rough estimate: 4 chars = 1 token)
       let totalTokens = 0
@@ -1135,6 +1162,194 @@ export class MinimalRAG {
       
     } catch (error) {
       console.error('❌ Document search failed:', error)
+      return []
+    }
+  }
+
+  // NEW: AI-driven retrieval intent analysis
+  async analyzeRetrievalIntent(
+    query: string,
+    documentContext?: {
+      documentId?: string
+      documentName?: string
+      documentType?: string
+    }
+  ): Promise<{
+    retrievalMode: 'similarity_search' | 'metadata_fetch_all'
+    reasoning: string
+    confidence: number
+    chunkType?: string
+  }> {
+    try {
+      const prompt = `Analyze this user query to determine the best document retrieval strategy.
+
+USER QUERY: "${query}"
+
+DOCUMENT CONTEXT:
+${documentContext ? `
+- Document: ${documentContext.documentName || 'Unknown'}
+- Type: ${documentContext.documentType || 'Unknown'}
+` : 'No specific document context'}
+
+AVAILABLE RETRIEVAL MODES:
+
+1. "similarity_search" (Default):
+   - Use for specific questions or targeted searches
+   - Examples: "What's the average price?", "Show customers from India", "Find rows with status active"
+
+2. "metadata_fetch_all" (Comprehensive):
+   - Use when user explicitly wants ALL data
+   - Examples: "Show me all rows", "Display all data", "I want everything", "Get all records", "Complete dataset"
+   - Keywords: "all", "everything", "complete", "entire", "full dataset"
+
+ANALYSIS RULES:
+- If query contains "all", "everything", "complete", "entire", "full dataset" → use "metadata_fetch_all"
+- If query asks for specific information → use "similarity_search"
+- When in doubt, prefer "similarity_search"
+
+For CSV/Excel documents, if mode is "metadata_fetch_all", set chunkType to "csv_rows".
+
+Respond with ONLY valid JSON:
+{
+  "retrievalMode": "similarity_search" | "metadata_fetch_all",
+  "reasoning": "Brief explanation",
+  "confidence": 0.0-1.0,
+  "chunkType": "csv_rows" | undefined
+}`
+
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a retrieval strategy analyzer. Respond ONLY with valid JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 200,
+        response_format: { type: 'json_object' }
+      })
+
+      const result = JSON.parse(response.choices[0].message.content || '{}')
+      
+      return {
+        retrievalMode: result.retrievalMode || 'similarity_search',
+        reasoning: result.reasoning || 'Default to similarity search',
+        confidence: result.confidence || 0.5,
+        chunkType: result.chunkType
+      }
+
+    } catch (error) {
+      console.error('❌ Retrieval intent analysis failed:', error)
+      return {
+        retrievalMode: 'similarity_search',
+        reasoning: 'Analysis failed, defaulting to similarity search',
+        confidence: 0.5
+      }
+    }
+  }
+
+  // NEW: Fetch all chunks by metadata filter
+  async getAllChunksByMetadata(
+    documentId: string,
+    userId: string,
+    chunkType?: string,
+    maxTokens: number = 32000
+  ): Promise<Array<{
+    id: string
+    content: string
+    score: number
+    documentId: string
+    documentName: string
+    chunkIndex: number
+    metadata: any
+  }>> {
+    try {
+      if (!this.index) {
+        await this.initialize()
+      }
+
+      const namespace = getNamespace('documents', userId)
+      
+      // Build metadata filter
+      const filter: any = { documentId: { $eq: documentId } }
+      if (chunkType) {
+        filter.chunkType = { $eq: chunkType }
+      }
+
+      // Query with dummy vector to use metadata filtering
+      const dummyVector = new Array(1536).fill(0)
+      const results = await this.index.namespace(namespace).query({
+        vector: dummyVector,
+        filter: filter,
+        topK: 10000,
+        includeMetadata: true
+      })
+
+      let chunks = results.matches?.map(match => ({
+        id: match.id,
+        content: match.metadata?.text as string || '',
+        score: 1.0,
+        documentId: match.metadata?.documentId as string,
+        documentName: match.metadata?.documentName as string,
+        chunkIndex: match.metadata?.chunkIndex as number || 0,
+        metadata: match.metadata || {}
+      })) || []
+
+      // Sort by chunkIndex to maintain order
+      chunks.sort((a, b) => a.chunkIndex - b.chunkIndex)
+
+      // Token filtering
+      let totalTokens = 0
+      const filteredChunks = []
+      for (const chunk of chunks) {
+        const estimatedTokens = Math.ceil(chunk.content.length / 4)
+        if (totalTokens + estimatedTokens <= maxTokens) {
+          filteredChunks.push(chunk)
+          totalTokens += estimatedTokens
+        } else {
+          break
+        }
+      }
+
+      console.log(`✅ Retrieved ${filteredChunks.length}/${chunks.length} chunks by metadata (~${totalTokens} tokens)`)
+      return filteredChunks
+
+    } catch (error) {
+      console.error('❌ Failed to get chunks by metadata:', error)
+      return []
+    }
+  }
+
+  // Get all CSV rows from database (for exact retrieval)
+  async getAllCSVRowsFromDB(
+    documentId: string,
+    userId: string,
+    maxRows?: number
+  ): Promise<Array<{rowIndex: number, data: any}>> {
+    try {
+      const { prisma } = await import('@/lib/db')
+      
+      const rows = await prisma.csv_row.findMany({
+        where: { document_id: documentId },
+        orderBy: { row_index: 'asc' },
+        take: maxRows,
+        select: {
+          row_index: true,
+          data: true
+        }
+      })
+      
+      return rows.map(r => ({
+        rowIndex: r.row_index,
+        data: r.data
+      }))
+    } catch (error) {
+      console.error('❌ Failed to get CSV rows from DB:', error)
       return []
     }
   }

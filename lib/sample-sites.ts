@@ -232,9 +232,20 @@ function buildFilterQuery(filters: APIFilters): string {
   }
   
   if (filters.website) {
-    // Escape single quotes to prevent SQL injection
-    const escapedWebsite = filters.website.replace(/'/g, "''");
-    conditions.push(`"website" LIKE '%${escapedWebsite}%'`);
+    if (Array.isArray(filters.website)) {
+      // Multiple websites: OR condition
+      const escapedWebsites = filters.website
+        .filter(w => w && typeof w === 'string' && w.trim())
+        .map(w => w.trim().replace(/'/g, "''"))
+      if (escapedWebsites.length > 0) {
+        const likeConditions = escapedWebsites.map(w => `"website" LIKE '%${w}%'`)
+        conditions.push(`(${likeConditions.join(' OR ')})`)
+      }
+    } else {
+      // Single website: existing LIKE
+      const escapedWebsite = String(filters.website).replace(/'/g, "''");
+      conditions.push(`"website" LIKE '%${escapedWebsite}%'`);
+    }
   }
   
   return conditions.join(" AND ");
@@ -486,8 +497,19 @@ function getFallbackSampleData(filters: APIFilters = {}): PaginatedResult {
     filtered = filtered.filter(s => s.niche.toLowerCase().includes(q))
   }
   if (filters.website) {
-    const q = String(filters.website).toLowerCase()
-    filtered = filtered.filter(s => s.website.toLowerCase().includes(q))
+    if (Array.isArray(filters.website)) {
+      // Multiple websites: match any
+      const queries = filters.website.map(w => String(w).toLowerCase().trim()).filter(q => q.length > 0)
+      if (queries.length > 0) {
+        filtered = filtered.filter(s => 
+          queries.some(q => s.website.toLowerCase().includes(q))
+        )
+      }
+    } else {
+      // Single website: existing behavior
+      const q = String(filters.website).toLowerCase()
+      filtered = filtered.filter(s => s.website.toLowerCase().includes(q))
+    }
   }
   
   // Apply price range filtering

@@ -296,6 +296,35 @@ async function processDocumentAsync(
       })
     }
 
+    // 4.5. Store CSV rows in database for exact retrieval (NEW)
+    if (extractionResult.metadata?.csvMetadata && extractionResult.metadata?.rawRows) {
+      try {
+        const rawRows = extractionResult.metadata.rawRows as any[]
+        const csvMetadata = extractionResult.metadata.csvMetadata
+        
+        // Batch insert rows (in chunks of 1000 for efficiency)
+        const batchSize = 1000
+        for (let i = 0; i < rawRows.length; i += batchSize) {
+          const batch = rawRows.slice(i, i + batchSize).map((row, idx) => ({
+            id: `${documentId}_row_${i + idx}`,
+            document_id: documentId,
+            row_index: i + idx,
+            data: row
+          }))
+          
+          await prisma.csv_row.createMany({
+            data: batch,
+            skipDuplicates: true
+          })
+        }
+        
+        console.log(`✅ Stored ${rawRows.length} CSV rows in database`)
+      } catch (dbError) {
+        console.error('⚠️ Failed to store CSV rows in database:', dbError)
+        // Don't fail the entire upload if DB storage fails
+      }
+    }
+
     // 5. Update document status
     await prisma.user_documents.update({
       where: { id: documentId },

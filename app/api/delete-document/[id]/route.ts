@@ -34,6 +34,26 @@ export async function DELETE(
     // Delete from Pinecone
     await ragSystem.deleteUserDocument(id, userId)
 
+    // Delete CSV rows from database (if any)
+    // Note: Cascade would work on hard delete, but we use soft delete
+    try {
+      // Use dynamic access in case Prisma client needs regeneration
+      const csvRowModel = (prisma as any).csv_row
+      if (csvRowModel && typeof csvRowModel.deleteMany === 'function') {
+        const deletedRows = await csvRowModel.deleteMany({
+          where: { document_id: id }
+        })
+        if (deletedRows && deletedRows.count > 0) {
+          console.log(`🗑️ Deleted ${deletedRows.count} CSV rows for document ${id}`)
+        }
+      }
+    } catch (csvDeleteError) {
+      // CSV rows might not exist for this document type, or model not available
+      // This is not critical - document will still be deleted
+      console.warn(`⚠️ Could not delete CSV rows for document ${id}:`, csvDeleteError instanceof Error ? csvDeleteError.message : 'Unknown error')
+      // Continue with deletion - this is not critical
+    }
+
     // Soft delete from database
     await prisma.user_documents.update({
       where: { id },

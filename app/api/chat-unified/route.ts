@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { ragSystem } from '@/lib/rag-minimal'
+import { getUserFriendlyError } from '@/lib/error-handler'
 
 export const maxDuration = 60
 
@@ -34,7 +35,7 @@ async function executeFilter(filters: any, userId: string) {
     console.error('❌ Filter execution failed:', error)
     return {
       action: 'filter_failed',
-      message: `Filter failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: 'Unable to apply filters. Please try again.',
       success: false
     }
   }
@@ -67,7 +68,7 @@ async function executeAddToCart(itemId: string, userId: string) {
     console.error('❌ Cart operation failed:', error)
     return {
       action: 'cart_failed',
-      message: `Failed to add to cart: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: 'Unable to update your cart. Please try again.',
       success: false
     }
   }
@@ -137,7 +138,7 @@ async function executeSearch(query: string, userId: string) {
       action: 'search_failed',
       query: query,
       sources: [],
-      message: `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: 'Unable to search documents. Please try again.',
       success: false
     }
   }
@@ -237,7 +238,7 @@ async function executeDocumentUpload(content: string, filename: string, userId: 
     return {
       action: 'upload_failed',
       filename,
-      message: `Failed to upload document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: 'Unable to upload document. Please try again.',
       success: false
     }
   }
@@ -439,7 +440,7 @@ Always be helpful and provide clear responses with appropriate tool calls. Use R
   } catch (error) {
     console.error('❌ API Error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: getUserFriendlyError(error) },
       { status: 500 }
     )
   }

@@ -26,6 +26,14 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -70,9 +78,28 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   const [isListening, setIsListening] = useState(false)
   const recognitionRef = useRef<any>(null)
   const [documentSearch, setDocumentSearch] = useState('')
+  const [deletingDocument, setDeletingDocument] = useState<{ id: string; name: string } | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // Change inputRef to support textarea
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Truncate long filenames to prevent horizontal scroll
+  const truncateFilename = (filename: string, maxLength: number = 25) => {
+    if (filename.length <= maxLength) return filename
+    
+    const lastDotIndex = filename.lastIndexOf('.')
+    if (lastDotIndex === -1) {
+      // No extension, just truncate
+      return `${filename.substring(0, maxLength - 3)}...`
+    }
+    
+    const extension = filename.substring(lastDotIndex)
+    const nameWithoutExt = filename.substring(0, lastDotIndex)
+    const truncated = nameWithoutExt.substring(0, maxLength - extension.length - 3)
+    return `${truncated}...${extension}`
+  }
 
   // Load documents on mount
   useEffect(() => {
@@ -253,32 +280,66 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   }
 
   // Delete document
-  const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) {
-      return
-    }
+  const handleDeleteClick = (documentId: string) => {
+    const doc = uploadedDocuments.find(d => d.id === documentId)
+    if (!doc) return
+    
+    setDeletingDocument({ id: documentId, name: doc.original_name })
+    setShowDeleteDialog(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingDocument || isDeleting) return
+    
+    setIsDeleting(true)
+    const currentDoc = deletingDocument
     
     try {
-      const response = await fetch(`/api/delete-document/${documentId}?userId=${userId}`, {
+      const response = await fetch(`/api/delete-document/${currentDoc.id}?userId=${userId}`, {
         method: 'DELETE'
       })
       
       const result = await response.json()
       
+      // Close dialog
+      setShowDeleteDialog(false)
+      
       if (result.success) {
         // Remove from state
-        setUploadedDocuments(prev => prev.filter(d => d.id !== documentId))
-        setSelectedDocuments(prev => prev.filter(id => id !== documentId))
+        setUploadedDocuments(prev => prev.filter(d => d.id !== currentDoc.id))
+        setSelectedDocuments(prev => prev.filter(id => id !== currentDoc.id))
         
         const msg: Message = {
           role: 'assistant',
-          content: `🗑️ Document deleted successfully.`
+          content: `🗑️ "${currentDoc.name}" deleted successfully.`
+        }
+        setMessages(prev => [...prev, msg])
+      } else {
+        // Show error message
+        const msg: Message = {
+          role: 'assistant',
+          content: `❌ Failed to delete "${currentDoc.name}". Please try again.`
         }
         setMessages(prev => [...prev, msg])
       }
     } catch (error) {
       console.error('Delete failed:', error)
+      setShowDeleteDialog(false)
+      const msg: Message = {
+        role: 'assistant',
+        content: `❌ Failed to delete "${currentDoc.name}". Please try again.`
+      }
+      setMessages(prev => [...prev, msg])
+    } finally {
+      setIsDeleting(false)
+      setDeletingDocument(null)
     }
+  }
+  
+  const handleDeleteCancel = () => {
+    if (isDeleting) return
+    setShowDeleteDialog(false)
+    setDeletingDocument(null)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -422,12 +483,13 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     }
     lastSubmitTsRef.current = now
     if (!input.trim()) return
-    if (isBackgroundPending) return
-
+    // Allow submission even during streaming/background processing
+    // The message will be sent when current stream completes
+    
     const text = input
     setInput('')
 
-    if (isLoading) return
+    // Allow submitting even when streaming - message will be queued and sent
     await sendMessage(text)
   }
 
@@ -774,10 +836,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                           "flex items-center border rounded-md text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:border-purple-500 bg-gray-100/70 dark:bg-gray-700/40 border-gray-200 dark:border-gray-700/60 transition-all duration-200",
                           selectedDocuments.length > 0 
                             ? "justify-center w-7 h-7 p-0 gap-0"
-                            : "justify-start gap-2 h-7 px-2.5",
-                          isLoading ? "opacity-50 cursor-not-allowed" : ""
+                            : "justify-start gap-2 h-7 px-2.5"
                         )}
-                        disabled={isLoading}
                       >
                         <Plus className="w-3 h-3" />
                         <span
@@ -815,7 +875,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                         </Tooltip>
                       </div>
                     )}
-                    <DropdownMenuContent className="w-[300px] max-w-[92vw] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 rounded-md shadow-sm p-2">
+                    <DropdownMenuContent className="w-[300px] max-w-[92vw] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700/60 rounded-md shadow-sm p-2 overflow-x-hidden">
                       <div className="space-y-2">
                         <button
                           onClick={(e) => {
@@ -873,7 +933,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                           </div>
                         )}
 
-                        <div className="max-h-56 overflow-y-auto rounded-md">
+                        <div className="max-h-56 overflow-y-auto overflow-x-hidden rounded-md">
                           {uploadedDocuments.length > 0 ? (
                             uploadedDocuments
                               .filter(doc => !documentSearch || doc.original_name.toLowerCase().includes(documentSearch.toLowerCase()))
@@ -881,30 +941,54 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                               const status = documentStatuses.get(doc.id) || doc.processing_status
                               const isCompleted = status === 'completed'
                               const isSelected = selectedDocuments.includes(doc.id)
+                              const isFailed = status === 'failed'
+                              const isProcessing = status === 'processing'
                               
                               return (
-                                <button
+                                <div
                                   key={doc.id}
                                   className={cn(
-                                    "w-full text-left flex items-center gap-2 px-2.5 py-2 text-sm bg-transparent",
+                                    "w-full flex items-center gap-2 px-2.5 py-2 text-sm bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50",
                                     isSelected && "bg-gray-50 dark:bg-gray-800/50",
-                                    !isCompleted && "opacity-60 cursor-not-allowed"
+                                    !isCompleted && "opacity-60"
                                   )}
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    if (isCompleted) toggleDocumentSelection(doc.id)
-                                  }}
-                                  disabled={!isCompleted}
                                 >
-                                  <span className={cn(
-                                    "inline-flex items-center justify-center w-4 h-4 rounded-full border",
-                                    isSelected ? "bg-violet-600 border-violet-600" : "border-gray-300 dark:border-gray-600"
-                                  )}>
-                                    <CheckIcon className={cn("w-3 h-3 text-white", isSelected ? "opacity-100" : "opacity-0")} />
-                                  </span>
-                                  <FileText className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                                  <span className="truncate text-sm text-gray-700 dark:text-gray-300">{doc.original_name}</span>
-                                </button>
+                                  <button
+                                    className={cn(
+                                      "flex-1 text-left flex items-center gap-2 min-w-0",
+                                      !isCompleted && "cursor-not-allowed"
+                                    )}
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      if (isCompleted) toggleDocumentSelection(doc.id)
+                                    }}
+                                    disabled={!isCompleted}
+                                  >
+                                    <span className={cn(
+                                      "inline-flex items-center justify-center w-4 h-4 rounded-full border",
+                                      isSelected ? "bg-violet-600 border-violet-600" : "border-gray-300 dark:border-gray-600"
+                                    )}>
+                                      <CheckIcon className={cn("w-3 h-3 text-white", isSelected ? "opacity-100" : "opacity-0")} />
+                                    </span>
+                                    <FileText className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                                    <span className="truncate text-sm text-gray-700 dark:text-gray-300 min-w-0 flex-1" title={doc.original_name}>
+                                      {truncateFilename(doc.original_name, 20)}
+                                    </span>
+                                    {isProcessing && <Loader2 className="w-3 h-3 animate-spin flex-shrink-0 text-gray-500" />}
+                                    {isFailed && <XCircle className="w-3 h-3 text-red-500 flex-shrink-0" />}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      handleDeleteClick(doc.id)
+                                    }}
+                                    className="flex-shrink-0 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors p-1"
+                                    title="Delete document"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               )
                             })
                           ) : (
@@ -929,7 +1013,9 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                             className="flex items-center gap-1.5 px-2.5 py-1 border rounded-md text-xs flex-shrink-0 bg-gray-100/70 dark:bg-gray-700/40 border-gray-200 dark:border-gray-700/60"
                           >
                             <FileText className="w-3 h-3 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                            <span className="text-gray-700 dark:text-gray-300 whitespace-nowrap">{doc.original_name}</span>
+                            <span className="text-gray-700 dark:text-gray-300 whitespace-nowrap" title={doc.original_name}>
+                              {truncateFilename(doc.original_name, 20)}
+                            </span>
                             <button
                               type="button"
                               onClick={() => toggleDocumentSelection(docId)}
@@ -954,12 +1040,12 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   placeholder="Start a conversation..."
                   className="px-3 py-2 focus:ring-0 resize-none bg-white dark:bg-gray-900 border-none text-gray-800 placeholder:text-gray-400 dark:text-white"
                   style={{ minHeight: '48px', maxHeight: '140px', height: 'auto', boxShadow: 'none' }}
-                  disabled={isLoading || isBackgroundPending}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
                       e.stopPropagation()
                       if ((e as any).repeat) return
+                      // Allow submitting even during streaming - will queue the message
                       handleSubmit(e)
                     }
                   }}
@@ -976,14 +1062,14 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                       "h-7 w-7 p-0 bg-transparent border-0 hover:bg-transparent",
                       isListening ? "text-purple-600 dark:text-purple-400" : "text-gray-600 dark:text-gray-300"
                     )}
-                    disabled={isLoading}
+                    disabled={isLoading || isBackgroundPending}
                   >
                     <Mic className="w-3.5 h-3.5" />
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={isLoading || isBackgroundPending || !input.trim()}
-                    className="h-7 w-7 p-0 text-white bg-violet-600 hover:bg-violet-700 rounded-full"
+                    disabled={!input.trim()}
+                    className="h-7 w-7 p-0 text-white bg-violet-600 hover:bg-violet-700 rounded-full disabled:opacity-50"
                   >
                     <ArrowUp className="w-4 h-4" />
                   </Button>
@@ -1027,6 +1113,54 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   </Button>
                 </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Document</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this document? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {deletingDocument && (
+            <div className="py-2">
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <FileText className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={deletingDocument.name}>
+                  {deletingDocument.name}
+                </span>
+              </div>
+              <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                All associated data and search results will be permanently removed.
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete Document'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
               </div>
     </>
   )

@@ -13,6 +13,7 @@ export interface ExtractionResult {
     xlsxMetadata?: XLSXMetadata
     docxMetadata?: DOCXMetadata
     pdfMetadata?: PDFMetadata
+    rawRows?: CSVRow[] // For CSV rows storage in database
   }
 }
 
@@ -867,35 +868,46 @@ export class FileProcessor {
   private extractCSV(buffer: Buffer): ExtractionResult {
     try {
       const content = buffer.toString('utf-8')
-      const lines = content.split('\n').filter(line => line.trim())
       
-      if (lines.length === 0) {
-        return { content: '', success: false, error: 'Empty CSV file' }
+      // Use papaparse for robust CSV parsing
+      const Papa = require('papaparse')
+      
+      // Parse CSV with proper library
+      const parseResult = Papa.parse(content, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (header: string) => header.trim(),
+        transform: (value: string) => value.trim()
+      })
+      
+      if (parseResult.errors.length > 0) {
+        console.warn('⚠️ CSV parsing warnings:', parseResult.errors.slice(0, 5)) // Log first 5 errors
       }
       
-      // Parse headers
-      const headers = this.parseCSVLine(lines[0])
+      const headers = parseResult.meta.fields || []
+      const parsedData = parseResult.data as any[]
       
-      // Parse data rows
-      const rows: CSVRow[] = []
-      for (let i = 1; i < lines.length; i++) {
-        const values = this.parseCSVLine(lines[i])
+      // Convert to CSVRow format with proper type handling
+      const rows: CSVRow[] = parsedData.map((rawRow) => {
         const row: CSVRow = {}
-        
-        headers.forEach((header, index) => {
-          const value = values[index] || ''
-          // Try to parse as number
-          if (!isNaN(Number(value)) && value !== '') {
-            row[header] = Number(value)
-          } else if (value.toLowerCase() === 'true' || value.toLowerCase() === 'false') {
-            row[header] = value.toLowerCase() === 'true'
+        headers.forEach((header) => {
+          const value = rawRow[header]
+          if (value === null || value === undefined || value === '') {
+            row[header] = ''
           } else {
-            row[header] = value
+            const strValue = String(value)
+            // Try to parse as number
+            if (!isNaN(Number(strValue)) && strValue !== '' && strValue.trim() !== '') {
+              row[header] = Number(strValue)
+            } else if (strValue.toLowerCase() === 'true' || strValue.toLowerCase() === 'false') {
+              row[header] = strValue.toLowerCase() === 'true'
+            } else {
+              row[header] = strValue
+            }
           }
         })
-        
-        rows.push(row)
-      }
+        return row
+      }).filter(row => Object.keys(row).length > 0) // Remove completely empty rows
       
       // Generate metadata
       const metadata: CSVMetadata = {
@@ -905,11 +917,14 @@ export class FileProcessor {
         sampleData: rows.slice(0, 5) // First 5 rows as sample
       }
       
+      console.log(`✅ CSV parsed: ${headers.length} columns, ${rows.length} rows`)
+      
       return {
         content: this.formatCSVForRAG(headers, rows, metadata),
         success: true,
         metadata: {
           csvMetadata: metadata,
+          rawRows: rows, // Add raw rows for DB storage
           wordCount: content.split(/\s+/).length
         }
       }
@@ -1076,12 +1091,11 @@ export class FileProcessor {
       content += `\n`
     }
     
-    // Add sample data with better formatting
-    content += `Sample Data (First 10 rows):\n`
-    content += `Headers: ${headers.join(' | ')}\n`
+    // Add ALL data rows with better formatting
+    content += `All Data Rows:\n`
+    content += `Headers: ${headers.join(' | ')}\n\n`
     
-    const sampleRows = rows.slice(0, 10)
-    sampleRows.forEach((row, index) => {
+    rows.forEach((row, index) => {
       const values = headers.map(header => {
         const value = row[header] || ''
         // Format values based on type
@@ -1095,10 +1109,6 @@ export class FileProcessor {
       }).join(' | ')
       content += `Row ${index + 1}: ${values}\n`
     })
-    
-    if (rows.length > 10) {
-      content += `... and ${rows.length - 10} more rows\n`
-    }
     
     // Add statistical summaries for numeric columns
     if (csvMetadata?.columnTypes) {
@@ -1267,10 +1277,9 @@ export class FileProcessor {
           content += `- ${header}: ${dataTypes[header]}\n`
         })
         
-        // Add sample data (first 10 rows)
-        content += `\nSample Data:\n`
-        const sampleRows = Math.min(10, rowCount)
-        for (let row = 1; row < sampleRows; row++) {
+        // Add ALL data rows
+        content += `\nAll Data Rows:\n`
+        for (let row = 1; row < rowCount; row++) {
           const rowData: string[] = []
           for (let col = 0; col < columnCount; col++) {
             const cell = XLSX.utils.encode_cell({ r: row, c: col })
@@ -1278,10 +1287,6 @@ export class FileProcessor {
             rowData.push(cellValue.toString())
           }
           content += `Row ${row}: ${rowData.join(' | ')}\n`
-        }
-        
-        if (rowCount > 10) {
-          content += `... and ${rowCount - 10} more rows\n`
         }
         
         // Add statistical analysis for numeric columns

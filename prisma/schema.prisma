@@ -1116,6 +1116,7 @@ model user_documents {
   pinecone_namespace String?                   @map("pinecone_namespace")
   processing_status  String                    @default("pending") @map("processing_status")
   chunk_metadata     document_chunk_metadata[]
+  csv_rows           csv_row[]
   users              User                      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([file_name])
@@ -1137,6 +1138,18 @@ model document_chunk_metadata {
   @@index([document_id])
   @@index([user_id])
   @@index([pinecone_id])
+}
+
+model csv_row {
+  id          String         @id @default(cuid())
+  document_id String         @map("document_id")
+  row_index   Int            @map("row_index")
+  data        Json           // Store entire row as JSON
+  created_at  DateTime       @default(now()) @map("created_at")
+  document    user_documents @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@index([document_id, row_index])
+  @@map("csv_rows")
 }
 
 enum ActivityCategory {

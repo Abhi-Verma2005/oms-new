@@ -153,7 +153,10 @@ function convertFiltersToAPI(f: Filters, searchQuery: string, page: number = 1, 
   if (f.niche) api.niche = f.niche
   if (f.language) api.language = f.language
   if (f.country) api.webCountry = f.country
-  if (f.website) api.website = f.website
+  if (f.website) {
+    // Support both string and array for website filter
+    api.website = Array.isArray(f.website) ? f.website : f.website
+  }
   if (f.backlinkNature) api.linkAttribute = f.backlinkNature
   if (typeof f.availability === 'boolean') api.availability = f.availability
   if (f.remarkIncludes) api.websiteRemark = f.remarkIncludes
@@ -1043,7 +1046,11 @@ function FiltersUI({
     const add = (key: keyof Filters, label?: string, value?: unknown) => {
       if (value !== undefined && value !== '' && value !== null) chips.push({ key, label: label || String(value) })
     }
-    add('website', `Website: ${filters.website}`, filters.website)
+    if (Array.isArray(filters.website)) {
+      add('website', `Website: ${filters.website.length} sites`, filters.website)
+    } else {
+      add('website', `Website: ${filters.website}`, filters.website)
+    }
     add('niche', `Niche: ${filters.niche}`, filters.niche)
     add('language', `Lang: ${filters.language}`, filters.language)
     add('country', `Country: ${filters.country}`, filters.country)

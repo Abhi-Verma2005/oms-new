@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { ragSystem } from '@/lib/rag-minimal'
 import { applyFilters } from '@/lib/tools-minimal'
 import { normalizeNiche } from '@/lib/pineconeNicheNormalize'
+import { getUserFriendlyError } from '@/lib/error-handler'
 
 export const maxDuration = 60
 
@@ -30,30 +31,104 @@ export async function POST(req: NextRequest) {
       ? `\n\n**CURRENT TABLE STATE:**\nCurrently showing ${currentRowsVisible} row${currentRowsVisible !== 1 ? 's' : ''} in the table.`
       : ''
 
-    // FIXED: Smart document context retrieval
+    // FIXED: AI-driven document context retrieval
     let documentContext = ''
     let documentInsights = null
     
+    // DEBUG: Log selectedDocuments value
+    console.log(`🔍 DEBUG selectedDocuments:`, {
+      exists: selectedDocuments !== undefined,
+      isArray: Array.isArray(selectedDocuments),
+      length: selectedDocuments?.length,
+      value: selectedDocuments
+    })
+    
     if (selectedDocuments && selectedDocuments.length > 0) {
       try {
-        console.log(`📄 Searching document context for ${selectedDocuments.length} documents:`, selectedDocuments)
+        console.log(`📄 Analyzing retrieval strategy for ${selectedDocuments.length} documents`)
         
-        // FIXED: Pass selectedDocuments to filter search results
-        const relevantChunks = await ragSystem.searchDocumentChunks(
-          userMessage, 
-          userId, 
-          3, // Top 3 chunks (reduced)
-          2000, // Max 2000 tokens (reduced)
-          selectedDocuments // Pass selected documents to filter results
+        // Get document metadata for context
+        const documentMetadata = await Promise.all(
+          selectedDocuments.map(async (docId) => {
+            const doc = await prisma.user_documents.findUnique({
+              where: { id: docId },
+              select: { file_name: true, mime_type: true, original_name: true }
+            })
+            return {
+              documentId: docId,
+              documentName: doc?.original_name || doc?.file_name || 'Unknown',
+              documentType: doc?.mime_type || 'Unknown'
+            }
+          })
         )
+        
+        // AI analyzes retrieval intent
+        const primaryDoc = documentMetadata[0]
+        const retrievalDecision = await ragSystem.analyzeRetrievalIntent(
+          userMessage,
+          {
+            documentId: primaryDoc?.documentId,
+            documentName: primaryDoc?.documentName,
+            documentType: primaryDoc?.documentType
+          }
+        )
+        
+        console.log(`🤖 AI Retrieval Decision:`, {
+          mode: retrievalDecision.retrievalMode,
+          reasoning: retrievalDecision.reasoning,
+          confidence: retrievalDecision.confidence,
+          chunkType: retrievalDecision.chunkType
+        })
+        
+        // Execute retrieval based on AI decision
+        let relevantChunks: any[] = []
+        const isCSV = primaryDoc?.documentType === 'text/csv'
+        
+        // For CSV "all rows" queries, use database (faster + exact)
+        if (retrievalDecision.retrievalMode === 'metadata_fetch_all' && 
+            retrievalDecision.chunkType === 'csv_rows' &&
+            primaryDoc?.documentType === 'text/csv') {
+          console.log('📊 Using database retrieval for CSV rows')
+          const allRows = await ragSystem.getAllCSVRowsFromDB(
+            primaryDoc.documentId,
+            userId,
+            10000 // Max rows
+          )
+          
+          // Format rows as chunks for LLM context
+          if (allRows.length > 0) {
+            relevantChunks = [{
+              content: formatCSVRowsForLLM(allRows, primaryDoc.documentName),
+              score: 1.0,
+              documentId: primaryDoc.documentId,
+              documentName: primaryDoc.documentName,
+              chunkIndex: 0,
+              metadata: { chunkType: 'csv_rows', source: 'database', rowCount: allRows.length }
+            }]
+            
+            console.log(`✅ Retrieved ${allRows.length} rows from database`)
+          }
+        } else {
+          // Use vector search for semantic queries or non-CSV documents
+          relevantChunks = await ragSystem.searchDocumentChunks(
+            userMessage, 
+            userId, 
+            retrievalDecision.retrievalMode === 'metadata_fetch_all' ? 100 : 3,
+            retrievalDecision.retrievalMode === 'metadata_fetch_all' ? 32000 : 2000,
+            selectedDocuments,
+            retrievalDecision.retrievalMode,
+            // Only pass CSV-specific chunkType when the document is actually a CSV
+            isCSV ? retrievalDecision.chunkType : undefined
+          )
+        }
         
         if (relevantChunks.length > 0) {
           // Enhanced document context formatting for CSV and other documents
           documentContext = formatDocumentContextForAllTypes(relevantChunks, userMessage)
           
-          console.log(`✅ Found ${relevantChunks.length} relevant document chunks from selected documents`)
+          console.log(`✅ Found ${relevantChunks.length} document chunks (${retrievalDecision.retrievalMode} mode)`)
         } else {
-          console.log(`⚠️ No relevant chunks found in selected documents`)
+          console.log(`⚠️ No relevant chunks found`)
         }
       } catch (error) {
         console.error('❌ Document context error:', error)
@@ -79,6 +154,14 @@ export async function POST(req: NextRequest) {
     const stage1SystemMessage = {
       role: 'system' as const,
       content: `You are an intelligent assistant for a publisher marketplace. You understand all filter parameters and can help users find the perfect websites.
+
+**CRITICAL PRIVACY RULES:**
+- NEVER mention internal technical details, system architecture, or implementation specifics
+- NEVER expose filter parameter names (like daMin, drMin, etc.) or technical terminology
+- NEVER mention "Stage 1", "Stage 2", "tool execution", "API calls", "vector search", or similar internal processes
+- NEVER reveal error details or debugging information
+- NEVER discuss system limitations or technical constraints
+- Focus ONLY on providing helpful user-facing responses about finding websites and publishers
 
 **CURRENT FILTERS:**
 ${currentFiltersContext}
@@ -209,37 +292,42 @@ ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 - **Last Published**: Filter by last publication date
   * Filter: lastPublishedAfter
 
-**Website Filter (EXCLUSIVE):**
-- **Website**: Filter by specific website name/domain (EXCLUSIVE FILTER)
-  * Filter: website
-  * **CRITICAL**: When a website filter is applied, ALL other filters are automatically cleared/replaced
-  * This filter is exclusive - only the website filter will be active, no other filters can coexist with it
-  * Use when user asks for a specific website, e.g., "show me example.com", "find techcrunch.com", "filter for wikipedia.org"
-  * The website value should be the domain name (with or without protocol, e.g., "techcrunch.com" or "https://techcrunch.com")
+**Website Filter:**
+- **Website**: Filter by specific website name/domain (supports single or multiple websites)
+  * Filter: website (string or array)
+  * **Single website**: Use when user asks for one website, e.g., "show me example.com"
+  * **Multiple websites**: Use when user asks for multiple websites or references uploaded document
+    - Examples: "show me techcrunch.com and wikipedia.org" → website: ["techcrunch.com", "wikipedia.org"]
+    - "show me websites from my document" → website: [array of extracted websites]
+  * The website value should be domain name(s) (with or without protocol, normalized)
+  * **When single website**: Clears other filters (exclusive behavior for single)
+  * **When multiple websites**: Can coexist with other filters
 
 **FILTER OPERATION INTELLIGENCE:**
 
-**SPECIAL RULE - Website Filter (EXCLUSIVE):**
-- **When user asks for a specific website**: Apply ONLY the website filter, clear ALL other filters
+**SPECIAL RULE - Website Filter:**
+- **Single website**: Apply ONLY the website filter, clear ALL other filters (exclusive)
+- **Multiple websites**: Can be combined with other filters
 - Keywords: "show me [website]", "find [website]", "filter for [website]", "search for [website]", "[website] only"
 - Examples: 
   * "show me techcrunch.com" → Apply website: "techcrunch.com", clear all other filters
-  * "find example.com" → Apply website: "example.com", clear all other filters
-  * "filter for wikipedia.org" → Apply website: "wikipedia.org", clear all other filters
-- **IMPORTANT**: When website filter is present, NO other filters should be applied or kept
-- If user currently has filters applied and asks for a website, replace everything with just the website filter
+  * "show me techcrunch.com and wikipedia.org" → Apply website: ["techcrunch.com", "wikipedia.org"]
+  * "show me websites from my document" → Extract websites from document, apply as array
+- **IMPORTANT**: Single website clears other filters; multiple websites can coexist with other filters
 
 **When to APPEND filters:**
 - User says "also", "and", "plus", "add", "include"
 - User wants to add more criteria to existing search
 - Example: "also show ones from India" (adds country filter)
-- **EXCEPTION**: Never append filters when user asks for a specific website - website filter is always exclusive
+- **EXCEPTION**: Never append filters when user asks for a single specific website - single website filter is exclusive
+- **NOTE**: Multiple websites can be appended/combined with other filters
 
 **When to REPLACE specific filters:**
 - User says "change", "instead", "actually", "update"
 - User wants to modify a specific aspect
 - Example: "change price to under $200" (replaces price filter)
-- **EXCEPTION**: If replacing with a website filter, clear ALL filters first
+- **EXCEPTION**: If replacing with a single website filter, clear ALL filters first (exclusive)
+- **NOTE**: If replacing with multiple websites, only replace website filter (not exclusive)
 
 **When to CLEAR ALL filters:**
 - User says "clear", "reset", "remove all", "start over", "new search"
@@ -371,7 +459,7 @@ Be intelligent, helpful, use beautiful markdown formatting, and show that you un
         model: 'gpt-4o',
         messages: [stage1SystemMessage, ...messages],
               temperature: 0.7,
-        max_tokens: 800,
+        max_tokens: 3000,
               stream: true
             })
           })
@@ -606,39 +694,45 @@ ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 - "available only", "in stock" → availability: true
 - "any availability" → Remove availability
 
-**Website (EXCLUSIVE FILTER):**
-- "show me [website]", "find [website]", "filter for [website]", "search for [website]", "[website] only"
-- Extract the website domain name from user input
-- Normalize: Remove protocol (http://, https://), remove www., keep domain + TLD
-- Examples:
-  * "show me techcrunch.com" → website: "techcrunch.com"
-  * "find https://www.example.org" → website: "example.org"
-  * "filter for www.wikipedia.org" → website: "wikipedia.org"
-  * "search for example.com" → website: "example.com"
-- **CRITICAL RULE**: When website filter is applied, ALL other filters must be removed
-- The website filter parameter should contain ONLY the website value, with all other filter keys removed
-- If website filter is present in parameters, the final parameters object should ONLY contain { website: "[value]" }
+**Website (Single or Multiple):**
+- Single: "show me [website]", "find [website]", "filter for [website]", "[website] only"
+- Multiple: "show me [website1] and [website2]", "websites from my document", "[website1], [website2], [website3]"
+- Extract website domain name(s) from user input or uploaded document
+- Normalize each: Remove protocol (http://, https://), remove www., keep domain + TLD
+- Single website examples:
+  * "show me techcrunch.com" → website: "techcrunch.com" (clears other filters)
+  * "find https://www.example.org" → website: "example.org" (clears other filters)
+- Multiple website examples:
+  * "show me techcrunch.com and wikipedia.org" → website: ["techcrunch.com", "wikipedia.org"]
+  * "websites from my document" → Extract all websites from document → website: [array]
+- **CRITICAL RULE**: 
+  * Single website: Clear ALL other filters (exclusive)
+  * Multiple websites: Can coexist with other filters
+- When extracting from document: Search RAG context for website/domain patterns, normalize each, return as array
 
 **4. SMART FILTER MERGING:**
 
-**SPECIAL CASE - Website Filter (EXCLUSIVE):**
-- **If website filter is being applied**: Clear ALL current filters, set ONLY website filter
-- Do NOT merge website filter with any other filters
-- Final parameters: { website: "[value]" } only
-- Example: Current filters: { niche: "tech", priceMax: 500 }, User: "show me example.com"
+**SPECIAL CASE - Website Filter:**
+- **Single website**: Clear ALL current filters, set ONLY website filter
+- **Multiple websites**: Can merge with current filters
+- Single example: Current filters: { niche: "tech", priceMax: 500 }, User: "show me example.com"
   → Final: { website: "example.com" } (all other filters removed)
+- Multiple example: Current filters: { niche: "tech" }, User: "show me techcrunch.com and wikipedia.org"
+  → Final: { website: ["techcrunch.com", "wikipedia.org"], niche: "tech" } (niche kept)
 
 **For APPEND operations:**
 - Start with current filters
 - Add new filters
 - Keep existing values unless explicitly changed
-- **EXCEPTION**: If adding website filter, ignore this rule and use Website Filter exclusive behavior
+- **EXCEPTION**: If adding single website filter, clear all other filters (exclusive behavior)
+- **NOTE**: If adding multiple websites, merge with current filters (not exclusive)
 
 **For REPLACE operations:**
 - Start with current filters
 - Replace only the mentioned filter type
 - Keep all other filters unchanged
-- **EXCEPTION**: If replacing with website filter, clear ALL filters first
+- **EXCEPTION**: If replacing with single website filter, clear ALL filters first (exclusive)
+- **NOTE**: If replacing with multiple websites, only replace website filter (not exclusive)
 
 **For CLEAR ALL operations:**
 - Start with empty filters
@@ -809,14 +903,14 @@ Analysis:
   "confidence": 0.98
 }
 
-Example 10 - WEBSITE FILTER (EXCLUSIVE):
+Example 10 - WEBSITE FILTER (SINGLE):
 User: "Show me techcrunch.com"
 Current: { niche: "tech", priceMax: 500, country: "United States" }
 Response: "I'll search for TechCrunch..."
 Analysis:
 {
   "shouldExecuteTool": true,
-  "reasoning": "Website filter request - user wants a specific website. This is an exclusive filter that clears all other filters.",
+  "reasoning": "Single website filter request - clears all other filters (exclusive)",
   "toolName": "applyFilters",
   "parameters": {
     "website": "techcrunch.com"
@@ -824,19 +918,35 @@ Analysis:
   "confidence": 0.95
 }
 
-Example 11 - WEBSITE FILTER FROM URL:
-User: "Find https://www.example.org"
-Current: { niche: "health" }
-Response: "I'll search for example.org..."
+Example 11 - MULTIPLE WEBSITES:
+User: "Show me techcrunch.com and wikipedia.org"
+Current: { niche: "tech" }
+Response: "I'll search for those websites..."
 Analysis:
 {
   "shouldExecuteTool": true,
-  "reasoning": "Website filter request with URL - normalize to domain name and apply exclusively",
+  "reasoning": "Multiple website filter - extract and normalize all websites, can coexist with other filters",
   "toolName": "applyFilters",
   "parameters": {
-    "website": "example.org"
+    "website": ["techcrunch.com", "wikipedia.org"],
+    "niche": "tech"
   },
   "confidence": 0.95
+}
+
+Example 12 - WEBSITES FROM DOCUMENT:
+User: "Show me websites from my uploaded document"
+Current: {}
+Response: "I'll extract websites from your document..."
+Analysis:
+{
+  "shouldExecuteTool": true,
+  "reasoning": "Document-based website extraction - search RAG for website patterns, return as array",
+  "toolName": "applyFilters",
+  "parameters": {
+    "website": ["techcrunch.com", "wikipedia.org", "example.com", ...]
+  },
+  "confidence": 0.90
 }
 
 **CRITICAL RULES:**
@@ -892,22 +1002,43 @@ Be intelligent about understanding the user's intent and perform the correct fil
           if (analysis.shouldExecuteTool && analysis.toolName === 'applyFilters') {
             console.log(`   Parameters:`, analysis.parameters)
             
-            // WEBSITE FILTER EXCLUSIVE BEHAVIOR: If website filter is present, clear all other filters
+            // WEBSITE FILTER HANDLING: Normalize single or multiple websites
             if (analysis.parameters && analysis.parameters.website) {
               const websiteValue = analysis.parameters.website
-              console.log(`   🌐 Website filter detected: "${websiteValue}" - Clearing all other filters (exclusive filter)`)
+              const isArray = Array.isArray(websiteValue)
               
-              // Normalize website value: remove protocol and www.
-              let normalizedWebsite = websiteValue.trim()
-              normalizedWebsite = normalizedWebsite.replace(/^https?:\/\//i, '') // Remove http:// or https://
-              normalizedWebsite = normalizedWebsite.replace(/^www\./i, '') // Remove www.
-              normalizedWebsite = normalizedWebsite.split('/')[0] // Remove path
-              normalizedWebsite = normalizedWebsite.split('?')[0] // Remove query params
-              normalizedWebsite = normalizedWebsite.split('#')[0] // Remove hash
+              // Normalize website value(s)
+              const normalizeWebsite = (w: string): string => {
+                let normalized = String(w).trim()
+                normalized = normalized.replace(/^https?:\/\//i, '') // Remove http:// or https://
+                normalized = normalized.replace(/^www\./i, '') // Remove www.
+                normalized = normalized.split('/')[0] // Remove path
+                normalized = normalized.split('?')[0] // Remove query params
+                normalized = normalized.split('#')[0] // Remove hash
+                return normalized
+              }
               
-              // Replace all parameters with only website filter
-              analysis.parameters = { website: normalizedWebsite }
-              console.log(`   ✅ Normalized website filter: "${normalizedWebsite}" (exclusive - all other filters cleared)`)
+              if (isArray) {
+                // Multiple websites: normalize each, keep other filters
+                const normalized = websiteValue
+                  .filter(w => w && typeof w === 'string')
+                  .map(normalizeWebsite)
+                  .filter(w => w.length > 0)
+                
+                if (normalized.length > 0) {
+                  // Limit to 100 for performance
+                  const limited = normalized.slice(0, 100)
+                  analysis.parameters.website = limited
+                  console.log(`   🌐 Multiple websites detected: ${limited.length} websites (can coexist with other filters)`)
+                } else {
+                  delete analysis.parameters.website
+                }
+              } else {
+                // Single website: normalize and clear other filters (exclusive)
+                const normalized = normalizeWebsite(websiteValue)
+                analysis.parameters = { website: normalized }
+                console.log(`   🌐 Single website detected: "${normalized}" - Clearing all other filters (exclusive)`)
+              }
             }
             
             // Execute the filter tool
@@ -954,7 +1085,7 @@ Be intelligent about understanding the user's intent and perform the correct fil
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
                 type: 'background_error',
                 stage: 2,
-                error: error instanceof Error ? error.message : 'Unknown error'
+                error: getUserFriendlyError(error)
               })}\n\n`))
               // Even on error, consider background done
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
@@ -996,7 +1127,7 @@ Be intelligent about understanding the user's intent and perform the correct fil
           console.error('❌ Stream error:', error)
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
             type: 'error',
-            error: error instanceof Error ? error.message : 'Unknown error' 
+            error: getUserFriendlyError(error)
           })}\n\n`))
           controller.close()
         }
@@ -1014,7 +1145,7 @@ Be intelligent about understanding the user's intent and perform the correct fil
   } catch (error) {
     console.error('❌ API Error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: getUserFriendlyError(error) },
       { status: 500 }
     )
   }
@@ -1177,4 +1308,36 @@ function formatDocumentContextForAllTypes(chunks: any[], userMessage: string): s
   context += '**Instructions:** Use this document context to provide accurate, data-driven responses. Reference specific values, columns, rows, sheets, sections, tables, lists, and pages when relevant. For Excel workbooks, prioritize workbook summaries and sheet overviews for general questions, and specific columns/statistics for detailed analysis. For Word documents, prioritize document summaries and outlines for general questions, and specific sections/tables for detailed analysis. For PDF documents, prioritize document summaries and outlines for general questions, and specific sections/tables/pages for detailed analysis.'
   
   return context
+}
+
+// Helper function to format CSV rows from database for LLM context
+function formatCSVRowsForLLM(rows: Array<{rowIndex: number, data: any}>, documentName: string): string {
+  if (rows.length === 0) {
+    return `No rows found in ${documentName}`
+  }
+  
+  // Extract headers from first row
+  const firstRow = rows[0].data
+  const headers = Object.keys(firstRow)
+  
+  let text = `All CSV Data from ${documentName} (${rows.length} rows):\n\n`
+  text += `Headers: ${headers.join(' | ')}\n\n`
+  text += `Data Rows:\n`
+  
+  rows.forEach(({ rowIndex, data }) => {
+    const values = headers.map((header) => {
+      const value = data[header]
+      if (value === null || value === undefined) {
+        return ''
+      }
+      // Quote string values, keep numbers as-is
+      if (typeof value === 'string' && value.includes('|')) {
+        return `"${value}"`
+      }
+      return String(value)
+    }).join(' | ')
+    text += `Row ${rowIndex + 1}: ${values}\n`
+  })
+  
+  return text
 }

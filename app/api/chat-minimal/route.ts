@@ -11,6 +11,7 @@ import {
   uploadDocument, 
   getUserContext 
 } from '@/lib/tools-minimal'
+import { getUserFriendlyError } from '@/lib/error-handler'
 
 export const maxDuration = 60
 
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('❌ API Error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: getUserFriendlyError(error) },
       { status: 500 }
     )
   }
