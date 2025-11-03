@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -24,6 +24,7 @@ interface AIChatbotProps {
 
 export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { } = useAIChatbot()
   const { getUserContextForAI, refreshUserData, isLoading: userContextLoading } = useUserContextForAI()
   const { getCurrentState } = useFilterStore()
@@ -181,13 +182,16 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
   const applyFilters = (filterCommand: string) => {
     try {
       const currentUrl = new URL(window.location.href)
+      const currentPath = (pathname || window.location.pathname).replace(/\/$/, '') // Remove trailing slash
       
       if (filterCommand === 'RESET') {
         // Reset all filters - navigate to publishers page without any parameters
-        // Defer navigation to prevent layout shift during streaming
-        setTimeout(() => {
-          router.replace('/publishers')
-        }, 100)
+        // Only redirect if not already on /publishers
+        if (currentPath !== '/publishers') {
+          setTimeout(() => {
+            router.replace('/publishers')
+          }, 100)
+        }
         return
       }
       
@@ -209,11 +213,19 @@ export function AIChatbot({ isOpen, onToggle }: AIChatbotProps) {
       // Build new URL
       const newUrl = `/publishers${newParams.toString() ? `?${newParams.toString()}` : ''}`
       
-      // Defer navigation to prevent layout shift during streaming
-      // This allows the streaming animation to complete before page navigation
-      setTimeout(() => {
-        router.replace(newUrl)
-      }, 100)
+      // Only redirect if not already on /publishers
+      if (currentPath !== '/publishers') {
+        // Defer navigation to prevent layout shift during streaming
+        // This allows the streaming animation to complete before page navigation
+        setTimeout(() => {
+          router.replace(newUrl)
+        }, 100)
+      } else {
+        // Already on /publishers, just update the URL with new params
+        setTimeout(() => {
+          router.replace(newUrl)
+        }, 100)
+      }
     } catch (error) {
       console.error('Error applying filters:', error)
     }
