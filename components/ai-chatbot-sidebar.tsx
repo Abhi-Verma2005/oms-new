@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -54,15 +54,10 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   const { getCurrentState, updateFromAI } = useFilterStore()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const pathname = usePathname()
 
-  const [messages, setMessages] = useState<Message[]>(() => {
-    // Load messages from localStorage on component mount
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`chat-messages-${userId}`)
-      return saved ? JSON.parse(saved) : []
-    }
-    return []
-  })
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isMounted, setIsMounted] = useState(false)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isBackgroundPending, setIsBackgroundPending] = useState(false)
@@ -107,6 +102,22 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
     return () => {
       // FIXED: Cleanup all intervals on unmount
       intervalRefs.current.forEach(interval => clearInterval(interval))
+    }
+  }, [userId])
+
+  // Load messages from localStorage after mount to prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`chat-messages-${userId}`)
+      if (saved) {
+        try {
+          const parsedMessages = JSON.parse(saved)
+          setMessages(parsedMessages)
+        } catch (error) {
+          console.error('Failed to parse saved messages:', error)
+        }
+      }
     }
   }, [userId])
 
@@ -416,7 +427,34 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                           if (typeof (window as any).setAIFilterFlag === 'function') {
                             ;(window as any).setAIFilterFlag()
                           }
+                          
+                          // Update filters in Zustand store first
                           updateFromAI(toolResult.filters)
+                          
+                          // Also persist to localStorage keys that publishers page reads from
+                          // This ensures filters persist even after redirect
+                          try {
+                            const storeState = useFilterStore.getState()
+                            const filterPayload = { filters: toolResult.filters, q: '' }
+                            
+                            if (storeState.selectedProjectId) {
+                              localStorage.setItem(`oms:last-filters:${storeState.selectedProjectId}`, JSON.stringify(filterPayload))
+                            } else {
+                              localStorage.setItem('oms:last-filters:individual', JSON.stringify(filterPayload))
+                            }
+                          } catch (error) {
+                            console.warn('Failed to persist filters to localStorage:', error)
+                          }
+                          
+                          // Check if we're not on /publishers and redirect if needed
+                          const currentPath = (pathname || window.location.pathname).replace(/\/$/, '') // Remove trailing slash
+                          if (currentPath !== '/publishers') {
+                            // Small delay to ensure persistence completes before redirect
+                            setTimeout(() => {
+                              router.push('/publishers')
+                            }, 100)
+                          }
+                          
                           setTimeout(() => setShowToolFeedback(false), 3000)
                         }
                         break
@@ -692,7 +730,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
       {/* Header */}
       <div className="flex items-center justify-end px-4 py-2 border-b border-gray-200 dark:border-gray-700/60">
         <div className="flex gap-2">
-          {!isMinimized && messages.length > 0 && (
+          {!isMinimized && isMounted && messages.length > 0 && (
             <Button
               variant="ghost"
               size="icon"

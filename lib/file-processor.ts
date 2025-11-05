@@ -1,6 +1,7 @@
 import mammoth from 'mammoth'
 import * as XLSX from 'xlsx'
 import PDFParser from 'pdf-parse/lib/pdf-parse'
+import Papa from 'papaparse'
 
 export interface ExtractionResult {
   content: string
@@ -870,8 +871,6 @@ export class FileProcessor {
       const content = buffer.toString('utf-8')
       
       // Use papaparse for robust CSV parsing
-      const Papa = require('papaparse')
-      
       // Parse CSV with proper library
       const parseResult = Papa.parse(content, {
         header: true,
