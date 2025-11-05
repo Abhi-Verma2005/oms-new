@@ -29,7 +29,14 @@ export default function Header({
   const { sidebarOpen, setSidebarOpen } = useAppProvider()
   const { openSidebar } = useLayout()
   const { toggleSidebar } = useResizableLayout()
-  const { getTotalItems, toggleCart } = useCart()
+  const { state, getTotalItems, toggleCart } = useCart()
+  const totalItems = getTotalItems()
+  
+  // Debug: Log cart changes (remove in production if needed)
+  useEffect(() => {
+    console.log('🛒 Cart updated:', { totalItems, itemCount: state.items.length, items: state.items })
+  }, [totalItems, state.items])
+  
   const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false)
   const [chatbotOpen, setChatbotOpen] = useState<boolean>(false)
   const [credits, setCredits] = useState<number | null>(null)
@@ -277,11 +284,17 @@ export default function Header({
               <button
                 onClick={toggleCart}
                 className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-gray-100 lg:hover:bg-gray-200 dark:hover:bg-gray-700/50 dark:lg:hover:bg-gray-800 rounded-full relative"
-                title="Shopping Cart"
+                title={`Shopping Cart${totalItems > 0 ? ` (${totalItems} item${totalItems !== 1 ? 's' : ''})` : ''}`}
               >
                 <span className="sr-only">Shopping Cart</span>
                 <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500/80 dark:text-gray-400/80" />
               </button>
+              {/* Cart Badge - positioned relative to parent div */}
+              {totalItems > 0 && (
+                <span className="absolute top-0 right-0 min-w-[20px] h-[20px] flex items-center justify-center px-1.5 text-[11px] leading-none font-bold text-white bg-violet-600 dark:bg-violet-500 rounded-full border-2 border-white dark:border-gray-900 shadow-lg z-[100] transform translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                  {totalItems > 99 ? '99+' : totalItems}
+                </span>
+              )}
               {/* Cart Modal positioned relative to this button */}
               <CartModal />
             </div>

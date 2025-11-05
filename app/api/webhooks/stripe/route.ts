@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
     hasSignature: !!signature,
     bodyLength: rawBody.length,
     webhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+    webhookSecretPrefix: process.env.STRIPE_WEBHOOK_SECRET?.substring(0, 10) || 'not set',
+    environment: process.env.NODE_ENV,
     signature: signature?.substring(0, 20) + '...'
   })
 
