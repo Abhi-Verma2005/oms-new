@@ -548,10 +548,13 @@ ${currentFiltersContext}
 **SYSTEM NORMALIZED NICHE HINT (from vector search):**
 ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 
-**FILTER OPERATION ANALYSIS:**
+**ACTION ANALYSIS:**
 
 **1. DETERMINE INTENT:**
-- ACTION: User wants to see/modify filtered results → Call applyFilters
+- ACTION (Navigation): If the user asks to go/open/navigate to a page → Call navigateTo with { route }
+  * Keywords: "go to", "navigate to", "open", "take me to", "show the", "view"
+  * Common pages: "/publishers", "/cart", "/orders", "/profile" (or explicit "/route")
+- ACTION (Filtering): User wants to see/modify filtered results → Call applyFilters
   * Keywords: "show me", "find me", "get me", "filter", "apply", "search for", "look for", "I want", "I need"
   * Quality terms: "good", "decent", "premium", "high-quality", "best", "top"
   * Specific criteria: "under $X", "DA above X", "tech sites", "from India", "with low spam"
@@ -602,7 +605,18 @@ ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 - Action: Adjust existing filters relatively
 - Example: "make it more expensive" → Increase priceMin, decrease priceMax
 
-**3. FILTER EXTRACTION RULES:**
+**3. NAVIGATION RULES:**
+
+When intent is navigation, determine a canonical route string:
+- Map terms → routes:
+  * "publishers", "marketplace", "sites" → "/publishers"
+  * "cart", "shopping cart" → "/cart"
+  * "orders", "order history" → "/orders"
+  * "profile", "account" → "/profile"
+- If the user mentions an absolute in-app route like "/something", use it directly.
+- Return parameters for navigation as: { "route": "/target" }
+
+**4. FILTER EXTRACTION RULES:**
 
 **Quality/Authority:**
 - "excellent", "top-tier", "premium" → daMin: 70, drMin: 70, spamMax: 2
@@ -750,9 +764,10 @@ ${normalizedNicheHint ? normalizedNicheHint : 'None'}
 {
   "shouldExecuteTool": true/false,
   "reasoning": "Detailed explanation of the operation type and filters",
-  "toolName": "applyFilters" or null,
+  "toolName": "applyFilters" | "navigateTo" | null,
   "parameters": {
-    // Final filter object after operation
+    // For navigateTo: { route: "/target" }
+    // For applyFilters: Final filter object after operation
   },
   "confidence": 0.0-1.0
 }
@@ -1088,6 +1103,38 @@ Be intelligent about understanding the user's intent and perform the correct fil
                 error: getUserFriendlyError(error)
               })}\n\n`))
               // Even on error, consider background done
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'background_complete',
+                stage: 2
+              })}\n\n`))
+            }
+          } else if (analysis.shouldExecuteTool && analysis.toolName === 'navigateTo' && analysis.parameters?.route) {
+            try {
+              const rawRoute = String(analysis.parameters.route || '').trim()
+              const safeRoute = rawRoute.startsWith('/') ? rawRoute : `/${rawRoute}`
+              console.log(`🧭 Navigation decided in Stage 2 → ${safeRoute}`)
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'background_result',
+                stage: 2,
+                toolResults: [{
+                  action: 'navigate',
+                  route: safeRoute,
+                  message: `Navigating to ${safeRoute}`,
+                  success: true
+                }],
+                message: `🧭 Navigation: ${safeRoute}`
+              })}\n\n`))
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'background_complete',
+                stage: 2
+              })}\n\n`))
+            } catch (error) {
+              console.error('❌ Navigation emission failed:', error)
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                type: 'background_error',
+                stage: 2,
+                error: getUserFriendlyError(error)
+              })}\n\n`))
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
                 type: 'background_complete',
                 stage: 2
