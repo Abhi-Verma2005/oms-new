@@ -144,7 +144,7 @@ export default function CheckoutClient() {
   return (
     <div className="lg:relative lg:flex">
       {/* Content */}
-      <div className="px-4 sm:px-6 lg:px-8 pt-4 pb-8 lg:grow lg:pr-8 xl:pr-16 2xl:ml-[80px]">
+      <div className="px-4 sm:px-6 lg:px-8 pt-0 pb-8 lg:grow lg:pr-8 xl:pr-16 2xl:ml-[80px]">
         <div className="lg:max-w-[640px] lg:mx-auto">
           {/* Cart items */}
           <div className="mb-6 lg:mb-0">
@@ -187,7 +187,7 @@ export default function CheckoutClient() {
       {/* Sidebar */}
       <div>
         <div className="lg:sticky lg:top-16 bg-linear-to-r from-white/30 dark:from-gray-800/30 lg:overflow-x-hidden lg:overflow-y-auto no-scrollbar lg:shrink-0 border-t lg:border-t-0 lg:border-l border-gray-200 dark:border-gray-700/60 lg:w-[320px] xl:w-[352px] 2xl:w-[calc(352px+80px)] lg:h-[calc(100dvh-64px)]">
-          <div className="py-8 px-4 lg:px-8 2xl:px-12">
+          <div className="pt-4 pb-8 px-4 lg:px-8 2xl:px-12">
             <div className="max-w-sm mx-auto lg:max-w-none">
               <h2 className="text-2xl text-gray-800 dark:text-gray-100 font-bold mb-6 tracking-tight">Review & Pay</h2>
               <div className="space-y-7">

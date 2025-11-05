@@ -34,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import CartInlineSummary from '@/components/cart-inline-summary'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -1068,7 +1069,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
                   </div>
                 </div>
 
-                
+                {/* Cart summary (above input) */}
+                <CartInlineSummary />
 
                 {/* Text input */}
                 <Textarea
