@@ -60,22 +60,24 @@ export default function CheckoutClient() {
       setLoading(true)
       setError(null)
       try {
-        // Prepare items for the payment intent
+        // Prepare items for the payment intent (prices in cents)
         const items = priceCentsParam > 0
-          ? [{ id: productId || 'package', name: siteName || 'Package', price: amount, quantity: 1 }]
+          ? [{ id: productId || 'package', name: siteName || 'Package', priceCents: priceCentsParam, quantity: 1 }]
           : state.items.map(item => {
               if (item.kind === 'site' && item.site) {
+                const priceCents = Math.round((item.site.publishing.price || item.site.publishing.priceWithContent || 0) * 100)
                 return {
                   id: item.site.id,
                   name: item.site.name,
-                  price: item.site.publishing.price || item.site.publishing.priceWithContent || 0,
+                  priceCents,
                   quantity: item.quantity || 1,
                 }
               }
+              const priceCents = Math.round((item.product?.priceDollars || 0) * 100)
               return {
                 id: item.product?.id || 'product',
                 name: item.product?.name || 'Product',
-                price: item.product?.priceDollars || 0,
+                priceCents,
                 quantity: item.quantity || 1,
               }
             })
@@ -279,24 +281,8 @@ function PaymentForm() {
         console.log('Payment succeeded:', paymentIntent)
         clearCart()
         
-        // Notify AI about payment success
-        try {
-          await fetch('/api/ai-notifications/payment-success', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: paymentIntent.id,
-              amount: paymentIntent.amount,
-              items: state.items.map(item => ({
-                id: item.kind === 'site' ? item.site?.id : item.product?.id,
-                name: item.kind === 'site' ? item.site?.name : item.product?.name,
-                quantity: item.quantity
-              }))
-            })
-          })
-        } catch (notificationError) {
-          console.warn('Failed to notify AI about payment success:', notificationError)
-        }
+        // Payment success - order will be created by webhook
+        // No need to notify AI here, it will be handled when order is created
 
         // Payment success handled - no automatic message needed
 

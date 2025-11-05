@@ -62,6 +62,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Event ID for logging and deduplication
+  const eventId = event.id
+
   try {
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -75,14 +78,30 @@ export async function POST(request: NextRequest) {
         })
         
         // Extract metadata
-        const { userId, items, orderType, orderId, projectId } = paymentIntent.metadata
+        const { userId, items, orderType, projectId } = paymentIntent.metadata
         
         if (!userId || !items) {
           console.error('Missing required metadata in payment intent:', {
             userId: !!userId,
-            items: !!items,
-            orderId: !!orderId
+            items: !!items
           })
+          break
+        }
+
+        // Check if order already exists (idempotency)
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            transactions: {
+              some: {
+                reference: paymentIntent.id,
+                provider: 'stripe'
+              }
+            }
+          }
+        })
+
+        if (existingOrder) {
+          console.log('Order already exists for payment intent:', paymentIntent.id)
           break
         }
 
@@ -94,17 +113,25 @@ export async function POST(request: NextRequest) {
 
         if (!user) {
           console.error('User not found in database:', { userId })
-          // Return 200 to prevent webhook retries, but log the error
           break
         }
 
-        // Parse items
-        const parsedItems = JSON.parse(items)
+        // Parse items with error handling
+        let parsedItems: any[]
+        try {
+          parsedItems = JSON.parse(items)
+          if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+            throw new Error('Items must be a non-empty array')
+          }
+        } catch (parseError) {
+          console.error('Failed to parse items from metadata:', parseError)
+          break
+        }
+        
         console.log('Parsed items:', parsedItems)
         
         try {
-          // Always create a new order after successful payment
-          // Since we no longer create orders upfront, we always create them here
+          // Create order after successful payment
           const order = await prisma.order.create({
             data: {
               userId,
@@ -116,9 +143,9 @@ export async function POST(request: NextRequest) {
                 create: parsedItems.map((item: any) => ({
                   siteId: item.id,
                   siteName: item.name,
-                  priceCents: Math.round(item.price * 100),
-                  withContent: false, // Default value
-                  quantity: item.quantity,
+                  priceCents: item.priceCents || 0, // Already in cents
+                  withContent: false,
+                  quantity: item.quantity || 1,
                 }))
               },
               transactions: {
@@ -127,7 +154,7 @@ export async function POST(request: NextRequest) {
                   currency: paymentIntent.currency.toUpperCase(),
                   status: 'SUCCESS',
                   provider: 'stripe',
-                  reference: paymentIntent.id,
+                  reference: paymentIntent.id, // Store payment intent ID for reference
                 }
               }
             },
@@ -147,6 +174,7 @@ export async function POST(request: NextRequest) {
               category: 'PAYMENT',
               description: `Payment successful for $${(paymentIntent.amount / 100).toFixed(2)} ${paymentIntent.currency.toUpperCase()}`,
               metadata: {
+                stripeEventId: eventId, // Store event ID for deduplication
                 paymentIntentId: paymentIntent.id,
                 amount: paymentIntent.amount,
                 currency: paymentIntent.currency,
@@ -197,11 +225,36 @@ export async function POST(request: NextRequest) {
           error: paymentIntent.last_payment_error,
         })
 
+        // Check if order already exists (idempotency)
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            transactions: {
+              some: {
+                reference: paymentIntent.id,
+                provider: 'stripe'
+              }
+            }
+          }
+        })
+
+        if (existingOrder) {
+          console.log('Order already exists for payment intent:', paymentIntent.id)
+          break
+        }
+
         // Create a failed order record for tracking purposes
         if (paymentIntent.metadata.userId) {
           try {
-            // Parse items from metadata
-            const items = paymentIntent.metadata.items ? JSON.parse(paymentIntent.metadata.items) : []
+            // Parse items from metadata with error handling
+            let items: any[] = []
+            try {
+              if (paymentIntent.metadata.items) {
+                items = JSON.parse(paymentIntent.metadata.items)
+                if (!Array.isArray(items)) items = []
+              }
+            } catch (parseError) {
+              console.error('Failed to parse items from metadata:', parseError)
+            }
             
             // Create a failed order directly (no PENDING state)
             const failedOrder = await prisma.order.create({
@@ -214,9 +267,9 @@ export async function POST(request: NextRequest) {
                   create: items.map((item: any) => ({
                     siteId: item.id,
                     siteName: item.name,
-                    priceCents: Math.round(item.price * 100),
+                    priceCents: item.priceCents || 0, // Already in cents
                     withContent: false,
-                    quantity: item.quantity,
+                    quantity: item.quantity || 1,
                   }))
                 },
                 transactions: {
