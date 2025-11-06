@@ -19,8 +19,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 })
     }
 
+    // Calculate total from items (in cents) if items provided, otherwise use amount * 100
+    const totalCents = items.length > 0
+      ? items.reduce((sum: number, item: any) => sum + (item.priceCents || 0) * (item.quantity || 1), 0)
+      : Math.round(amount * 100)
+
+    if (totalCents <= 0) {
+      return NextResponse.json({ error: 'Invalid total amount' }, { status: 400 })
+    }
+
     const intent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
+      amount: totalCents,
       currency,
       automatic_payment_methods: { enabled: true },
       metadata: {

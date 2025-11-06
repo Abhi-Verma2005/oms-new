@@ -11,7 +11,16 @@ export const revalidate = 0
 
 export async function POST(request: NextRequest) {
   // Get the raw body as a string for signature verification
-  const rawBody = await request.text()
+  // Read as arrayBuffer first to ensure we get raw bytes (prevents Vercel parsing issues)
+  let rawBody: string
+  try {
+    const buffer = await request.arrayBuffer()
+    rawBody = Buffer.from(buffer).toString('utf-8')
+  } catch (error) {
+    // Fallback to text() if arrayBuffer fails
+    rawBody = await request.text()
+  }
+  
   const headersList = await headers()
   const signature = headersList.get('stripe-signature')
 
@@ -64,6 +73,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Event ID for logging and deduplication
+  const eventId = event.id
+
   try {
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -77,14 +89,30 @@ export async function POST(request: NextRequest) {
         })
         
         // Extract metadata
-        const { userId, items, orderType, orderId, projectId } = paymentIntent.metadata
+        const { userId, items, orderType, projectId } = paymentIntent.metadata
         
         if (!userId || !items) {
           console.error('Missing required metadata in payment intent:', {
             userId: !!userId,
-            items: !!items,
-            orderId: !!orderId
+            items: !!items
           })
+          break
+        }
+
+        // Check if order already exists (idempotency)
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            transactions: {
+              some: {
+                reference: paymentIntent.id,
+                provider: 'stripe'
+              }
+            }
+          }
+        })
+
+        if (existingOrder) {
+          console.log('Order already exists for payment intent:', paymentIntent.id)
           break
         }
 
@@ -96,17 +124,25 @@ export async function POST(request: NextRequest) {
 
         if (!user) {
           console.error('User not found in database:', { userId })
-          // Return 200 to prevent webhook retries, but log the error
           break
         }
 
-        // Parse items
-        const parsedItems = JSON.parse(items)
+        // Parse items with error handling
+        let parsedItems: any[]
+        try {
+          parsedItems = JSON.parse(items)
+          if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+            throw new Error('Items must be a non-empty array')
+          }
+        } catch (parseError) {
+          console.error('Failed to parse items from metadata:', parseError)
+          break
+        }
+        
         console.log('Parsed items:', parsedItems)
         
         try {
-          // Always create a new order after successful payment
-          // Since we no longer create orders upfront, we always create them here
+          // Create order after successful payment
           const order = await prisma.order.create({
             data: {
               userId,
@@ -118,9 +154,9 @@ export async function POST(request: NextRequest) {
                 create: parsedItems.map((item: any) => ({
                   siteId: item.id,
                   siteName: item.name,
-                  priceCents: Math.round(item.price * 100),
-                  withContent: false, // Default value
-                  quantity: item.quantity,
+                  priceCents: item.priceCents || 0, // Already in cents
+                  withContent: false,
+                  quantity: item.quantity || 1,
                 }))
               },
               transactions: {
@@ -129,7 +165,7 @@ export async function POST(request: NextRequest) {
                   currency: paymentIntent.currency.toUpperCase(),
                   status: 'SUCCESS',
                   provider: 'stripe',
-                  reference: paymentIntent.id,
+                  reference: paymentIntent.id, // Store payment intent ID for reference
                 }
               }
             },
@@ -149,6 +185,7 @@ export async function POST(request: NextRequest) {
               category: 'PAYMENT',
               description: `Payment successful for $${(paymentIntent.amount / 100).toFixed(2)} ${paymentIntent.currency.toUpperCase()}`,
               metadata: {
+                stripeEventId: eventId, // Store event ID for deduplication
                 paymentIntentId: paymentIntent.id,
                 amount: paymentIntent.amount,
                 currency: paymentIntent.currency,
@@ -173,9 +210,17 @@ export async function POST(request: NextRequest) {
             console.error('Error logging activities:', logError)
           }
         } catch (dbError) {
-          console.error('Error handling order in database:', dbError)
-          // Don't return error status - Stripe payment was successful
-          // Log the error but return 200 to prevent webhook retries
+          console.error('Error handling order in database:', {
+            error: dbError instanceof Error ? dbError.message : String(dbError),
+            stack: dbError instanceof Error ? dbError.stack : undefined,
+            paymentIntentId: paymentIntent.id,
+            userId
+          })
+          // Return 500 for database errors - Stripe will retry
+          return NextResponse.json(
+            { error: 'Database error', received: false },
+            { status: 500 }
+          )
         }
 
         console.log('Payment succeeded:', {
@@ -199,11 +244,36 @@ export async function POST(request: NextRequest) {
           error: paymentIntent.last_payment_error,
         })
 
+        // Check if order already exists (idempotency)
+        const existingOrder = await prisma.order.findFirst({
+          where: {
+            transactions: {
+              some: {
+                reference: paymentIntent.id,
+                provider: 'stripe'
+              }
+            }
+          }
+        })
+
+        if (existingOrder) {
+          console.log('Order already exists for payment intent:', paymentIntent.id)
+          break
+        }
+
         // Create a failed order record for tracking purposes
         if (paymentIntent.metadata.userId) {
           try {
-            // Parse items from metadata
-            const items = paymentIntent.metadata.items ? JSON.parse(paymentIntent.metadata.items) : []
+            // Parse items from metadata with error handling
+            let items: any[] = []
+            try {
+              if (paymentIntent.metadata.items) {
+                items = JSON.parse(paymentIntent.metadata.items)
+                if (!Array.isArray(items)) items = []
+              }
+            } catch (parseError) {
+              console.error('Failed to parse items from metadata:', parseError)
+            }
             
             // Create a failed order directly (no PENDING state)
             const failedOrder = await prisma.order.create({
@@ -216,9 +286,9 @@ export async function POST(request: NextRequest) {
                   create: items.map((item: any) => ({
                     siteId: item.id,
                     siteName: item.name,
-                    priceCents: Math.round(item.price * 100),
+                    priceCents: item.priceCents || 0, // Already in cents
                     withContent: false,
-                    quantity: item.quantity,
+                    quantity: item.quantity || 1,
                   }))
                 },
                 transactions: {
@@ -258,9 +328,17 @@ export async function POST(request: NextRequest) {
               console.error('Error logging failed payment activity:', logError)
             }
           } catch (dbError) {
-            console.error('Error handling failed payment:', dbError)
-            // Don't return error status - webhook was processed successfully
-            // Log the error but return 200 to prevent webhook retries
+            console.error('Error handling failed payment:', {
+              error: dbError instanceof Error ? dbError.message : String(dbError),
+              stack: dbError instanceof Error ? dbError.stack : undefined,
+              paymentIntentId: paymentIntent.id,
+              userId: paymentIntent.metadata.userId
+            })
+            // Return 500 for database errors - Stripe will retry
+            return NextResponse.json(
+              { error: 'Database error', received: false },
+              { status: 500 }
+            )
           }
         }
 
@@ -273,10 +351,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Error processing webhook:', error)
+    console.error('Error processing webhook:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      eventType: event?.type,
+      eventId: event?.id
+    })
     
-    // Only return 500 for critical errors that should be retried
-    // For database/logging errors, return 200 to prevent infinite retries
+    // Return appropriate status codes based on error type
     if (error instanceof Error && error.message.includes('signature')) {
       // Signature verification failed - return 400 (don't retry)
       return NextResponse.json(
@@ -285,10 +367,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // For other errors (database, logging), return 200 to prevent retries
-    // but log the error for debugging
-    console.error('Webhook processed with errors, but returning 200 to prevent retries')
-    return NextResponse.json({ received: true, warning: 'Processed with errors' })
+    // For unexpected errors, return 500 so Stripe retries
+    return NextResponse.json(
+      { error: 'Internal server error', received: false },
+      { status: 500 }
+    )
   }
 }
 
