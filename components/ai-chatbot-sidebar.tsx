@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { useUserContextForAI } from '@/stores/user-context-store'
 import { useProjectStore } from '@/stores/project-store'
 import { useFilterStore } from '@/stores/filter-store'
+import { useCart } from '@/contexts/cart-context'
 import { useDropzone } from 'react-dropzone'
 import { Streamdown } from 'streamdown'
 import {
@@ -53,6 +54,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
   const { getUserContextForAI } = useUserContextForAI()
   const { selectedProjectId } = useProjectStore()
   const { getCurrentState, updateFromAI } = useFilterStore()
+  const { getTotalItems } = useCart()
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
@@ -366,6 +368,7 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
 
     try {
       const { filters: currentFilters, searchQuery, currentRowsVisible } = getCurrentState()
+      const cartItemCount = getTotalItems()
 
       const response = await fetch('/api/chat-streaming', {
         method: 'POST',
@@ -376,7 +379,8 @@ export default function AIChatbotSidebar({ isOpen, onToggle, userId = 'anonymous
           currentFilters,
           searchQuery,
           selectedDocuments,
-          currentRowsVisible
+          currentRowsVisible,
+          cartItemCount
         })
       })
 

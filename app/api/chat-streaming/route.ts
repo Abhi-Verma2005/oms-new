@@ -9,7 +9,7 @@ export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, userId, documentUpload, currentFilters: requestCurrentFilters, selectedDocuments, currentRowsVisible } = await req.json()
+    const { messages, userId, documentUpload, currentFilters: requestCurrentFilters, selectedDocuments, currentRowsVisible, cartItemCount } = await req.json()
     
     if (!userId || !messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     console.log(`🚀 Two-Stage LLM Processing for user ${userId}`)
     console.log(`📊 Current filters from frontend:`, currentFilters)
     console.log(`📊 Current rows visible:`, currentRowsVisible)
+    console.log(`🛒 Cart item count:`, cartItemCount)
     
     const currentFiltersContext = Object.keys(currentFilters).length > 0 
       ? `Current filters: ${JSON.stringify(currentFilters, null, 2)}`
@@ -29,6 +30,10 @@ export async function POST(req: NextRequest) {
     
     const rowsVisibleContext = typeof currentRowsVisible === 'number' && currentRowsVisible > 0
       ? `\n\n**CURRENT TABLE STATE:**\nCurrently showing ${currentRowsVisible} row${currentRowsVisible !== 1 ? 's' : ''} in the table.`
+      : ''
+    
+    const cartContext = typeof cartItemCount === 'number' && cartItemCount >= 0
+      ? `\n\n**CURRENT CART STATE:**\nThe user currently has ${cartItemCount} item${cartItemCount !== 1 ? 's' : ''} in their cart.`
       : ''
 
     // FIXED: AI-driven document context retrieval
@@ -166,6 +171,7 @@ export async function POST(req: NextRequest) {
 **CURRENT FILTERS:**
 ${currentFiltersContext}
 ${rowsVisibleContext}
+${cartContext}
 
 ${documentContext}
 
@@ -544,6 +550,7 @@ Be intelligent, helpful, use beautiful markdown formatting, and show that you un
 
 **CURRENT FILTERS:**
 ${currentFiltersContext}
+${cartContext}
 
 **SYSTEM NORMALIZED NICHE HINT (from vector search):**
 ${normalizedNicheHint ? normalizedNicheHint : 'None'}
